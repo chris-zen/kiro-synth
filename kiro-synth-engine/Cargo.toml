@@ -1,0 +1,15 @@
+[package]
+name = "kiro-synth-engine"
+version = "0.1.0"
+authors = ["Christian Perez Llamas"]
+edition = "2018"
+
+[dependencies]
+num-traits = { version = "0.2", default-features = false, features = ["libm"] }
+libm = "0.2.1"
+
+ringbuf = "0.2.1"
+heapless = "0.5.1"
+typenum = "1.11.2"
+
+kiro-synth-core = { path = "../kiro-synth-core" }

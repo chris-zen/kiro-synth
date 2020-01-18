@@ -1,0 +1,8 @@
+[package]
+name = "kiro-synth-midi"
+version = "0.1.0"
+authors = ["Christian Perez Llamas"]
+edition = "2018"
+
+[dependencies]
+heapless = "0.5.1"
