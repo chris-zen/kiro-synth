@@ -1,4 +1,4 @@
-use num_traits::Float;
+use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::{Program, Block, osc};
 use kiro_synth_midi::messages::Message::ProgramChange;
 
@@ -12,43 +12,43 @@ impl Programs {
     let one = program.const_one();
 
     let note_pitch = Program::<F>::note_pitch();
-    let pitch_bend = program.param();
+    let pitch_bend = zero;
 
     let output_left = Program::<F>::output_left();
     let output_right = Program::<F>::output_right();
 
     let osc1 = osc::Block {
       inputs: osc::Inputs {
-        shape: program.param(),
-        amplitude: program.param(),
+        shape: zero,
+        amplitude: one,
         amp_mod: zero,
-        octave: program.param(),
-        semitones: program.param(),
-        cents: program.param(),
+        octave: zero,
+        semitones: zero,
+        cents: program.const_value(F::from(-6.0).unwrap()),
         note_pitch,
         pitch_bend,
-        freq_mod: zero,
+        freq_mod: one,
       },
       output: program.signal(),
     };
 
     let osc2 = osc::Block {
       inputs: osc::Inputs {
-        shape: program.param(),
-        amplitude: program.param(),
+        shape: zero,
+        amplitude: one,
         amp_mod: zero,
-        octave: program.param(),
-        semitones: program.param(),
-        cents: program.param(),
+        octave: zero,
+        semitones: zero,
+        cents: program.const_value(F::from(6.0).unwrap()),
         note_pitch,
-        pitch_bend,
-        freq_mod: osc1.output,
+        pitch_bend: zero,
+        freq_mod: one,
       },
       output: program.signal(),
     };
 
     let out = Block::Out {
-      left: osc2.output,
+      left: osc1.output,
       right: osc2.output,
     };
 

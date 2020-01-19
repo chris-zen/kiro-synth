@@ -1,44 +1,72 @@
-use num_traits::Float;
-
-use crate::program::SignalRef;
 use core::ops::{Index, IndexMut};
+
+use crate::float::Float;
+use crate::program::SignalRef;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SignalState {
+  Off,
+  Updated,
+  Consumed,
+}
 
 #[derive(Debug, Clone)]
 pub struct Signal<F: Float> {
   value: F,
-  updated: bool,
+  state: SignalState,
 }
 
 impl<F: Float> Default for Signal<F> {
   fn default() -> Self {
     Signal {
       value: F::zero(),
-      updated: true,
+      state: SignalState::Updated,
     }
   }
 }
 
 impl<F: Float> Signal<F> {
   pub fn set(&mut self, value: F) {
-    self.updated = true;
+    self.state = if self.value != value {
+      SignalState::Updated
+    }
+    else {
+      self.state
+    };
     self.value = value;
+  }
+
+  pub fn consume(&mut self) -> F {
+    if self.state == SignalState::Updated {
+      self.state = SignalState::Consumed
+    }
+    self.value
   }
 
   pub fn get(&self) -> F {
     self.value
   }
 
-  pub fn is_updated(&self) -> bool {
-    self.updated
+  pub fn state(&self) -> SignalState {
+    self.state
   }
 
-  pub fn reset_update(&mut self) {
-    self.updated = false;
+  pub fn reset(&mut self) {
+    self.state = SignalState::Updated;
   }
 
-  pub fn if_updated<G>(&self, f: G) where G: FnOnce(F) -> () {
-    if self.updated {
-      f(self.value)
+  pub fn update_state(&mut self) {
+    self.state = match self.state {
+      SignalState::Updated => SignalState::Updated,
+      SignalState::Consumed => SignalState::Off,
+      SignalState::Off => SignalState::Off,
+    }
+  }
+
+  pub fn if_updated<G>(&mut self, f: G) where G: FnOnce(F) -> () {
+    match self.state {
+      SignalState::Updated | SignalState::Consumed => f(self.consume()),
+      SignalState::Off => {},
     }
   }
 }
@@ -57,6 +85,20 @@ impl<F: Float> Signal<F> {
 
 pub(crate) struct SignalBus<'a, F: Float> {
   signals: &'a mut [Signal<F>]
+}
+
+impl<'a, F: Float> SignalBus<'a, F> {
+  pub fn reset(&mut self) {
+    for signal in self.signals.iter_mut() {
+      signal.reset();
+    }
+  }
+
+  pub fn update(&mut self) {
+    for signal in self.signals.iter_mut() {
+      signal.update_state();
+    }
+  }
 }
 
 impl<'a, F: Float> SignalBus<'a, F> {

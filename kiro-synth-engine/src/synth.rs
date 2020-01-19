@@ -1,4 +1,3 @@
-//use num_traits::Float;
 use heapless::Vec;
 use heapless::consts;
 use typenum::marker_traits::Unsigned;
@@ -112,7 +111,7 @@ impl<'a, F: Float> Synth<'a, F> {
 
     for index in self.active_voices.iter() {
       let voice = &mut self.voices[*index];
-      voice.process(&self.program);
+      voice.process(&mut self.program);
       let (voice_left, voice_right) = voice.output();
       left = left + voice_left;
       right = right + voice_right;

@@ -1,6 +1,6 @@
+use crate::float::Float;
 use crate::oscillators::osc_pitch_shift::OscPitchShift;
 use crate::oscillators::osc_waveform::OscWaveform;
-use num_traits::Float;
 
 #[derive(Debug)]
 pub struct PitchedOscillator<F: Float> {
@@ -105,7 +105,6 @@ where
 
   /// Generate the next value
   pub fn generate(&mut self) -> F {
-//    println!("{:?} {:?}", self.modulo.to_f32().unwrap(), self.phase_inc.to_f32().unwrap());
     let wf = self.waveform.generate(self.modulo, self.phase_inc);
     self.update_modulo();
     wf * self.amplitude + self.amp_mod

@@ -1,4 +1,4 @@
-use num_traits::Float;
+use crate::float::Float;
 
 /// Calculates the pitch shift multiplier from the following parameters:
 /// - A number of octaves

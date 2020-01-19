@@ -1,4 +1,4 @@
-use num_traits::Float;
+use crate::float::Float;
 
 pub enum Message<F: Float> {
   NoteOn {

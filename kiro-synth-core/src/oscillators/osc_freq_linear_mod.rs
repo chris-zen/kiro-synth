@@ -1,4 +1,4 @@
-use num_traits::Float;
+use crate::float::Float;
 
 /// Frequency Linear Modulation
 /// Used with Frequency and Phase modulation (FM/PM)

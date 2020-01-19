@@ -1,5 +1,3 @@
-//use num_traits::Float;
-
 use kiro_synth_core::oscillators::pitched_oscillator::PitchedOscillator;
 
 use crate::float::Float;

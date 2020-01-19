@@ -26,15 +26,21 @@ impl<'a, F: Float> Processor<'a, F> {
     }
   }
 
-  pub fn process<'b>(&mut self, signals: &mut SignalBus<'b, F>, program: &Program<F>) {
+  pub fn process<'b>(&mut self, signals: &mut SignalBus<'b, F>, program: &mut Program<F>) {
     match self {
-      Processor::Const(value, signal) => signals[*signal].set(*value),
-      Processor::Param(param, signal) => program.get_param(*param).if_updated(|value| signals[*signal].set(value)),
-      Processor::Osc(ref mut proc) => proc.process(signals, program),
+      Processor::Const(value, signal) => {
+        signals[*signal].set(*value)
+      },
+      Processor::Param(param, signal) => {
+        program.get_param_mut(*param).if_updated(|value| signals[*signal].set(value))
+      },
+      Processor::Osc(ref mut proc) => {
+        proc.process(signals, program)
+      },
       Processor::Out(ref left, ref right) => {
-        let left_value = signals[left].get();
+        let left_value = signals[left].consume();
         signals[Program::<F>::output_left()].set(left_value);
-        let right_value = signals[right].get();
+        let right_value = signals[right].consume();
         signals[Program::<F>::output_right()].set(right_value);
       }
     }

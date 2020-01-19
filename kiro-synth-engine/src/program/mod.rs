@@ -1,8 +1,9 @@
 pub mod osc;
 
-use num_traits::Float;
 use heapless::Vec;
 use heapless::consts;
+
+use crate::float::Float;
 use crate::signal::Signal;
 
 pub type MaxSignals = consts::U256;
@@ -143,11 +144,17 @@ impl<F: Float> Program<F> {
 
   pub fn reset_param_updates(&mut self) {
     for param in self.params.iter_mut() {
-      param.reset_update();
+      param.reset();
     }
   }
 
   pub fn get_blocks(&self) -> &[Block<F>] {
     &*self.blocks
   }
+}
+
+pub struct ProgramBuilder<F: Float> {
+  signals_count: usize,
+  params: Vec<Signal<F>, MaxParams>,
+  blocks: Vec<Block<F>, MaxBlocks>,
 }

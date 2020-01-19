@@ -9,6 +9,7 @@ use ringbuf::{Consumer, Producer, RingBuffer};
 use kiro_synth_core::waveforms::saw;
 use kiro_synth_core::waveforms::saw::Saw;
 use kiro_synth_core::waveforms::Waveform;
+use kiro_synth_core::float::Float;
 
 use kiro_synth_midi::messages::Message as MidiMessage;
 
@@ -38,7 +39,7 @@ fn main() -> Result<()> {
 
   // SYNTH
 
-  let synth2 = Synth::new(SAMPLE_RATE as f32, events_consumer, &waveforms, Programs::default());
+  let synth = Synth::new(SAMPLE_RATE as f32, events_consumer, &waveforms, Programs::default());
 
   // MIDI
 
@@ -48,7 +49,7 @@ fn main() -> Result<()> {
   // AUDIO
 
   let audio_driver = AudioDriver::new(SAMPLE_RATE)?;
-  audio_driver.run(SynthAudioHandler(synth2));
+  audio_driver.run(SynthAudioHandler(synth));
 
   drop(midi_driver);
 

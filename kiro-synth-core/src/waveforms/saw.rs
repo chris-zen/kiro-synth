@@ -1,4 +1,4 @@
-use num_traits::float::Float;
+use crate::float::Float;
 
 use crate::blep::{PolyBLEP, TableBLEP, BLEP, BLEP_8_BLACKMAN_HARRIS};
 use crate::utils::unipolar_to_bipolar;

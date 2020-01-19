@@ -1,6 +1,4 @@
-#![no_std]
-
-mod float;
+//#![no_std]
 
 #[macro_use]
 mod signal;
@@ -11,3 +9,5 @@ mod key_freqs;
 pub mod program;
 pub mod synth;
 pub mod event;
+
+pub use kiro_synth_core::float;

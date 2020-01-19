@@ -18,8 +18,8 @@ pub use table_rect::BLEP_8_RECT;
 pub use table_tri::BLEP_8_TRI;
 pub use table_welch::BLEP_8_WELCH;
 
+use crate::float::Float;
 use crate::interpolation::linear_interpolation;
-use num_traits::float::Float;
 
 pub trait TableBLEP {
   fn residual<F: Float>(

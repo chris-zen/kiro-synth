@@ -1,5 +1,4 @@
 use core::ops::DerefMut;
-//use num_traits::Float;
 use heapless::Vec;
 
 use crate::float::Float;
@@ -7,7 +6,7 @@ use crate::key_freqs::KEY_FREQ;
 use crate::program::{MaxSignals, MaxBlocks, Block, osc, Program, SignalRef, ParamRef};
 use crate::processor::Processor;
 use crate::synth::SynthWaveforms;
-use crate::signal::{Signal, SignalBus};
+use crate::signal::{Signal, SignalBus, SignalState};
 
 pub(crate) struct Voice<'a, F: Float> {
   waveforms: &'a SynthWaveforms<F>,
@@ -32,6 +31,8 @@ impl<'a, F: Float> Voice<'a, F> {
       }
     }
 
+//    println!("voice::signals {:?}", signals.iter_mut().map(|s| (s.consume(), s.state())).collect::<Vec<(F, SignalState), MaxSignals>>());
+
     Voice {
       waveforms,
       signals,
@@ -48,9 +49,7 @@ impl<'a, F: Float> Voice<'a, F> {
   }
 
   pub fn reset(&mut self) {
-    for signal in self.signals.iter_mut() {
-      signal.reset_update();
-    }
+    SignalBus::new(self.signals.deref_mut()).reset();
   }
 
   pub fn note_on(&mut self, key: u8, velocity: F) {
@@ -63,11 +62,13 @@ impl<'a, F: Float> Voice<'a, F> {
   pub fn note_off(&mut self) {
   }
 
-  pub fn process(&mut self, program: &Program<F>) {
-    let mut bus = SignalBus::new(self.signals.deref_mut());
+  pub fn process(&mut self, program: &mut Program<F>) {
+    let mut signals = SignalBus::new(self.signals.deref_mut());
     for processor in self.processors.iter_mut() {
-      processor.process(&mut bus, program)
+      processor.process(&mut signals, program)
     }
+    signals.update();
+//    println!("{:?}", self.signals.iter_mut().map(|s| (s.get(), s.state())).collect::<Vec<(F, SignalState), MaxSignals>>());
   }
 
   pub fn output(&self) -> (F, F) {

@@ -1,6 +1,6 @@
+use crate::float::Float;
 use crate::waveforms::saw::Saw;
 use crate::waveforms::Waveform;
-use num_traits::Float;
 
 #[derive(Debug, Clone)]
 pub enum OscWaveform<F: Float> {
