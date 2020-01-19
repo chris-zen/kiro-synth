@@ -54,32 +54,66 @@ impl<F: Float> Program<F> {
   pub const OUTPUT_RIGHT_SIGNAL_REF: usize = 4;
   pub const FIRST_FREE_SIGNAL_REF: usize = 5;
 
+  pub fn get_signals_count(&self) -> usize {
+    self.signals_count
+  }
+
+  pub fn get_param(&self, param: ParamRef) -> &Signal<F> {
+    &self.params[param.0]
+  }
+
+  pub fn get_param_mut(&mut self, param: ParamRef) -> &mut Signal<F> {
+    &mut self.params[param.0]
+  }
+
+  pub fn get_params_count(&self) -> usize {
+    self.params.len()
+  }
+
+  pub fn reset_param_updates(&mut self) {
+    for param in self.params.iter_mut() {
+      param.reset();
+    }
+  }
+
+  pub fn get_blocks(&self) -> &[Block<F>] {
+    &*self.blocks
+  }
+}
+
+pub struct ProgramBuilder<F: Float> {
+  signals_count: usize,
+  params: Vec<Signal<F>, MaxParams>,
+  blocks: Vec<Block<F>, MaxBlocks>,
+}
+
+impl<F: Float> ProgramBuilder<F> {
   pub fn new() -> Self {
-    Program {
-      signals_count: Self::FIRST_FREE_SIGNAL_REF,
+    ProgramBuilder {
+      signals_count: Program::<F>::FIRST_FREE_SIGNAL_REF,
       params: Vec::new(),
       blocks: Vec::new(),
     }
   }
 
   pub fn note_key() -> SignalRef {
-    SignalRef(Self::NOTE_KEY_SIGNAL_REF)
+    SignalRef(Program::<F>::NOTE_KEY_SIGNAL_REF)
   }
 
   pub fn note_velocity() -> SignalRef {
-    SignalRef(Self::NOTE_VELOCITY_SIGNAL_REF)
+    SignalRef(Program::<F>::NOTE_VELOCITY_SIGNAL_REF)
   }
 
   pub fn note_pitch() -> SignalRef {
-    SignalRef(Self::NOTE_PITCH_SIGNAL_REF)
+    SignalRef(Program::<F>::NOTE_PITCH_SIGNAL_REF)
   }
 
   pub fn output_left() -> SignalRef {
-    SignalRef(Self::OUTPUT_LEFT_SIGNAL_REF)
+    SignalRef(Program::<F>::OUTPUT_LEFT_SIGNAL_REF)
   }
 
   pub fn output_right() -> SignalRef {
-    SignalRef(Self::OUTPUT_RIGHT_SIGNAL_REF)
+    SignalRef(Program::<F>::OUTPUT_RIGHT_SIGNAL_REF)
   }
 
   pub fn const_value(&mut self, value: F) -> SignalRef {
@@ -126,35 +160,11 @@ impl<F: Float> Program<F> {
     block_ref
   }
 
-  pub fn get_signals_count(&self) -> usize {
-    self.signals_count
-  }
-
-  pub fn get_param(&self, param: ParamRef) -> &Signal<F> {
-    &self.params[param.0]
-  }
-
-  pub fn get_param_mut(&mut self, param: ParamRef) -> &mut Signal<F> {
-    &mut self.params[param.0]
-  }
-
-  pub fn get_params_count(&self) -> usize {
-    self.params.len()
-  }
-
-  pub fn reset_param_updates(&mut self) {
-    for param in self.params.iter_mut() {
-      param.reset();
+  pub fn build(self) -> Program<F> {
+    Program {
+      signals_count: self.signals_count,
+      params: self.params,
+      blocks: self.blocks,
     }
   }
-
-  pub fn get_blocks(&self) -> &[Block<F>] {
-    &*self.blocks
-  }
-}
-
-pub struct ProgramBuilder<F: Float> {
-  signals_count: usize,
-  params: Vec<Signal<F>, MaxParams>,
-  blocks: Vec<Block<F>, MaxBlocks>,
 }

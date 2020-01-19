@@ -3,7 +3,7 @@ use heapless::Vec;
 
 use crate::float::Float;
 use crate::key_freqs::KEY_FREQ;
-use crate::program::{MaxSignals, MaxBlocks, Block, osc, Program, SignalRef, ParamRef};
+use crate::program::{MaxSignals, MaxBlocks, Block, osc, Program, SignalRef, ParamRef, ProgramBuilder};
 use crate::synth::SynthWaveforms;
 use crate::signal::{Signal, SignalBus};
 use crate::voice::Voice;
@@ -39,9 +39,9 @@ impl<'a, F: Float> Processor<'a, F> {
       },
       Processor::Out(ref left, ref right) => {
         let left_value = signals[left].consume();
-        signals[Program::<F>::output_left()].set(left_value);
+        signals[ProgramBuilder::<F>::output_left()].set(left_value);
         let right_value = signals[right].consume();
-        signals[Program::<F>::output_right()].set(right_value);
+        signals[ProgramBuilder::<F>::output_right()].set(right_value);
       }
     }
   }
