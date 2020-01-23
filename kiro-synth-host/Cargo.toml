@@ -15,6 +15,7 @@ anyhow = "1.0.26"
 cpal = "0.11.0"
 
 ringbuf = "0.2.1"
+heapless = "0.5.2"
 
 kiro-synth-core = { path = "../kiro-synth-core" }
 kiro-synth-midi = { path = "../kiro-synth-midi" }

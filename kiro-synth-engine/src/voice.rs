@@ -48,18 +48,28 @@ impl<'a, F: Float> Voice<'a, F> {
     self.signals[Program::<F>::NOTE_VELOCITY_SIGNAL_REF].get()
   }
 
-  pub fn reset(&mut self) {
-    SignalBus::new(self.signals.deref_mut()).reset();
+  pub fn reset(&mut self, program: &Program<F>) {
+    let mut signals = SignalBus::new(self.signals.deref_mut());
+    signals.reset();
+
+    for block in program.get_blocks() {
+      if let Block::Param(param_block) = block {
+        if let Some((_, param)) = program.get_param(param_block.reference) {
+          let param_value = param.signal.get();
+          signals[param_block.signal].set(param_value);
+        }
+      }
+    }
   }
 
-  pub fn note_on(&mut self, key: u8, velocity: F) {
-    self.reset();
+  pub fn note_on(&mut self, program: &Program<F>, key: u8, velocity: F) {
+    self.reset(program);
     self.signals[Program::<F>::NOTE_KEY_SIGNAL_REF].set(F::from(key).unwrap());
     self.signals[Program::<F>::NOTE_VELOCITY_SIGNAL_REF].set(velocity);
     self.signals[Program::<F>::NOTE_PITCH_SIGNAL_REF].set(F::from(KEY_FREQ[(key & 0x7f) as usize]).unwrap());
   }
 
-  pub fn note_off(&mut self) {
+  pub fn note_off(&mut self, _program: &Program<F>) {
   }
 
   pub fn process(&mut self, program: &mut Program<F>) {

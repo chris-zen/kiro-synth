@@ -3,7 +3,7 @@ use heapless::Vec;
 
 use crate::float::Float;
 use crate::key_freqs::KEY_FREQ;
-use crate::program::{MaxSignals, MaxBlocks, Block, osc, Program, SignalRef, ParamRef, ProgramBuilder};
+use crate::program::{MaxSignals, MaxBlocks, Block, osc, Program, SignalRef, ParamRef, ProgramBuilder, ParamBlock};
 use crate::synth::SynthWaveforms;
 use crate::signal::{Signal, SignalBus};
 use crate::voice::Voice;
@@ -20,7 +20,7 @@ impl<'a, F: Float> Processor<'a, F> {
   pub fn new(sample_rate: F, waveforms: &'a SynthWaveforms<F>, block: &Block<F>) -> Self {
     match block.clone() {
       Block::Const { value, signal } => Processor::Const(value, signal),
-      Block::Param { param, signal } => Processor::Param(param, signal),
+      Block::Param(ParamBlock { reference: param, signal }) => Processor::Param(param, signal),
       Block::Osc(osc_block) => Processor::Osc(osc::Processor::new(sample_rate, waveforms, osc_block)),
       Block::Out { left, right } => Processor::Out(left, right),
     }
@@ -32,7 +32,7 @@ impl<'a, F: Float> Processor<'a, F> {
         signals[*signal].set(*value)
       },
       Processor::Param(param, signal) => {
-        program.get_param_mut(*param).if_updated(|value| signals[*signal].set(value))
+        program.get_param_signal_mut(*param).if_updated(|value| signals[*signal].set(value))
       },
       Processor::Osc(ref mut proc) => {
         proc.process(signals, program)

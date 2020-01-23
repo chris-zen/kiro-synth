@@ -26,6 +26,13 @@ impl<F: Float> Default for Signal<F> {
 }
 
 impl<F: Float> Signal<F> {
+  pub fn new(initial_value: F) -> Self {
+    Signal {
+      value: initial_value,
+      state: SignalState::Updated,
+    }
+  }
+
   pub fn set(&mut self, value: F) {
     self.state = if self.value != value {
       SignalState::Updated

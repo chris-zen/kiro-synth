@@ -9,7 +9,10 @@ pub enum Message<F: Float> {
     key: u8,
     velocity: F
   },
-
+  Param {
+    index: usize,
+    value: F,
+  }
 }
 
 pub struct Event<F: Float> {

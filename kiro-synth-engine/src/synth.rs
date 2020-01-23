@@ -43,14 +43,14 @@ impl<F: Float> Index<usize> for SynthWaveforms<F> {
 pub struct Synth<'a, F: Float> {
   sample_rate: F,
   events: Consumer<Event<F>>,
-  program: Program<F>,
+  program: Program<'a, F>,
   voices: Vec<Voice<'a, F>, MaxVoices>,
   active_voices: Vec<usize, MaxVoices>,
   free_voices: Vec<usize, MaxVoices>,
 }
 
 impl<'a, F: Float> Synth<'a, F> {
-  pub fn new(sample_rate: F, events: Consumer<Event<F>>, waveforms: &'a SynthWaveforms<F>, program: Program<F>) -> Self {
+  pub fn new(sample_rate: F, events: Consumer<Event<F>>, waveforms: &'a SynthWaveforms<F>, program: Program<'a, F>) -> Self {
     let mut voices: Vec<Voice<'a, F>, MaxVoices> = Vec::new();
     let mut free_voices: Vec<usize, MaxVoices> = Vec::new();
     for index in 0..MaxVoices::to_usize() {
@@ -73,6 +73,7 @@ impl<'a, F: Float> Synth<'a, F> {
       match message {
         Message::NoteOn { key, velocity } => self.note_on(key, velocity),
         Message::NoteOff { key, velocity } => self.note_off(key, velocity),
+        Message::Param { index, value } => self.program.set_param_value(index, value),
       }
     }
   }
@@ -80,14 +81,14 @@ impl<'a, F: Float> Synth<'a, F> {
   fn note_on(&mut self, key: u8, velocity: F) {
     if let Some(index) = self.allocate_voice(key, velocity) {
       drop(self.active_voices.push(index));
-      self.voices[index].note_on(key, velocity);
+      self.voices[index].note_on(&self.program, key, velocity);
     }
   }
 
   fn note_off(&mut self, key: u8, _velocity: F) {
     if let Some(index) = self.take_active_voice(key) {
       drop(self.free_voices.push(index));
-      self.voices[index].note_off();
+      self.voices[index].note_off(&self.program);
     }
   }
 
@@ -117,7 +118,7 @@ impl<'a, F: Float> Synth<'a, F> {
       right = right + voice_right;
     }
 
-    self.program.reset_param_updates();
+    self.program.update_params();
 
     (left, right)
   }

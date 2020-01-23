@@ -1,15 +1,11 @@
 mod audio;
 mod midi;
 mod programs;
+mod midi_mapper;
 
 use anyhow::Result;
 
-use ringbuf::{Consumer, Producer, RingBuffer};
-
-use kiro_synth_core::waveforms::saw;
-use kiro_synth_core::waveforms::saw::Saw;
-use kiro_synth_core::waveforms::Waveform;
-use kiro_synth_core::float::Float;
+use ringbuf::{Producer, RingBuffer};
 
 use kiro_synth_midi::messages::Message as MidiMessage;
 
@@ -18,7 +14,8 @@ use kiro_synth_engine::event::{Event, Message as SynthMessage};
 
 use crate::audio::{AudioDriver, AudioHandler};
 use crate::midi::{MidiDriver, MidiHandler};
-use crate::programs::Programs;
+use crate::programs::PlaygroundModule;
+use crate::midi_mapper::MidiMapper;
 
 const SAMPLE_RATE: u32 = 44100;
 
@@ -39,11 +36,26 @@ fn main() -> Result<()> {
 
   // SYNTH
 
-  let synth = Synth::new(SAMPLE_RATE as f32, events_consumer, &waveforms, Programs::default());
+  let (program, module) = PlaygroundModule::new_program();
+
+  let mut midi_mapper = MidiMapper::new();
+  midi_mapper.pitch_bend(program.get_param(module.params.pitch_bend));
+
+  midi_mapper.controller(74, program.get_param(module.params.osc1_amplitude));
+  midi_mapper.controller(71, program.get_param(module.params.osc1_octave));
+  midi_mapper.controller(76, program.get_param(module.params.osc1_semitones));
+  midi_mapper.controller(77, program.get_param(module.params.osc1_cents));
+
+  midi_mapper.controller(18, program.get_param(module.params.osc2_amplitude));
+  midi_mapper.controller(19, program.get_param(module.params.osc2_octave));
+  midi_mapper.controller(16, program.get_param(module.params.osc2_semitones));
+  midi_mapper.controller(17, program.get_param(module.params.osc2_cents));
+
+  let synth = Synth::new(SAMPLE_RATE as f32, events_consumer, &waveforms, program);
 
   // MIDI
 
-  let handler = EventsMidiHandler::new(events_producer);
+  let handler = EventsMidiHandler::new(midi_mapper, events_producer);
   let midi_driver = MidiDriver::new("kiro-synth", midi_buffer, handler)?;
 
   // AUDIO
@@ -59,7 +71,7 @@ fn main() -> Result<()> {
 struct SynthAudioHandler<'a>(Synth<'a, f32>);
 
 impl<'a> AudioHandler for SynthAudioHandler<'a> {
-  fn prepare(&mut self, len: usize) {
+  fn prepare(&mut self, _len: usize) {
     self.0.prepare();
   }
 
@@ -69,12 +81,16 @@ impl<'a> AudioHandler for SynthAudioHandler<'a> {
 }
 
 struct EventsMidiHandler {
-  events: Producer<Event<f32>>
+  midi_mapper: MidiMapper<f32>,
+  events: Producer<Event<f32>>,
 }
 
 impl EventsMidiHandler {
-  pub fn new(events: Producer<Event<f32>>) -> Self {
-    EventsMidiHandler { events }
+  pub fn new(midi_mapper: MidiMapper<f32>, events: Producer<Event<f32>>) -> Self {
+    EventsMidiHandler {
+      midi_mapper,
+      events
+    }
   }
 }
 
@@ -83,11 +99,23 @@ impl MidiHandler for EventsMidiHandler {
     println!("{:014}: {:?}", timestamp, message);
     match message {
       MidiMessage::NoteOn { channel: _, key, velocity } => {
-        drop(self.events.push(Event::new(0u64, SynthMessage::NoteOn { key, velocity: velocity as f32 / 128.0 })));
+        let message = SynthMessage::NoteOn { key, velocity: velocity as f32 / 127.0 };
+        drop(self.events.push(Event::new(0u64, message)));
       },
       MidiMessage::NoteOff { channel: _, key, velocity } => {
-        drop(self.events.push(Event::new(0u64, SynthMessage::NoteOff { key, velocity: velocity as f32 / 128.0 })));
+        let message = SynthMessage::NoteOff { key, velocity: velocity as f32 / 127.0 };
+        drop(self.events.push(Event::new(0u64, message)));
       },
+      MidiMessage::PitchBend { channel: _, value } => {
+        if let Some(event) = self.midi_mapper.map_midi_pitch_bend(value) {
+          drop(self.events.push(event));
+        }
+      },
+      MidiMessage::ControlChange { channel: _, controller, value } => {
+        if let Some(event) = self.midi_mapper.map_midi_controller(controller, value) {
+          drop(self.events.push(event));
+        }
+      }
       _ => {}
     };
   }

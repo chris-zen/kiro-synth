@@ -6,7 +6,7 @@ use coremidi::{Client, InputPort, PacketList, Sources};
 use kiro_synth_midi::decoder::{CallbackResult, Decoder, DecoderCallbacks};
 use kiro_synth_midi::messages::Message;
 
-use crate::midi::{MidiError, MidiHandler, MidiDriver};
+use crate::midi::{MidiError, MidiHandler};
 
 #[derive(Error, Debug)]
 #[error("CoreMidi returned OSStatus: {0}")]
@@ -42,8 +42,8 @@ where
 }
 
 pub struct CoreMidiDriver {
-  client: Client,
-  input_port: InputPort
+  _client: Client,
+  _input_port: InputPort
 }
 
 impl CoreMidiDriver {
@@ -80,8 +80,8 @@ impl CoreMidiDriver {
     println!("CoreMidi input port created");
 
     Ok(Self {
-      client,
-      input_port,
+      _client: client,
+      _input_port: input_port,
     })
   }
 
