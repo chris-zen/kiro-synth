@@ -8,9 +8,10 @@ use kiro_synth_core::oscillators::osc_waveform::OscWaveform;
 use kiro_synth_core::waveforms::saw;
 
 use crate::float::Float;
-use crate::program::Program;
+use crate::program::{Program, ParamRef};
 use crate::voice::Voice;
 use crate::event::{Message, Event};
+use kiro_synth_core::waveforms::sine::Sine;
 
 type MaxWaveforms = consts::U8;
 type MaxVoices = consts::U16;
@@ -21,14 +22,22 @@ pub struct SynthWaveforms<F: Float>(Vec<OscWaveform<F>, MaxWaveforms>);
 impl<F: Float> SynthWaveforms<F> {
   pub fn new() -> Self {
     let mut waveforms: Vec<OscWaveform<F>, MaxWaveforms> = heapless::Vec::new();
-    for _ in 0..MaxWaveforms::to_usize() {
-      drop(waveforms.push(OscWaveform::Saw(saw::Saw::new(
-        saw::Mode::Bipolar,
-        saw::Correction::EightPointBlepWithInterpolation,
-        saw::Saw::default_saturation()
-      ))));
-    }
+    drop(waveforms.push(OscWaveform::Sine(Sine)));
+    drop(waveforms.push(OscWaveform::Saw(saw::Saw::new(
+      saw::Mode::Bipolar,
+      saw::Correction::EightPointBlepWithInterpolation,
+      saw::Saw::default_saturation()
+    ))));
+    drop(waveforms.push(OscWaveform::Saw(saw::Saw::new(
+      saw::Mode::Unipolar,
+      saw::Correction::TwoPointBlepWithInterpolation,
+      saw::Saw::default_saturation()
+    ))));
     SynthWaveforms(waveforms)
+  }
+
+  pub fn len(&self) -> usize {
+    self.0.len()
   }
 }
 
@@ -71,9 +80,26 @@ impl<'a, F: Float> Synth<'a, F> {
   pub fn prepare(&mut self) {
     while let Some(Event { timestamp: _, message }) = self.events.pop() {
       match message {
-        Message::NoteOn { key, velocity } => self.note_on(key, velocity),
-        Message::NoteOff { key, velocity } => self.note_off(key, velocity),
-        Message::Param { index, value } => self.program.set_param_value(index, value),
+        Message::NoteOn { key, velocity } => {
+          self.note_on(key, velocity)
+        },
+        Message::NoteOff { key, velocity } => {
+          self.note_off(key, velocity)
+        },
+        Message::Param { param_ref, value } => {
+          if let Some((_, param)) = self.program.get_param_mut(param_ref) {
+            println!("{} = {:?}", param.id, value);
+            param.signal.set(value)
+          }
+        },
+        Message::ParamChange { param_ref, change } => {
+          if let Some((_, param)) = self.program.get_param_mut(param_ref) {
+            let value = param.signal.get() + change;
+            let value = value.min(param.values.max).max(param.values.min);
+            println!("{} = {:?}", param.id, value);
+            param.signal.set(value);
+          }
+        },
       }
     }
   }

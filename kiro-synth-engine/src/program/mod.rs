@@ -1,4 +1,5 @@
 pub mod osc;
+pub mod expr;
 
 use heapless::Vec;
 use heapless::consts;
@@ -17,6 +18,15 @@ pub struct ParamValues<F: Float> {
   pub min: F,
   pub max: F,
   pub resolution: F,
+}
+
+impl<F: Float> ParamValues<F> {
+  pub fn with_initial_value(self, initial_value: F) -> Self {
+    Self {
+      initial_value,
+      .. self
+    }
+  }
 }
 
 #[derive(Debug, Clone)]
@@ -48,7 +58,7 @@ pub struct ParamBlock {
   pub signal: SignalRef,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash32, Copy)]
 pub struct ParamRef(pub usize);
 
 impl From<ParamBlock> for ParamRef {
@@ -70,6 +80,8 @@ pub enum Block<F: Float> {
   Param(ParamBlock),
 
   Osc(osc::Block),
+
+  Expr(expr::Block<F>),
 
   Out {
     left: SignalRef,
@@ -99,9 +111,9 @@ impl<'a, F: Float> Program<'a, F> {
     self.signals_count
   }
 
-  pub fn get_params_count(&self) -> usize {
-    self.params.len()
-  }
+//  pub fn get_params_count(&self) -> usize {
+//    self.params.len()
+//  }
 
   pub fn get_params(&self) -> &[Param<'a, F>] {
     self.params.deref()
@@ -111,29 +123,38 @@ impl<'a, F: Float> Program<'a, F> {
     self.params.deref_mut()
   }
 
-  pub fn get_param<R: Into<ParamRef>>(&self, param: R) -> Option<(usize, &Param<'a, F>)> {
+  pub fn get_param<R: Into<ParamRef>>(&self, param: R) -> Option<(ParamRef, &Param<'a, F>)> {
     let param_ref = param.into();
-    self.params.get(param_ref.0).map(|param| (param_ref.0, param))
+    self.params.get(param_ref.0).map(|param| (param_ref, param))
   }
 
-  pub fn get_param_by_id(&self, id: &str) -> Option<(usize, &Param<'a, F>)> {
-    self.params.iter()
-        .position(|param| param.id == id)
-        .map(|param_index| (param_index, &self.params[param_index]))
+  pub fn get_param_mut<R: Into<ParamRef>>(&mut self, param: R) -> Option<(ParamRef, &mut Param<'a, F>)> {
+    let param_ref = param.into();
+    self.params.get_mut(param_ref.0).map(|param| (param_ref, param))
   }
 
-  pub fn get_param_ref(&self, id: &'a str) -> Option<ParamRef> {
-    self.params.iter()
-        .position(|param| param.id == id)
-        .map(|param_index| ParamRef(param_index))
-  }
+//  pub fn get_param_by_id(&self, id: &str) -> Option<(usize, &Param<'a, F>)> {
+//    self.params.iter()
+//        .position(|param| param.id == id)
+//        .map(|param_index| (param_index, &self.params[param_index]))
+//  }
 
-  pub fn set_param_value(&mut self, index: usize, value: F) {
-    if let Some(param) = self.params.get_mut(index) {
-      println!("{} = {:?}", param.id, value);
-      param.signal.set(value)
-    }
-  }
+//  pub fn get_param_ref(&self, id: &'a str) -> Option<ParamRef> {
+//    self.params.iter()
+//        .position(|param| param.id == id)
+//        .map(|param_index| ParamRef(param_index))
+//  }
+
+//  pub fn get_param_value(&mut self, index: usize) -> F {
+//    self.params.get(index)
+//        .map_or(F::zero(), |param| param.signal.get())
+//  }
+//
+//  pub fn set_param_value(&mut self, param_ref: ParamRef, value: F) {
+//    if let Some(param) = self.params.get_mut(param_ref.0) {
+//      param.signal.set(value)
+//    }
+//  }
 
   pub fn get_param_signal(&self, param: ParamRef) -> &Signal<F> {
     &self.params[param.0].signal

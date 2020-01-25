@@ -1,6 +1,9 @@
 //#![no_std]
 
 #[macro_use]
+extern crate hash32_derive;
+
+#[macro_use]
 mod signal;
 mod processor;
 mod voice;

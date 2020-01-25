@@ -11,5 +11,7 @@ libm = "0.2.1"
 ringbuf = "0.2.1"
 heapless = "0.5.1"
 typenum = "1.11.2"
+hash32 = "0.1.1"
+hash32-derive = "0.1.0"
 
 kiro-synth-core = { path = "../kiro-synth-core" }

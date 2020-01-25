@@ -1,6 +1,7 @@
 use crate::float::Float;
 
 pub mod saw;
+pub mod sine;
 pub mod square;
 
 pub trait Waveform<F: Float> {

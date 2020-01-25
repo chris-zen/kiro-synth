@@ -1,5 +1,7 @@
 use crate::float::Float;
+use crate::program::ParamRef;
 
+#[derive(Debug, Clone)]
 pub enum Message<F: Float> {
   NoteOn {
     key: u8,
@@ -10,11 +12,16 @@ pub enum Message<F: Float> {
     velocity: F
   },
   Param {
-    index: usize,
+    param_ref: ParamRef,
     value: F,
-  }
+  },
+  ParamChange {
+    param_ref: ParamRef,
+    change: F,
+  },
 }
 
+#[derive(Debug, Clone)]
 pub struct Event<F: Float> {
   pub timestamp: u64,
   pub message: Message<F>,

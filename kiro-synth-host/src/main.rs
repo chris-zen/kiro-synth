@@ -36,20 +36,34 @@ fn main() -> Result<()> {
 
   // SYNTH
 
-  let (program, module) = PlaygroundModule::new_program();
+  let (program, module) = PlaygroundModule::new_program(waveforms.len());
 
   let mut midi_mapper = MidiMapper::new();
   midi_mapper.pitch_bend(program.get_param(module.params.pitch_bend));
 
-  midi_mapper.controller(74, program.get_param(module.params.osc1_amplitude));
-  midi_mapper.controller(71, program.get_param(module.params.osc1_octave));
-  midi_mapper.controller(76, program.get_param(module.params.osc1_semitones));
-  midi_mapper.controller(77, program.get_param(module.params.osc1_cents));
+  midi_mapper.rel_controller(21, program.get_param(module.params.osc1_amplitude));
+  midi_mapper.rel_controller(22, program.get_param(module.params.osc1_shape));
+  midi_mapper.rel_controller(23, program.get_param(module.params.osc1_octave));
+  midi_mapper.rel_controller(24, program.get_param(module.params.osc1_semitones));
+  midi_mapper.rel_controller(25, program.get_param(module.params.osc1_cents));
 
-  midi_mapper.controller(18, program.get_param(module.params.osc2_amplitude));
-  midi_mapper.controller(19, program.get_param(module.params.osc2_octave));
-  midi_mapper.controller(16, program.get_param(module.params.osc2_semitones));
-  midi_mapper.controller(17, program.get_param(module.params.osc2_cents));
+  midi_mapper.rel_controller(29, program.get_param(module.params.osc2_amplitude));
+  midi_mapper.rel_controller(30, program.get_param(module.params.osc2_shape));
+  midi_mapper.rel_controller(31, program.get_param(module.params.osc2_octave));
+  midi_mapper.rel_controller(32, program.get_param(module.params.osc2_semitones));
+  midi_mapper.rel_controller(33, program.get_param(module.params.osc2_cents));
+
+  midi_mapper.rel_controller(41, program.get_param(module.params.osc3_amplitude));
+  midi_mapper.rel_controller(42, program.get_param(module.params.osc3_shape));
+  midi_mapper.rel_controller(43, program.get_param(module.params.osc3_octave));
+  midi_mapper.rel_controller(44, program.get_param(module.params.osc3_semitones));
+  midi_mapper.rel_controller(45, program.get_param(module.params.osc3_cents));
+
+  midi_mapper.rel_controller(49, program.get_param(module.params.osc4_amplitude));
+  midi_mapper.rel_controller(50, program.get_param(module.params.osc4_shape));
+  midi_mapper.rel_controller(51, program.get_param(module.params.osc4_octave));
+  midi_mapper.rel_controller(52, program.get_param(module.params.osc4_semitones));
+  midi_mapper.rel_controller(53, program.get_param(module.params.osc4_cents));
 
   let synth = Synth::new(SAMPLE_RATE as f32, events_consumer, &waveforms, program);
 
@@ -96,7 +110,7 @@ impl EventsMidiHandler {
 
 impl MidiHandler for EventsMidiHandler {
   fn on_message(&mut self, timestamp: u64, message: MidiMessage) {
-    println!("{:014}: {:?}", timestamp, message);
+//    println!("{:014}: {:?}", timestamp, message);
     match message {
       MidiMessage::NoteOn { channel: _, key, velocity } => {
         let message = SynthMessage::NoteOn { key, velocity: velocity as f32 / 127.0 };
