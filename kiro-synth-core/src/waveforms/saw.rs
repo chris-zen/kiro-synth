@@ -1,7 +1,7 @@
 use crate::float::Float;
 
 use crate::blep::{PolyBLEP, TableBLEP, BLEP, BLEP_8_BLACKMAN_HARRIS};
-use crate::utils::unipolar_to_bipolar;
+use crate::funcs::signal_polarity::unipolar_to_bipolar;
 use crate::waveforms::Waveform;
 
 /// 8-point BLEP can only be calculated when freq <= Nyquist4, where Nyquist4 is sample_rate / 8
