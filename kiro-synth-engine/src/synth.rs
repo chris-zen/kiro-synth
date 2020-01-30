@@ -64,7 +64,7 @@ impl<'a, F: Float> Synth<'a, F> {
     let mut free_voices: Vec<usize, MaxVoices> = Vec::new();
     for index in 0..MaxVoices::to_usize() {
       drop(voices.push(Voice::new(sample_rate, waveforms, &program)));
-      drop(free_voices.push(MaxVoices::to_usize() - index));
+      drop(free_voices.push(MaxVoices::to_usize() - index - 1));
     }
 
     Synth {
@@ -107,14 +107,18 @@ impl<'a, F: Float> Synth<'a, F> {
   fn note_on(&mut self, key: u8, velocity: F) {
     if let Some(index) = self.allocate_voice(key, velocity) {
       drop(self.active_voices.push(index));
-      self.voices[index].note_on(&self.program, key, velocity);
+      self.voices[index].note_on(&mut self.program, key, velocity);
+      println!("{:?}", self.active_voices);
     }
   }
 
   fn note_off(&mut self, key: u8, _velocity: F) {
-    if let Some(index) = self.take_active_voice(key) {
-      drop(self.free_voices.push(index));
-      self.voices[index].note_off(&self.program);
+    for active_voice_index in 0..self.active_voices.len() {
+      let voice_index = self.active_voices[active_voice_index];
+      let voice = &mut self.voices[voice_index];
+      if voice.get_key(&self.program) == key {
+        voice.note_off(&self.program)
+      }
     }
   }
 
@@ -122,26 +126,32 @@ impl<'a, F: Float> Synth<'a, F> {
     self.free_voices.pop()
   }
 
-  fn take_active_voice(&mut self, key: u8) -> Option<usize> {
-    self.active_voices.iter()
-      .position(|index| {
-        let voice = &self.voices[*index];
-        voice.get_key() == key
-      })
-      .map(|pos| {
-        self.active_voices.swap_remove(pos)
-      })
-  }
-
   pub fn process(&mut self) -> (F, F) {
     let (mut left, mut right) = (F::zero(), F::zero());
 
-    for index in self.active_voices.iter() {
-      let voice = &mut self.voices[*index];
+    let mut freed_voices = false;
+    let mut active_voice_index = 0;
+    while active_voice_index < self.active_voices.len() {
+      let voice_index = self.active_voices[active_voice_index];
+      let voice = &mut self.voices[voice_index];
+
       voice.process(&mut self.program);
-      let (voice_left, voice_right) = voice.output();
+      let (voice_left, voice_right) = voice.output(&self.program);
       left = left + voice_left;
       right = right + voice_right;
+
+      if voice.is_off(&self.program) {
+        self.active_voices.swap_remove(active_voice_index);
+        drop(self.free_voices.push(voice_index));
+        freed_voices = true;
+      }
+      else {
+        active_voice_index += 1;
+      }
+    }
+
+    if freed_voices {
+      println!("{:?}", self.active_voices);
     }
 
     self.program.update_params();

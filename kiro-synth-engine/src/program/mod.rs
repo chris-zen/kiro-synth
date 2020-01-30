@@ -1,5 +1,7 @@
-pub mod osc;
+pub mod dca;
+pub mod envgen;
 pub mod expr;
+pub mod osc;
 
 use heapless::Vec;
 use heapless::consts;
@@ -79,9 +81,13 @@ pub enum Block<F: Float> {
 
   Param(ParamBlock),
 
-  Osc(osc::Block),
+  DCA(dca::Block),
+
+  EG(envgen::Block),
 
   Expr(expr::Block<F>),
+
+  Osc(osc::Block),
 
   Out {
     left: SignalRef,
@@ -93,22 +99,51 @@ pub enum Block<F: Float> {
 pub struct BlockRef(pub(crate) usize);
 
 #[derive(Debug, Clone)]
+pub struct VoiceBlock {
+  pub key: SignalRef,
+  pub velocity: SignalRef,
+  pub note_pitch: SignalRef,
+  pub gate: SignalRef,
+  pub trigger: SignalRef,
+  pub off: SignalRef,
+  pub output_left: SignalRef,
+  pub output_right: SignalRef,
+}
+
+struct SignalRefs(usize);
+
+impl SignalRefs {
+  pub fn new() -> Self {
+    SignalRefs(0)
+  }
+
+  pub fn create(&mut self) -> SignalRef {
+    let reference = SignalRef(self.0);
+    self.0 += 1;
+    reference
+  }
+
+  pub fn count(&self) -> usize {
+    self.0
+  }
+}
+
+#[derive(Debug, Clone)]
 pub struct Program<'a, F:Float> {
   signals_count: usize,
+  voice: VoiceBlock,
   params: Vec<Param<'a, F>, MaxParams>,
   blocks: Vec<Block<F>, MaxBlocks>,
 }
 
 impl<'a, F: Float> Program<'a, F> {
-  pub const NOTE_KEY_SIGNAL_REF: usize = 0;
-  pub const NOTE_VELOCITY_SIGNAL_REF: usize = 1;
-  pub const NOTE_PITCH_SIGNAL_REF: usize = 2;
-  pub const OUTPUT_LEFT_SIGNAL_REF: usize = 3;
-  pub const OUTPUT_RIGHT_SIGNAL_REF: usize = 4;
-  pub const FIRST_FREE_SIGNAL_REF: usize = 5;
 
   pub fn get_signals_count(&self) -> usize {
     self.signals_count
+  }
+
+  pub fn voice(&self) -> &VoiceBlock {
+    &self.voice
   }
 
 //  pub fn get_params_count(&self) -> usize {
@@ -183,7 +218,8 @@ impl<'a, F: Float> Program<'a, F> {
 }
 
 pub struct ProgramBuilder<'a, F: Float> {
-  signals_count: usize,
+  signal_refs: SignalRefs,
+  voice: VoiceBlock,
   params: Vec<Param<'a, F>, MaxParams>,
   blocks: Vec<Block<F>, MaxBlocks>,
 }
@@ -191,36 +227,33 @@ pub struct ProgramBuilder<'a, F: Float> {
 impl<'a, F: Float> ProgramBuilder<'a, F> {
 
   pub fn new() -> Self {
+    let mut signal_refs = SignalRefs::new();
+
+    let voice = VoiceBlock {
+      key: signal_refs.create(),
+      velocity: signal_refs.create(),
+      note_pitch: signal_refs.create(),
+      gate: signal_refs.create(),
+      trigger: signal_refs.create(),
+      off: signal_refs.create(),
+      output_left: signal_refs.create(),
+      output_right: signal_refs.create(),
+    };
+
     ProgramBuilder {
-      signals_count: Program::<F>::FIRST_FREE_SIGNAL_REF,
+      signal_refs,
+      voice,
       params: Vec::new(),
       blocks: Vec::new(),
     }
   }
 
-  pub fn note_key() -> SignalRef {
-    SignalRef(Program::<F>::NOTE_KEY_SIGNAL_REF)
-  }
-
-  pub fn note_velocity() -> SignalRef {
-    SignalRef(Program::<F>::NOTE_VELOCITY_SIGNAL_REF)
-  }
-
-  pub fn note_pitch() -> SignalRef {
-    SignalRef(Program::<F>::NOTE_PITCH_SIGNAL_REF)
-  }
-
-  pub fn output_left() -> SignalRef {
-    SignalRef(Program::<F>::OUTPUT_LEFT_SIGNAL_REF)
-  }
-
-  pub fn output_right() -> SignalRef {
-    SignalRef(Program::<F>::OUTPUT_RIGHT_SIGNAL_REF)
+  pub fn voice(&self) -> &VoiceBlock {
+    &self.voice
   }
 
   pub fn const_value(&mut self, value: F) -> SignalRef {
-    let signal = SignalRef(self.signals_count);
-    self.signals_count += 1;
+    let signal = self.signal_refs.create();
     let block_ref = BlockRef(self.blocks.len());
     drop(self.blocks.push(Block::Const { value, signal }));
     signal
@@ -246,8 +279,7 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
     let param_ref = ParamRef(self.params.len());
     drop(self.params.push(param));
 
-    let signal_ref = SignalRef(self.signals_count);
-    self.signals_count += 1;
+    let signal_ref = self.signal_refs.create();
 
     let param_block = ParamBlock {
       reference: param_ref,
@@ -260,9 +292,7 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
   }
 
   pub fn signal(&mut self) -> SignalRef {
-    let signal_ref = SignalRef(self.signals_count);
-    self.signals_count += 1;
-    signal_ref
+    self.signal_refs.create()
   }
 
   pub fn block(&mut self, block: Block<F>) -> BlockRef {
@@ -279,7 +309,8 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
 
   pub fn build(self) -> Program<'a, F> {
     Program {
-      signals_count: self.signals_count,
+      signals_count: self.signal_refs.count(),
+      voice: self.voice,
       params: self.params,
       blocks: self.blocks,
     }

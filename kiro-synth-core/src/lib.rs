@@ -5,3 +5,5 @@ pub mod funcs;
 pub mod blep;
 pub mod oscillators;
 pub mod waveforms;
+pub mod envgen;
+pub mod dca;

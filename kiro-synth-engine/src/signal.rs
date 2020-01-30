@@ -95,6 +95,10 @@ pub(crate) struct SignalBus<'a, F: Float> {
 }
 
 impl<'a, F: Float> SignalBus<'a, F> {
+  pub fn new(signals: &'a mut [Signal<F>]) -> Self {
+    SignalBus { signals }
+  }
+
   pub fn reset(&mut self) {
     for signal in self.signals.iter_mut() {
       signal.reset();
@@ -105,12 +109,6 @@ impl<'a, F: Float> SignalBus<'a, F> {
     for signal in self.signals.iter_mut() {
       signal.update_state();
     }
-  }
-}
-
-impl<'a, F: Float> SignalBus<'a, F> {
-  pub fn new(signals: &'a mut [Signal<F>]) -> Self {
-    SignalBus { signals }
   }
 }
 

@@ -40,12 +40,16 @@ impl<'a, F: Float> Voice<'a, F> {
     }
   }
 
-  pub fn get_key(&self) -> u8 {
-    self.signals[Program::<F>::NOTE_KEY_SIGNAL_REF].get().to_u8().unwrap()
+  pub fn get_key(&self, program: &Program<F>) -> u8 {
+    self.signals[program.voice().key.0].get().to_u8().unwrap()
   }
+//
+//  pub fn get_velocity(&self, program: &Program<F>) -> F {
+//    self.signals[program.voice().velocity.0].get()
+//  }
 
-  pub fn get_velocity(&self) -> F {
-    self.signals[Program::<F>::NOTE_VELOCITY_SIGNAL_REF].get()
+  pub fn is_off(&self, program: &Program<F>) -> bool {
+    self.signals[program.voice().off.0].get() == F::one()
   }
 
   pub fn reset(&mut self, program: &Program<F>) {
@@ -60,31 +64,47 @@ impl<'a, F: Float> Voice<'a, F> {
         }
       }
     }
+
+    signals[program.voice().off].set(F::zero());
   }
 
   pub fn note_on(&mut self, program: &Program<F>, key: u8, velocity: F) {
     self.reset(program);
-    self.signals[Program::<F>::NOTE_KEY_SIGNAL_REF].set(F::from(key).unwrap());
-    self.signals[Program::<F>::NOTE_VELOCITY_SIGNAL_REF].set(velocity);
-    self.signals[Program::<F>::NOTE_PITCH_SIGNAL_REF].set(F::from(KEY_FREQ[(key & 0x7f) as usize]).unwrap());
+    let voice = program.voice();
+    self.signals[voice.key.0].set(F::val(key));
+    self.signals[voice.velocity.0].set(velocity);
+    self.signals[voice.note_pitch.0].set(F::val(KEY_FREQ[(key & 0x7f) as usize]));
+    self.signals[voice.gate.0].set(F::one());
+    self.signals[voice.trigger.0].set(F::one());
   }
 
-  pub fn note_off(&mut self, _program: &Program<F>) {
+  pub fn note_off(&mut self, program: &Program<F>) {
+    self.signals[program.voice().gate.0].set(F::zero());
   }
 
   pub fn process(&mut self, program: &mut Program<F>) {
     let mut signals = SignalBus::new(self.signals.deref_mut());
+
     for processor in self.processors.iter_mut() {
       processor.process(&mut signals, program)
     }
+
     signals.update();
-//    println!("{:?}", self.signals.iter_mut().map(|s| (s.get(), s.state())).collect::<Vec<(F, SignalState), MaxSignals>>());
+
+    // The trigger does an spike of 1 sample
+    let voice = program.voice();
+    if signals[voice.trigger].get() > F::zero() {
+      signals[voice.trigger].set(F::zero())
+    }
+
+//    println!("{:?}", self.signals.iter_mut().skip(3).take(2).map(|s| (s.get(), s.state())).collect::<Vec<(F, SignalState), MaxSignals>>());
   }
 
-  pub fn output(&self) -> (F, F) {
+  pub fn output(&self, program: &Program<F>) -> (F, F) {
+    let voice = program.voice();
     (
-      self.signals[Program::<F>::OUTPUT_LEFT_SIGNAL_REF].get(),
-      self.signals[Program::<F>::OUTPUT_RIGHT_SIGNAL_REF].get()
+      self.signals[voice.output_left.0].get(),
+      self.signals[voice.output_right.0].get()
     )
   }
 }

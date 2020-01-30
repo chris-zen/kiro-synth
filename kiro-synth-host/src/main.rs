@@ -47,11 +47,23 @@ fn main() -> Result<()> {
   midi_mapper.rel_controller(24, program.get_param(module.params.osc1_semitones));
   midi_mapper.rel_controller(25, program.get_param(module.params.osc1_cents));
 
-  midi_mapper.rel_controller(29, program.get_param(module.params.osc2_amplitude));
-  midi_mapper.rel_controller(30, program.get_param(module.params.osc2_shape));
-  midi_mapper.rel_controller(31, program.get_param(module.params.osc2_octave));
-  midi_mapper.rel_controller(32, program.get_param(module.params.osc2_semitones));
-  midi_mapper.rel_controller(33, program.get_param(module.params.osc2_cents));
+  midi_mapper.rel_controller(26, program.get_param(module.params.dca_amplitude));
+  midi_mapper.rel_controller(27, program.get_param(module.params.dca_pan));
+
+//  midi_mapper.rel_controller(29, program.get_param(module.params.osc2_amplitude));
+//  midi_mapper.rel_controller(30, program.get_param(module.params.osc2_shape));
+//  midi_mapper.rel_controller(31, program.get_param(module.params.osc2_octave));
+//  midi_mapper.rel_controller(32, program.get_param(module.params.osc2_semitones));
+//  midi_mapper.rel_controller(33, program.get_param(module.params.osc2_cents));
+
+  midi_mapper.rel_controller(29, program.get_param(module.params.eg1_attack));
+  midi_mapper.rel_controller(30, program.get_param(module.params.eg1_decay));
+  midi_mapper.rel_controller(31, program.get_param(module.params.eg1_sustain));
+  midi_mapper.rel_controller(32, program.get_param(module.params.eg1_release));
+  midi_mapper.rel_controller(33, program.get_param(module.params.eg1_mode));
+  midi_mapper.rel_controller(34, program.get_param(module.params.eg1_legato));
+  midi_mapper.rel_controller(35, program.get_param(module.params.eg1_reset_to_zero));
+  midi_mapper.rel_controller(36, program.get_param(module.params.eg1_dca_intensity));
 
   midi_mapper.rel_controller(41, program.get_param(module.params.osc3_amplitude));
   midi_mapper.rel_controller(42, program.get_param(module.params.osc3_shape));
