@@ -46,6 +46,7 @@ impl<F: Float> DCA<F> {
   /// value expected to be between 0.0 and 1.0
   pub fn set_velocity(&mut self, value: F) {
     self.velocity = value * value;
+    self.gain_invalidated = true;
   }
 
   /// value is bipolar in decibels
@@ -92,7 +93,7 @@ impl<F: Float> DCA<F> {
         self.eg_mod + F::one()
       };
 
-      self.gain = self.amplitude * eg_mod * self.eg_mod;
+      self.gain = self.velocity * self.amplitude * self.amp_mod * eg_mod;
     }
   }
 

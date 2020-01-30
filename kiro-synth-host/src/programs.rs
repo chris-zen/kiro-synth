@@ -80,10 +80,10 @@ impl PlaygroundModule {
     let params = PlaygroundParams {
       pitch_bend: program.param("pitch-bend", "Pitch Bend", Self::pitch_bend_values()),
 
-      eg1_attack: program.param("eg1-attack", "EG1 Attack", Self::adsr_values()),
-      eg1_decay: program.param("eg1-decay", "EG1 Decay", Self::adsr_values()),
-      eg1_sustain: program.param("eg1-sustain", "EG1 Sustain", Self::adsr_values()),
-      eg1_release: program.param("eg1-release", "EG1 Release", Self::adsr_values()),
+      eg1_attack: program.param("eg1-attack", "EG1 Attack", Self::adsr_values(F::val(0.02))),
+      eg1_decay: program.param("eg1-decay", "EG1 Decay", Self::adsr_values(F::val(0.1))),
+      eg1_sustain: program.param("eg1-sustain", "EG1 Sustain", Self::adsr_values(F::val(0.9))),
+      eg1_release: program.param("eg1-release", "EG1 Release", Self::adsr_values(F::val(1.5))),
       eg1_mode: program.param("eg1-mode", "EG1 Mode", Self::mode_values()),
       eg1_legato: program.param("eg1-legato", "EG1 Legato", Self::bool_values(false)),
       eg1_reset_to_zero: program.param("eg1-reset-to-zero", "EG1 Reset To Zero", Self::bool_values(false)),
@@ -268,9 +268,9 @@ impl PlaygroundModule {
     }
   }
 
-  fn adsr_values<F: Float>() -> ParamValues<F> {
+  fn adsr_values<F: Float>(value: F) -> ParamValues<F> {
     ParamValues {
-      initial_value: F::one(),
+      initial_value: value,
       min: F::zero(),
       max: F::val(10.0),
       resolution: F::val(0.01),
