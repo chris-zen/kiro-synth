@@ -2,7 +2,6 @@ use kiro_synth_core::float::Float;
 use kiro_synth_core::dca::DCA;
 
 use crate::program::{SignalRef, Program};
-use crate::synth::SynthWaveforms;
 use crate::signal::SignalBus;
 
 #[derive(Debug, Clone)]
@@ -44,6 +43,8 @@ impl<F: Float> Processor<F> {
     }
   }
 
+  pub fn reset(&mut self) {}
+
   pub fn process<'a>(&mut self, signals: &mut SignalBus<'a, F>, program: &Program<F>) {
     let Block { inputs, outputs } = self.block.clone();
     let Inputs { left, right, velocity,
@@ -57,7 +58,7 @@ impl<F: Float> Processor<F> {
     signals[pan].if_updated(|value| self.dca.set_pan(value));
     signals[pan_mod].if_updated(|value| self.dca.set_pan_mod(value));
 
-    let left_in= signals[left].get();
+    let left_in = signals[left].get();
     let right_in = signals[right].get();
     let (left_out, right_out) = self.dca.process(left_in, right_in);
     signals[left_output].set(left_out);

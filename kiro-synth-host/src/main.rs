@@ -77,6 +77,10 @@ fn main() -> Result<()> {
   midi_mapper.rel_controller(52, program.get_param(module.params.osc4_semitones));
   midi_mapper.rel_controller(53, program.get_param(module.params.osc4_cents));
 
+  midi_mapper.rel_controller(54, program.get_param(module.params.filt1_mode));
+  midi_mapper.rel_controller(55, program.get_param(module.params.filt1_freq));
+  midi_mapper.rel_controller(56, program.get_param(module.params.filt1_q));
+
   let synth = Synth::new(SAMPLE_RATE as f32, events_consumer, &waveforms, program);
 
   // MIDI
@@ -122,7 +126,7 @@ impl EventsMidiHandler {
 
 impl MidiHandler for EventsMidiHandler {
   fn on_message(&mut self, timestamp: u64, message: MidiMessage) {
-//    println!("{:014}: {:?}", timestamp, message);
+    println!("{:014}: {:?}", timestamp, message);
     match message {
       MidiMessage::NoteOn { channel: _, key, velocity } => {
         let message = SynthMessage::NoteOn { key, velocity: velocity as f32 / 127.0 };

@@ -44,6 +44,8 @@ impl<'a, F: Float> Processor<'a, F> {
     }
   }
 
+  pub fn reset(&mut self) {}
+
   pub fn process<'b>(&mut self, signals: &mut SignalBus<'b, F>, program: &Program<F>) {
     let Block { inputs, output } = self.block.clone();
     let Inputs { shape, amplitude, amp_mod,

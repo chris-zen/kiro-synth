@@ -44,6 +44,10 @@ impl<F: Float> Processor<F> {
     }
   }
 
+  pub fn reset(&mut self) {
+    self.envgen.reset()
+  }
+
   pub fn process<'a>(&mut self, signals: &mut SignalBus<'a, F>, program: &Program<F>) {
     let Block { inputs, outputs } = self.block.clone();
     let Inputs { attack, decay, sustain, release,

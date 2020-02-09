@@ -7,3 +7,4 @@ pub mod oscillators;
 pub mod waveforms;
 pub mod envgen;
 pub mod dca;
+pub mod filters;

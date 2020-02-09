@@ -3,7 +3,7 @@ use heapless::Vec;
 use crate::float::Float;
 use crate::key_freqs::KEY_FREQ;
 use crate::program::{MaxSignals, MaxBlocks, Block, Program, SignalRef, ParamRef, ProgramBuilder, ParamBlock};
-use crate::program::{dca, envgen, expr, osc};
+use crate::program::{dca, envgen, expr, filter, osc};
 use crate::synth::SynthWaveforms;
 use crate::signal::{Signal, SignalBus};
 use crate::voice::Voice;
@@ -15,6 +15,7 @@ pub(crate) enum Processor<'a, F: Float> {
   DCA(dca::Processor<F>),
   EG(envgen::Processor<F>),
   Expr(expr::Processor<F>),
+  Filter(filter::Processor<F>),
   Osc(osc::Processor<'a, F>),
   Out(SignalRef, SignalRef),
 }
@@ -28,7 +29,21 @@ impl<'a, F: Float> Processor<'a, F> {
       Block::EG(eg_block) => Processor::EG(envgen::Processor::new(sample_rate, eg_block)),
       Block::Osc(osc_block) => Processor::Osc(osc::Processor::new(sample_rate, waveforms, osc_block)),
       Block::Expr(expr_block) => Processor::Expr(expr::Processor::new(expr_block)),
+      Block::Filter(filt_block) => Processor::Filter(filter::Processor::new(sample_rate, filt_block)),
       Block::Out { left, right } => Processor::Out(left, right),
+    }
+  }
+
+  pub fn reset(&mut self) {
+    match self {
+      Processor::Const(value, signal) => {},
+      Processor::Param(param, signal) => {},
+      Processor::DCA(ref mut proc) => proc.reset(),
+      Processor::EG(ref mut proc) => proc.reset(),
+      Processor::Expr(ref mut proc) => proc.reset(),
+      Processor::Filter(ref mut proc) => proc.reset(),
+      Processor::Osc(ref mut proc) => proc.reset(),
+      Processor::Out(ref left, ref right) => {},
     }
   }
 
@@ -47,6 +62,9 @@ impl<'a, F: Float> Processor<'a, F> {
         proc.process(signals, program)
       },
       Processor::Expr(ref mut proc) => {
+        proc.process(signals, program)
+      },
+      Processor::Filter(ref mut proc) => {
         proc.process(signals, program)
       },
       Processor::Osc(ref mut proc) => {

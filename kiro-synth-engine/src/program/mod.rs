@@ -1,6 +1,7 @@
 pub mod dca;
 pub mod envgen;
 pub mod expr;
+pub mod filter;
 pub mod osc;
 
 use heapless::Vec;
@@ -9,6 +10,7 @@ use heapless::consts;
 use crate::float::Float;
 use crate::signal::Signal;
 use std::ops::{Deref, DerefMut};
+use crate::program::expr::{ExprBuilder, OpRef};
 
 pub type MaxSignals = consts::U256;
 pub type MaxParams = consts::U512;
@@ -86,6 +88,8 @@ pub enum Block<F: Float> {
   EG(envgen::Block),
 
   Expr(expr::Block<F>),
+
+  Filter(filter::Block),
 
   Osc(osc::Block),
 
@@ -293,6 +297,12 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
 
   pub fn signal(&mut self) -> SignalRef {
     self.signal_refs.create()
+  }
+
+  pub fn expr<B: Fn(&mut ExprBuilder<F>) -> OpRef>(&mut self, build_expr: B) -> expr::Block<F> {
+    let mut expr_builder = ExprBuilder::new();
+    build_expr(&mut expr_builder);
+    expr_builder.build(self)
   }
 
   pub fn block(&mut self, block: Block<F>) -> BlockRef {

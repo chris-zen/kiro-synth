@@ -66,6 +66,10 @@ impl<'a, F: Float> Voice<'a, F> {
     }
 
     signals[program.voice().off].set(F::zero());
+
+    for proc in self.processors.iter_mut() {
+      proc.reset();
+    }
   }
 
   pub fn note_on(&mut self, program: &Program<F>, key: u8, velocity: F) {
