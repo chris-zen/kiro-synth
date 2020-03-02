@@ -1,71 +1,45 @@
 use kiro_synth_core::float::Float;
-use kiro_synth_engine::program::{Program, Block, ProgramBuilder, ParamBlock, SignalRef, ParamValues, Param};
+use kiro_synth_engine::program::{Program, Block, ProgramBuilder, ParamBlock, SignalRef, ParamValues};
 use kiro_synth_engine::program::{dca, envgen, filter, osc};
-use kiro_synth_engine::program::expr::ExprBuilder;
 use kiro_synth_core::filters::freq_control::FreqControl;
 
+use crate::program::params::{EnvGenParams, OscParams, FilterParams, DcaParams};
 
-pub struct PlaygroundParams {
+pub struct KiroParams {
   pub pitch_bend: ParamBlock,
 
-  pub eg1_attack: ParamBlock,
-  pub eg1_decay: ParamBlock,
-  pub eg1_sustain: ParamBlock,
-  pub eg1_release: ParamBlock,
-  pub eg1_mode: ParamBlock,
-  pub eg1_legato: ParamBlock,
-  pub eg1_reset_to_zero: ParamBlock,
-  pub eg1_dca_intensity: ParamBlock,
+  pub eg1: EnvGenParams,
 
-  pub osc1_shape: ParamBlock,
-  pub osc1_amplitude: ParamBlock,
-  pub osc1_octave: ParamBlock,
-  pub osc1_semitones: ParamBlock,
-  pub osc1_cents: ParamBlock,
+  pub osc1: OscParams,
+  pub osc2: OscParams,
+  pub osc3: OscParams,
+  pub osc4: OscParams,
 
-  pub osc2_shape: ParamBlock,
-  pub osc2_amplitude: ParamBlock,
-  pub osc2_octave: ParamBlock,
-  pub osc2_semitones: ParamBlock,
-  pub osc2_cents: ParamBlock,
+  pub filt1: FilterParams,
 
-  pub osc3_shape: ParamBlock,
-  pub osc3_amplitude: ParamBlock,
-  pub osc3_octave: ParamBlock,
-  pub osc3_semitones: ParamBlock,
-  pub osc3_cents: ParamBlock,
-
-  pub osc4_shape: ParamBlock,
-  pub osc4_amplitude: ParamBlock,
-  pub osc4_octave: ParamBlock,
-  pub osc4_semitones: ParamBlock,
-  pub osc4_cents: ParamBlock,
-
-  pub filt1_mode: ParamBlock,
-  pub filt1_freq: ParamBlock,
-  pub filt1_q: ParamBlock,
-
-  pub dca_amplitude: ParamBlock,
-  pub dca_pan: ParamBlock,
+  pub dca: DcaParams,
 }
 
-pub struct PlaygroundSignals {
-  pub osc1_output: SignalRef,
-  pub osc2_output: SignalRef,
-  pub osc3_output: SignalRef,
-  pub osc4_output: SignalRef,
+pub struct KiroSignals {
+  pub eg1_normal: SignalRef,
+  pub eg1_biased: SignalRef,
+  pub osc1: SignalRef,
+  pub osc2: SignalRef,
+  pub osc3: SignalRef,
+  pub osc4: SignalRef,
+  pub filt1: SignalRef,
   pub dca_left: SignalRef,
   pub dca_right: SignalRef,
 }
 
-pub struct PlaygroundModule {
-  pub params: PlaygroundParams,
-  pub signals: PlaygroundSignals,
+pub struct KiroModule {
+  pub params: KiroParams,
+  pub signals: KiroSignals,
 }
 
-impl PlaygroundModule {
+impl KiroModule {
 
-  pub fn new_program<'a, F: Float>(num_shapes: usize) -> (Program<'a, F>, PlaygroundModule) {
+  pub fn new_program<'a, F: Float>(num_shapes: usize) -> (Program<'a, F>, KiroModule) {
     let mut program_builder = ProgramBuilder::new();
 
     let module = Self::new(&mut program_builder, num_shapes);
@@ -75,7 +49,7 @@ impl PlaygroundModule {
     (program_builder.build(), module)
   }
 
-  pub fn new<F: Float>(program: &mut ProgramBuilder<F>, num_shapes: usize) -> PlaygroundModule {
+  pub fn new<F: Float>(program: &mut ProgramBuilder<F>, num_shapes: usize) -> KiroModule {
 
     let voice = program.voice().clone();
 
@@ -84,123 +58,140 @@ impl PlaygroundModule {
 
     let num_filters = filter::Mode::count();
 
-    let params = PlaygroundParams {
-      pitch_bend: program.param("pitch-bend", "Pitch Bend", Self::pitch_bend_values()),
+    let params = KiroParams {
+      pitch_bend: program.param("pitch-bend", Self::pitch_bend_values()),
 
-      eg1_attack: program.param("eg1-attack", "EG1 Attack", Self::adsr_values(F::val(0.02))),
-      eg1_decay: program.param("eg1-decay", "EG1 Decay", Self::adsr_values(F::val(0.1))),
-      eg1_sustain: program.param("eg1-sustain", "EG1 Sustain", Self::adsr_values(F::val(0.9))),
-      eg1_release: program.param("eg1-release", "EG1 Release", Self::adsr_values(F::val(1.5))),
-      eg1_mode: program.param("eg1-mode", "EG1 Mode", Self::mode_values()),
-      eg1_legato: program.param("eg1-legato", "EG1 Legato", Self::bool_values(false)),
-      eg1_reset_to_zero: program.param("eg1-reset-to-zero", "EG1 Reset To Zero", Self::bool_values(false)),
-      eg1_dca_intensity: program.param("eg1-dca-intensity", "EG1-DCA Intensity", Self::intensity_values()),
+      eg1: EnvGenParams {
+        attack: program.param("eg1-attack", Self::adsr_values(F::val(0.02))),
+        decay: program.param("eg1-decay", Self::adsr_values(F::val(0.1))),
+        sustain: program.param("eg1-sustain", Self::adsr_values(F::val(0.9))),
+        release: program.param("eg1-release", Self::adsr_values(F::val(1.5))),
+        mode: program.param("eg1-mode", Self::mode_values()),
+        legato: program.param("eg1-legato", Self::bool_values(false)),
+        reset_to_zero: program.param("eg1-reset-to-zero", Self::bool_values(false)),
+        dca_intensity: program.param("eg1-dca-intensity", Self::intensity_values()),
+      },
 
-      osc1_shape: program.param("osc1-shape", "Osc1 Shape", Self::enum_values(num_shapes)),
-      osc1_amplitude: program.param("osc1-amplitude", "Osc1 Amplitude", Self::amplitude_values().with_initial_value(F::zero())),
-      osc1_octave: program.param("osc1-octave", "Osc1 Octave", Self::octave_values()),
-      osc1_semitones: program.param("osc1-semitones", "Osc1 Semitones", Self::semitones_values()),
-      osc1_cents: program.param("osc1-cents", "Osc1 Cents", Self::cents_values()),
+      osc1: OscParams {
+        shape: program.param("osc1-shape", Self::enum_values(num_shapes)),
+        amplitude: program.param("osc1-amplitude", Self::amplitude_values().with_initial_value(F::zero())),
+        octave: program.param("osc1-octave", Self::octave_values()),
+        semitones: program.param("osc1-semitones", Self::semitones_values()),
+        cents: program.param("osc1-cents", Self::cents_values()),
+      },
 
-      osc2_shape: program.param("osc2-shape", "Osc2 Shape", Self::enum_values(num_shapes)),
-      osc2_amplitude: program.param("osc2-amplitude", "Osc2 Amplitude", Self::amplitude_values().with_initial_value(F::zero())),
-      osc2_octave: program.param("osc2-octave", "Osc2 Octave", Self::octave_values()),
-      osc2_semitones: program.param("osc2-semitones", "Osc2 Semitones", Self::semitones_values()),
-      osc2_cents: program.param("osc2-cents", "Osc2 Cents", Self::cents_values()),
+      osc2: OscParams {
+        shape: program.param("osc2-shape", Self::enum_values(num_shapes)),
+        amplitude: program.param("osc2-amplitude", Self::amplitude_values().with_initial_value(F::zero())),
+        octave: program.param("osc2-octave", Self::octave_values()),
+        semitones: program.param("osc2-semitones", Self::semitones_values()),
+        cents: program.param("osc2-cents", Self::cents_values()),
+      },
 
-      osc3_shape: program.param("osc3-shape", "Osc3 Shape", Self::enum_values(num_shapes)),
-      osc3_amplitude: program.param("osc3-amplitude", "Osc3 Amplitude", Self::amplitude_values()),
-      osc3_octave: program.param("osc3-octave", "Osc3 Octave", Self::octave_values()),
-      osc3_semitones: program.param("osc3-semitones", "Osc3 Semitones", Self::semitones_values()),
-      osc3_cents: program.param("osc3-cents", "Osc3 Cents", Self::cents_values()),
+      osc3: OscParams {
+        shape: program.param("osc3-shape", Self::enum_values(num_shapes)),
+        amplitude: program.param("osc3-amplitude", Self::amplitude_values()),
+        octave: program.param("osc3-octave", Self::octave_values()),
+        semitones: program.param("osc3-semitones", Self::semitones_values()),
+        cents: program.param("osc3-cents", Self::cents_values()),
+      },
 
-      osc4_shape: program.param("osc4-shape", "Osc4 Shape", Self::enum_values(num_shapes)),
-      osc4_amplitude: program.param("osc4-amplitude", "Osc4 Amplitude", Self::amplitude_values()),
-      osc4_octave: program.param("osc4-octave", "Osc4 Octave", Self::octave_values()),
-      osc4_semitones: program.param("osc4-semitones", "Osc4 Semitones", Self::semitones_values()),
-      osc4_cents: program.param("osc4-cents", "Osc4 Cents", Self::cents_values()),
+      osc4: OscParams {
+        shape: program.param("osc4-shape", Self::enum_values(num_shapes)),
+        amplitude: program.param("osc4-amplitude", Self::amplitude_values()),
+        octave: program.param("osc4-octave", Self::octave_values()),
+        semitones: program.param("osc4-semitones", Self::semitones_values()),
+        cents: program.param("osc4-cents", Self::cents_values()),
+      },
 
-      filt1_mode: program.param("filt1-mode", "Filt1 Mode", Self::enum_values(num_filters)),
-      filt1_freq: program.param("filt1-freq", "Filt1 Frequency", Self::filt_freq_values()),
-      filt1_q: program.param("filt1-q", "Filt1 Q", Self::filt_q_values()),
+      filt1: FilterParams {
+        mode: program.param("filt1-mode", Self::enum_values(num_filters)),
+        freq: program.param("filt1-freq", Self::filt_freq_values()),
+        q: program.param("filt1-q", Self::filt_q_values()),
+      },
 
-      dca_amplitude: program.param("dca-amplitude-db", "DCA Amplitude dB", Self::amplitude_db_values()),
-      dca_pan: program.param("dca-pan", "DCA Pan", Self::pan_values()),
+      dca: DcaParams {
+        amplitude: program.param("dca-amplitude-db", Self::amplitude_db_values()),
+        pan: program.param("dca-pan", Self::pan_values()),
+      },
     };
 
-    let signals = PlaygroundSignals {
-      osc1_output: program.signal(),
-      osc2_output: program.signal(),
-      osc3_output: program.signal(),
-      osc4_output: program.signal(),
+    let signals = KiroSignals {
+      eg1_normal: program.signal(),
+      eg1_biased: program.signal(),
+      osc1: program.signal(),
+      osc2: program.signal(),
+      osc3: program.signal(),
+      osc4: program.signal(),
+      filt1: program.signal(),
       dca_left: program.signal(),
       dca_right: program.signal(),
     };
 
     let eg1 = envgen::Block {
       inputs: envgen::Inputs {
-        attack: params.eg1_attack.signal,
-        decay: params.eg1_decay.signal,
-        sustain: params.eg1_sustain.signal,
-        release: params.eg1_release.signal,
-        mode: params.eg1_mode.signal,
-        legato: params.eg1_legato.signal,
-        reset_to_zero: params.eg1_reset_to_zero.signal,
+        attack: params.eg1.attack.signal,
+        decay: params.eg1.decay.signal,
+        sustain: params.eg1.sustain.signal,
+        release: params.eg1.release.signal,
+        mode: params.eg1.mode.signal,
+        legato: params.eg1.legato.signal,
+        reset_to_zero: params.eg1.reset_to_zero.signal,
       },
       outputs: envgen::Outputs {
-        normal: program.signal(),
-        biased: program.signal(),
+        normal: signals.eg1_normal,
+        biased: signals.eg1_biased,
         voice_off: voice.off,
       }
     };
 
     let eg1_dca_intensity = program.expr(|expr| {
-      expr.mul_signal_param(eg1.outputs.normal, params.eg1_dca_intensity.reference)
+      expr.mul_signal_param(eg1.outputs.normal, params.eg1.dca_intensity.reference)
     });
 
-    let osc1 = osc::Block {
-      inputs: osc::Inputs {
-        shape: params.osc1_shape.signal,
-        amplitude: params.osc1_amplitude.signal,
-        amp_mod: zero,
-        octave: params.osc1_octave.signal,
-        semitones: params.osc1_semitones.signal,
-        cents: params.osc1_cents.signal,
-        note_pitch: program.const_value(F::val(1)),
-        pitch_bend: zero,
-        freq_mod: zero,
-      },
-      output: signals.osc1_output,
-    };
+    // let osc1 = osc::Block {
+    //   inputs: osc::Inputs {
+    //     shape: params.osc1_shape.signal,
+    //     amplitude: params.osc1_amplitude.signal,
+    //     amp_mod: zero,
+    //     octave: params.osc1_octave.signal,
+    //     semitones: params.osc1_semitones.signal,
+    //     cents: params.osc1_cents.signal,
+    //     note_pitch: program.const_value(F::val(1)),
+    //     pitch_bend: zero,
+    //     freq_mod: zero,
+    //   },
+    //   output: signals.osc1,
+    // };
 
-//    let osc2 = osc::Block {
-//      inputs: osc::Inputs {
-//        shape: params.osc2_shape.signal,
-//        amplitude: params.osc2_amplitude.signal,
-//        amp_mod: zero,
-//        octave: params.osc2_octave.signal,
-//        semitones: params.osc2_semitones.signal,
-//        cents: params.osc2_cents.signal,
-//        note_pitch: program.const_value(F::val(440)),
-//        pitch_bend: zero,
-//        freq_mod: zero,
-//      },
-//      output: signals.osc2_output,
-//    };
+    // let osc2 = osc::Block {
+    //   inputs: osc::Inputs {
+    //     shape: params.osc2_shape.signal,
+    //     amplitude: params.osc2_amplitude.signal,
+    //     amp_mod: zero,
+    //     octave: params.osc2_octave.signal,
+    //     semitones: params.osc2_semitones.signal,
+    //     cents: params.osc2_cents.signal,
+    //     note_pitch: program.const_value(F::val(440)),
+    //     pitch_bend: zero,
+    //     freq_mod: zero,
+    //   },
+    //   output: signals.osc2,
+    // };
 
     let osc3 = osc::Block {
       inputs: osc::Inputs {
-        shape: params.osc3_shape.signal,
-        amplitude: params.osc3_amplitude.signal,
-        amp_mod: osc1.output,
-        octave: params.osc3_octave.signal,
-        semitones: params.osc3_semitones.signal,
-        cents: params.osc3_cents.signal,
+        shape: params.osc3.shape.signal,
+        amplitude: params.osc3.amplitude.signal,
+        amp_mod: zero,
+        octave: params.osc3.octave.signal,
+        semitones: params.osc3.semitones.signal,
+        cents: params.osc3.cents.signal,
         note_pitch: voice.note_pitch,
         pitch_bend: params.pitch_bend.signal,
         freq_mod: zero,
       },
-      output: signals.osc3_output,
+      output: signals.osc3,
     };
 
 //    let osc4_freq_mod = {
@@ -212,17 +203,17 @@ impl PlaygroundModule {
 
     let osc4 = osc::Block {
       inputs: osc::Inputs {
-        shape: params.osc4_shape.signal,
-        amplitude: params.osc4_amplitude.signal,
+        shape: params.osc4.shape.signal,
+        amplitude: params.osc4.amplitude.signal,
         amp_mod: zero,
-        octave: params.osc4_octave.signal,
-        semitones: params.osc4_semitones.signal,
-        cents: params.osc4_cents.signal,
+        octave: params.osc4.octave.signal,
+        semitones: params.osc4.semitones.signal,
+        cents: params.osc4.cents.signal,
         note_pitch: voice.note_pitch,
         pitch_bend: params.pitch_bend.signal,
         freq_mod: zero,
       },
-      output: signals.osc4_output,
+      output: signals.osc4,
     };
 
     let osc_mix = program.expr(|expr| {
@@ -232,12 +223,12 @@ impl PlaygroundModule {
     let filt1 = filter::Block {
       input: osc_mix.output,
       params: filter::Params {
-        mode: params.filt1_mode.signal,
-        freq: params.filt1_freq.signal,
+        mode: params.filt1.mode.signal,
+        freq: params.filt1.freq.signal,
         freq_mod: one,
-        q: params.filt1_q.signal,
+        q: params.filt1.q.signal,
       },
-      output: program.signal(),
+      output: signals.filt1,
     };
 
     let dca = dca::Block {
@@ -245,10 +236,10 @@ impl PlaygroundModule {
         left: filt1.output,
         right: filt1.output,
         velocity: voice.velocity,
-        amplitude: params.dca_amplitude.signal,
-        amp_mod: osc1.output,
+        amplitude: params.dca.amplitude.signal,
+        amp_mod: zero,
         eg_mod: eg1_dca_intensity.output,
-        pan: params.dca_pan.signal,
+        pan: params.dca.pan.signal,
         pan_mod: zero,
       },
       outputs: dca::Outputs {
@@ -259,7 +250,7 @@ impl PlaygroundModule {
 
     program.block(Block::EG(eg1));
     program.block(Block::Expr(eg1_dca_intensity));
-    program.block(Block::Osc(osc1));
+    // program.block(Block::Osc(osc1));
 //    program.block(Block::Osc(osc2));
 //    program.block(Block::Expr(osc4_freq_mod));
     program.block(Block::Osc(osc3));
@@ -268,7 +259,7 @@ impl PlaygroundModule {
     program.block(Block::Filter(filt1));
     program.block(Block::DCA(dca));
 
-    PlaygroundModule {
+    KiroModule {
       params,
       signals,
     }
@@ -312,7 +303,7 @@ impl PlaygroundModule {
 
   fn enum_values<F: Float>(count: usize) -> ParamValues<F> {
     ParamValues {
-      initial_value: F::val(2), //FIXME 0.0
+      initial_value: F::val(0.0),
       min: F::zero(),
       max: F::val(count - 1),
       resolution: F::one(),

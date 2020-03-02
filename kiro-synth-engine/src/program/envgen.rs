@@ -76,7 +76,7 @@ impl<F: Float> Processor<F> {
     signals[mode].if_updated(|value| {
       match value {
         v if v == F::zero() => self.envgen.set_mode(Mode::Analog),
-        v if v == F::one() => self.envgen.set_mode(Mode::Analog),
+        v if v == F::one() => self.envgen.set_mode(Mode::Digital),
         _ => {}
       }
     });

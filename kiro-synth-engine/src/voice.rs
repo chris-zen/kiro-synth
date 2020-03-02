@@ -5,36 +5,34 @@ use crate::float::Float;
 use crate::key_freqs::KEY_FREQ;
 use crate::program::{MaxSignals, MaxBlocks, Block, osc, Program, SignalRef, ParamRef};
 use crate::processor::Processor;
-use crate::synth::SynthWaveforms;
+use crate::synth::{SynthWaveforms, SynthGlobals};
 use crate::signal::{Signal, SignalBus, SignalState};
 
-pub(crate) struct Voice<'a, F: Float> {
-  waveforms: &'a SynthWaveforms<F>,
+pub(crate) struct Voice<F: Float> {
   signals: Vec<Signal<F>, MaxSignals>,
-  processors: Vec<Processor<'a, F>, MaxBlocks>,
+  processors: Vec<Processor<F>, MaxBlocks>,
 }
 
-impl<'a, F: Float> Voice<'a, F> {
-  pub fn new(sample_rate: F, waveforms: &'a SynthWaveforms<F>, program: &Program<F>) -> Self {
+impl<F: Float> Voice<F> {
+  pub fn new(sample_rate: F, program: &Program<F>) -> Self {
     let mut signals: Vec<Signal<F>, MaxSignals> = Vec::new();
     for _ in 0..program.get_signals_count() {
       drop(signals.push(Signal::default()));
     }
 
-    let mut processors: Vec<Processor<'a, F>, MaxBlocks> = Vec::new();
+    let mut processors: Vec<Processor<F>, MaxBlocks> = Vec::new();
     for block in program.get_blocks().iter() {
       if let Block::Const { value, signal } = block {
         signals[signal.0].set(*value)
       }
       else {
-        drop(processors.push(Processor::new(sample_rate, waveforms, block)));
+        drop(processors.push(Processor::new(sample_rate, block)));
       }
     }
 
 //    println!("voice::signals {:?}", signals.iter_mut().map(|s| (s.consume(), s.state())).collect::<Vec<(F, SignalState), MaxSignals>>());
 
     Voice {
-      waveforms,
       signals,
       processors,
     }
@@ -86,11 +84,11 @@ impl<'a, F: Float> Voice<'a, F> {
     self.signals[program.voice().gate.0].set(F::zero());
   }
 
-  pub fn process(&mut self, program: &mut Program<F>) {
+  pub fn process(&mut self, program: &mut Program<F>, synth_globals: &SynthGlobals<F>) {
     let mut signals = SignalBus::new(self.signals.deref_mut());
 
     for processor in self.processors.iter_mut() {
-      processor.process(&mut signals, program)
+      processor.process(&mut signals, program, synth_globals)
     }
 
     signals.update();

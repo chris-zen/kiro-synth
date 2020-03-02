@@ -14,9 +14,9 @@ use crate::event::{Message, Event};
 use kiro_synth_core::waveforms::sine::Sine;
 
 type MaxWaveforms = consts::U8;
-type MaxVoices = consts::U16;
+type MaxVoices = consts::U32;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SynthWaveforms<F: Float>(Vec<OscWaveform<F>, MaxWaveforms>);
 
 impl<F: Float> SynthWaveforms<F> {
@@ -49,21 +49,39 @@ impl<F: Float> Index<usize> for SynthWaveforms<F> {
   }
 }
 
+pub struct SynthGlobals<F: Float> {
+  pub waveforms: SynthWaveforms<F>,
+}
+
+impl<F: Float> SynthGlobals<F> {
+  pub fn new() -> Self {
+    SynthGlobals {
+      waveforms: SynthWaveforms::new(),
+    }
+  }
+}
+
 pub struct Synth<'a, F: Float> {
   sample_rate: F,
   events: Consumer<Event<F>>,
   program: Program<'a, F>,
-  voices: Vec<Voice<'a, F>, MaxVoices>,
+  globals: SynthGlobals<F>,
+  voices: Vec<Voice<F>, MaxVoices>,
   active_voices: Vec<usize, MaxVoices>,
   free_voices: Vec<usize, MaxVoices>,
 }
 
 impl<'a, F: Float> Synth<'a, F> {
-  pub fn new(sample_rate: F, events: Consumer<Event<F>>, waveforms: &'a SynthWaveforms<F>, program: Program<'a, F>) -> Self {
-    let mut voices: Vec<Voice<'a, F>, MaxVoices> = Vec::new();
+
+  pub fn new(sample_rate: F,
+             events: Consumer<Event<F>>,
+             program: Program<'a, F>,
+             globals: SynthGlobals<F>) -> Self {
+
+    let mut voices: Vec<Voice<F>, MaxVoices> = Vec::new();
     let mut free_voices: Vec<usize, MaxVoices> = Vec::new();
     for index in 0..MaxVoices::to_usize() {
-      drop(voices.push(Voice::new(sample_rate, waveforms, &program)));
+      drop(voices.push(Voice::new(sample_rate, &program)));
       drop(free_voices.push(MaxVoices::to_usize() - index - 1));
     }
 
@@ -71,6 +89,7 @@ impl<'a, F: Float> Synth<'a, F> {
       sample_rate,
       events,
       program,
+      globals,
       voices,
       active_voices: Vec::new(),
       free_voices,
@@ -135,7 +154,7 @@ impl<'a, F: Float> Synth<'a, F> {
       let voice_index = self.active_voices[active_voice_index];
       let voice = &mut self.voices[voice_index];
 
-      voice.process(&mut self.program);
+      voice.process(&mut self.program, &self.globals);
       let (voice_left, voice_right) = voice.output(&self.program);
       left = left + voice_left;
       right = right + voice_right;

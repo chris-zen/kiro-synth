@@ -9,14 +9,14 @@ use kiro_synth_midi::types::{U14, U7};
 type MaxMappings = consts::U128;
 type MidiController = U7;
 type MappingIndex = usize;
-type ParamIndex = usize;
+// type ParamIndex = usize;
 
 pub enum Transform<F: Float> {
-  UnipolarU7,
-  UnipolarU14,
-  BipolarU7,
-  BipolarU14,
-  MinMaxU7(F, F, F),
+  // UnipolarU7,
+  // UnipolarU14,
+  // BipolarU7,
+  // BipolarU14,
+  // MinMaxU7(F, F, F),
   MinMaxU14(F, F, F),
   Relative64(F),
 }
@@ -24,16 +24,16 @@ pub enum Transform<F: Float> {
 impl<F: Float> Transform<F> {
   fn param_value_from(&self, midi_value: usize) -> F {
     match self {
-      Transform::UnipolarU7 => F::val(midi_value & 0x7f) / F::val(127.0),
-      Transform::UnipolarU14 => F::val(midi_value & 0x3fff) / F::val(16383.0),
-      Transform::BipolarU7 => (F::val(midi_value & 0x7f) * F::val(2.0 / 127.0)) - F::one(),
-      Transform::BipolarU14 => (F::val(midi_value & 0x3fff) * F::val(2.0 / 16383.0)) - F::one(),
-      Transform::MinMaxU7(min, max, resolution) => {
-        let midi_value = F::val(midi_value & 0x7f);
-        let range = *max - *min;
-        let value = midi_value * F::val(1.0 / 127.0) * range + *min;
-        (value / *resolution).round() * *resolution
-      },
+      // Transform::UnipolarU7 => F::val(midi_value & 0x7f) / F::val(127.0),
+      // Transform::UnipolarU14 => F::val(midi_value & 0x3fff) / F::val(16383.0),
+      // Transform::BipolarU7 => (F::val(midi_value & 0x7f) * F::val(2.0 / 127.0)) - F::one(),
+      // Transform::BipolarU14 => (F::val(midi_value & 0x3fff) * F::val(2.0 / 16383.0)) - F::one(),
+      // Transform::MinMaxU7(min, max, resolution) => {
+      //   let midi_value = F::val(midi_value & 0x7f);
+      //   let range = *max - *min;
+      //   let value = midi_value * F::val(1.0 / 127.0) * range + *min;
+      //   (value / *resolution).round() * *resolution
+      // },
       Transform::MinMaxU14(min, max, resolution) => {
         let midi_value = F::val(midi_value & 0x3fff);
         let range = *max - *min;
@@ -93,12 +93,12 @@ impl<F: Float> MidiMapper<F> {
     })
   }
 
-  pub fn controller<'a>(&mut self, midi_controller: MidiController, param_info: Option<(ParamRef, &Param<'a, F>)>) {
-    if let Some((param_ref, param)) = param_info {
-      let transform = Transform::MinMaxU7(param.values.min, param.values.max, param.values.resolution);
-      self.add_controller_mapping(midi_controller, param_ref, transform)
-    }
-  }
+  // pub fn controller<'a>(&mut self, midi_controller: MidiController, param_info: Option<(ParamRef, &Param<'a, F>)>) {
+  //   if let Some((param_ref, param)) = param_info {
+  //     let transform = Transform::MinMaxU7(param.values.min, param.values.max, param.values.resolution);
+  //     self.add_controller_mapping(midi_controller, param_ref, transform)
+  //   }
+  // }
 
   pub fn rel_controller<'a>(&mut self, midi_controller: MidiController, param_info: Option<(ParamRef, &Param<'a, F>)>) {
     if let Some((param_ref, param)) = param_info {

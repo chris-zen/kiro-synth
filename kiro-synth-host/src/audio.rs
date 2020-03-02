@@ -1,16 +1,17 @@
 use anyhow::Result;
 use thiserror::Error;
 
-use cpal::traits::{DeviceTrait, EventLoopTrait, HostTrait};
-use cpal::{BuildStreamError, DefaultFormatError, EventLoop, Format, PlayStreamError, StreamId};
+use cpal::{Device, StreamConfig, SampleRate, Stream};
+use cpal::{DefaultStreamConfigError, BuildStreamError, PlayStreamError};
+use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
 #[derive(Error, Debug)]
 pub enum AudioError {
   #[error("No default output device")]
   NoDefaultOutputDevice,
 
-  #[error("No default format")]
-  NoDefaultFormat(#[from] DefaultFormatError),
+  #[error("No default stream config")]
+  NoDefaultStreamConfig(#[from] DefaultStreamConfigError),
 
   #[error("Error building stream")]
   BuildStream(#[from] BuildStreamError),
@@ -25,86 +26,57 @@ pub trait AudioHandler: Send {
 }
 
 pub struct AudioDriver {
-  format: Format,
-  event_loop: EventLoop,
-  _stream_id: StreamId,
+  device: Device,
+  config: StreamConfig,
+  stream: Stream,
 }
 
 impl AudioDriver {
-  pub fn new(sample_rate: u32) -> Result<Self> {
+  pub fn new<Handler: AudioHandler + 'static>(sample_rate: u32, mut handler: Handler) -> Result<Self> {
     let host = cpal::default_host();
+
     let device = host
       .default_output_device()
       .ok_or(AudioError::NoDefaultOutputDevice)?;
     println!("Using default output device: '{}'", device.name()?);
 
-    let mut format = device
-      .default_output_format()
-      .map_err(|source| AudioError::NoDefaultFormat(source))?;
-    format.sample_rate = cpal::SampleRate(sample_rate);
-    format.data_type = cpal::SampleFormat::F32;
-    println!("Format: `{:?}`.", format);
+    let mut config: StreamConfig = device.default_output_config()
+      .map_err(|source| AudioError::NoDefaultStreamConfig(source))?
+      .into();
 
-    let event_loop = host.event_loop();
+    let channels = config.channels as usize;
 
-    let stream_id = event_loop
-      .build_output_stream(&device, &format)
-      .map_err(|source| AudioError::BuildStream(source))?;
+    config.sample_rate = SampleRate(sample_rate);
+    println!("Using default output stream config: {:?}", config);
 
-    event_loop
-      .play_stream(stream_id.clone())
-      .map_err(|source| AudioError::PlayStream(source))?;
-
-    Ok(AudioDriver {
-      format,
-      event_loop,
-      _stream_id: stream_id,
-    })
-  }
-
-  pub fn run<Handler: AudioHandler>(&self, mut handler: Handler) {
-    self.event_loop.run(move |id, result| {
-      let data = match result {
-        Ok(data) => data,
-        Err(err) => {
-          eprintln!("an error occurred on stream {:?}: {}", id, err);
-          return;
-        }
-      };
-
-      match data {
-        cpal::StreamData::Output {
-          buffer: cpal::UnknownTypeOutputBuffer::U16(mut buffer),
-        } => {
-          handler.prepare(buffer.len());
-          for sample in buffer.chunks_mut(self.format.channels as usize) {
-            let (left, right) = handler.next();
-            sample[0] = ((left * 0.5 + 0.5) * std::u16::MAX as f32) as u16;
-            sample[1] = ((right * 0.5 + 0.5) * std::u16::MAX as f32) as u16;
-          }
-        }
-        cpal::StreamData::Output {
-          buffer: cpal::UnknownTypeOutputBuffer::I16(mut buffer),
-        } => {
-          handler.prepare(buffer.len());
-          for sample in buffer.chunks_mut(self.format.channels as usize) {
-            let (left, right) = handler.next();
-            sample[0] = (left * std::u16::MAX as f32) as i16;
-            sample[1] = (right * std::u16::MAX as f32) as i16;
-          }
-        }
-        cpal::StreamData::Output {
-          buffer: cpal::UnknownTypeOutputBuffer::F32(mut buffer),
-        } => {
-          handler.prepare(buffer.len());
-          for sample in buffer.chunks_mut(self.format.channels as usize) {
-            let (left, right) = handler.next();
-            sample[0] = left;
+    let stream = device.build_output_stream(
+      &config,
+      move |data: &mut [f32]| {
+        handler.prepare(data.len());
+        for sample in data.chunks_mut(channels) {
+          let (left, right) = handler.next();
+          sample[0] = left;
+          if channels > 1 {
             sample[1] = right;
           }
+          for i in 2..channels {
+            sample[i] = 0.0f32;
+          }
         }
-        _ => (),
-      }
-    });
+      },
+      move |err| {
+        eprintln!("an error occurred on stream: {}", err);
+      },
+    )?;
+
+    stream
+      .play()
+      .map_err(|err| AudioError::PlayStream(err))?;
+
+    Ok(AudioDriver {
+      device,
+      config,
+      stream,
+    })
   }
 }

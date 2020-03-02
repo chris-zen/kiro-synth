@@ -57,7 +57,7 @@ impl<F> Waveform<F> for Saw<F>
 where
   F: Float,
 {
-  fn generate(&mut self, modulo: F, phase_inc: F) -> F {
+  fn generate(&self, modulo: F, phase_inc: F) -> F {
     let signal = match self.mode {
       Mode::Normal => unipolar_to_bipolar(modulo),
       Mode::Unipolar => {

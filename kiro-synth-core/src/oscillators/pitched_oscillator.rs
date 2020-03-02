@@ -1,16 +1,17 @@
 use crate::float::Float;
 use crate::oscillators::osc_pitch_shift::OscPitchShift;
 use crate::oscillators::osc_waveform::OscWaveform;
+use num_traits::real::Real;
 
 #[derive(Debug)]
 pub struct PitchedOscillator<F: Float> {
-  sample_rate: F,
+  inv_sample_rate: F,
   waveform: OscWaveform<F>,
   pitch_freq: F,
   pitch_shift: OscPitchShift<F>,
-  pitch_multiplier: F,
   modulo: F,
   phase_inc: F,
+  phase_inc_invalidated: bool,
   amplitude: F,
   amp_mod: F,
 }
@@ -22,75 +23,68 @@ where
 {
   pub fn new(sample_rate: F, waveform: OscWaveform<F>, pitch_freq: F) -> Self {
     let pitch_shift = OscPitchShift::default();
-    let pitch_multiplier = pitch_shift.multiplier();
     let modulo = waveform.initial_modulo();
 
-    let mut pitched_oscillator = Self {
-      sample_rate,
+    PitchedOscillator {
+      inv_sample_rate: sample_rate.recip(),
       waveform,
       pitch_freq,
       pitch_shift,
-      pitch_multiplier,
       modulo,
       phase_inc: F::zero(),
+      phase_inc_invalidated: true,
       amplitude: F::one(),
       amp_mod: F::zero(),
-    };
-    pitched_oscillator.update_phase_inc();
-    pitched_oscillator
+    }
   }
 
   /// Set the sample rate
   pub fn set_sample_rate(&mut self, sample_rate: F) {
-    self.sample_rate = sample_rate;
+    self.inv_sample_rate = sample_rate.recip();
+    self.phase_inc_invalidated = true;
   }
 
   /// Set the waveform
   pub fn set_waveform(&mut self, waveform: OscWaveform<F>) {
     self.waveform = waveform;
-    self.update_phase_inc();
     self.modulo = self.waveform.initial_modulo();
+    self.phase_inc_invalidated = true; // TODO really necessary ???
   }
 
   /// Set the pitch frequency
   pub fn set_pitch_frequency(&mut self, pitch_freq: F) {
     self.pitch_freq = pitch_freq;
-    self.update_phase_inc();
+    self.phase_inc_invalidated = true;
   }
 
   /// Set the shift for the octaves
   pub fn set_octaves(&mut self, octaves: F) {
     self.pitch_shift.set_octaves(octaves);
-    self.pitch_multiplier = self.pitch_shift.multiplier();
-    self.update_phase_inc();
+    self.phase_inc_invalidated = true;
   }
 
   /// Set the semitones shift
   pub fn set_semitones(&mut self, semitones: F) {
     self.pitch_shift.set_semitones(semitones);
-    self.pitch_multiplier = self.pitch_shift.multiplier();
-    self.update_phase_inc();
+    self.phase_inc_invalidated = true;
   }
 
   /// Set the shift for the cents
   pub fn set_cents(&mut self, cents: F) {
     self.pitch_shift.set_cents(cents);
-    self.pitch_multiplier = self.pitch_shift.multiplier();
-    self.update_phase_inc();
+    self.phase_inc_invalidated = true;
   }
 
   /// Set the pitch bend
   pub fn set_pitch_bend(&mut self, pitch_bend: F) {
     self.pitch_shift.set_pitch_bend(pitch_bend);
-    self.pitch_multiplier = self.pitch_shift.multiplier();
-    self.update_phase_inc();
+    self.phase_inc_invalidated = true;
   }
 
   /// Set the frequency modulation
   pub fn set_frequency_modulation(&mut self, freq_mod: F) {
     self.pitch_shift.set_modulation(freq_mod);
-    self.pitch_multiplier = self.pitch_shift.multiplier();
-    self.update_phase_inc();
+    self.phase_inc_invalidated = true;
   }
 
   /// Set amplitude
@@ -105,14 +99,18 @@ where
 
   /// Generate the next value
   pub fn generate(&mut self) -> F {
+    if self.phase_inc_invalidated {
+      self.update_phase_inc();
+    }
+
     let wf = self.waveform.generate(self.modulo, self.phase_inc);
     self.update_modulo();
     wf * self.amplitude + self.amp_mod
   }
 
   fn update_phase_inc(&mut self) {
-    let freq = self.pitch_freq * self.pitch_multiplier;
-    self.phase_inc = freq / self.sample_rate;
+    let freq = self.pitch_freq * self.pitch_shift.multiplier();
+    self.phase_inc = freq * self.inv_sample_rate;
   }
 
   fn update_modulo(&mut self) {

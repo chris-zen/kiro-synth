@@ -2,8 +2,9 @@ use kiro_synth_core::oscillators::pitched_oscillator::PitchedOscillator;
 
 use crate::float::Float;
 use crate::program::{SignalRef, Program};
-use crate::synth::SynthWaveforms;
+use crate::synth::{SynthWaveforms, SynthGlobals};
 use crate::signal::SignalBus;
+use kiro_synth_core::oscillators::osc_waveform::OscWaveform;
 
 
 #[derive(Debug, Clone)]
@@ -26,33 +27,36 @@ pub struct Block {
 }
 
 #[derive(Debug)]
-pub(crate) struct Processor<'a, F: Float> {
-  waveforms: &'a SynthWaveforms<F>,
+pub(crate) struct Processor<F: Float> {
   osc: PitchedOscillator<F>,
   block: Block,
 }
 
-impl<'a, F: Float> Processor<'a, F> {
+impl<F: Float> Processor<F> {
 
-  pub fn new(sample_rate: F, waveforms: &'a SynthWaveforms<F>, block: Block) -> Self {
-    let waveform = waveforms[0].clone();
+  pub fn new(sample_rate: F, block: Block) -> Self {
+    let waveform = OscWaveform::default();
+    let osc = PitchedOscillator::new(sample_rate, waveform, F::zero());
 
     Processor {
-      waveforms,
-      osc: PitchedOscillator::new(sample_rate, waveform, F::zero()),
+      osc,
       block,
     }
   }
 
   pub fn reset(&mut self) {}
 
-  pub fn process<'b>(&mut self, signals: &mut SignalBus<'b, F>, program: &Program<F>) {
+  pub fn process<'a>(&mut self,
+                     signals: &mut SignalBus<'a, F>,
+                     _program: &Program<F>,
+                     synth_globals: &SynthGlobals<F>) {
+
     let Block { inputs, output } = self.block.clone();
     let Inputs { shape, amplitude, amp_mod,
                  octave, semitones, cents,
                  note_pitch, pitch_bend, freq_mod } = inputs;
 
-    signals[shape].if_updated(|value| self.osc.set_waveform(self.waveforms[value.to_usize().unwrap()].clone()));
+    signals[shape].if_updated(|value| self.osc.set_waveform(synth_globals.waveforms[value.to_usize().unwrap()].clone()));
     signals[amplitude].if_updated(|value| self.osc.set_amplitude(value));
     signals[amp_mod].if_updated(|value| self.osc.set_amplitude_modulation(value));
     signals[octave].if_updated(|value| self.osc.set_octaves(value));

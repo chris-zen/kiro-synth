@@ -51,7 +51,6 @@ impl<'a> ParamDesc<'a> {
 #[derive(Debug, Clone)]
 pub struct Param<'a, F: Float> {
   pub id: &'a str,
-  pub name: &'a str,
   pub values: ParamValues<F>,
   pub signal: Signal<F>,
 }
@@ -271,11 +270,10 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
     self.const_value(F::one())
   }
 
-  pub fn param(&mut self, id: &'a str, name: &'a str, values: ParamValues<F>) -> ParamBlock {
+  pub fn param(&mut self, id: &'a str, values: ParamValues<F>) -> ParamBlock {
     let initial_value = values.initial_value;
     let param = Param {
       id,
-      name,
       values,
       signal: Signal::new(initial_value)
     };

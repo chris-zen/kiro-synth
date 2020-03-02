@@ -42,7 +42,7 @@ where
 {
   /// Set the shift for the octaves
   pub fn set_octaves(&mut self, octaves: F) {
-    self.octaves_shift = octaves * F::from(12.0).unwrap();
+    self.octaves_shift = octaves * F::val(12.0);
   }
 
   /// Set the semitones shift
@@ -52,7 +52,7 @@ where
 
   /// Set the shift for the cents
   pub fn set_cents(&mut self, cents: F) {
-    self.cents_shift = cents * F::from(0.01).unwrap();
+    self.cents_shift = cents * F::val(0.01);
   }
 
   /// Set the pitch bend
@@ -75,6 +75,6 @@ where
 
     F::from(2.0)
       .unwrap()
-      .powf(total_semitones_shift / F::from(12.0).unwrap())
+      .powf(total_semitones_shift / F::val(12.0))
   }
 }
