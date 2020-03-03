@@ -3,6 +3,7 @@ mod midi;
 mod program;
 mod programs;
 mod midi_mapper;
+mod synth;
 mod ui;
 
 use anyhow::Result;
@@ -20,7 +21,11 @@ use crate::programs::KiroModule;
 use crate::midi_mapper::MidiMapper;
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::Program;
-use crate::ui::SynthParams;
+use crate::ui::{SynthParams, Model};
+use druid::AppDelegate;
+// use crate::ui::delegate::UiDelegate;
+use std::sync::{Mutex, Arc};
+use crate::synth::SynthClient;
 
 const SAMPLE_RATE: u32 = 44100;
 
@@ -38,6 +43,7 @@ fn main() -> Result<()> {
 
   let events_ring_buffer = RingBuffer::<Event<f32>>::new(1024);
   let (events_producer, events_consumer) = events_ring_buffer.split();
+  let synth_client = Arc::new(Mutex::new(SynthClient::new(events_producer)));
 
   // PROGRAM
 
@@ -46,7 +52,7 @@ fn main() -> Result<()> {
   // MIDI
 
   let midi_mapper = create_midi_mapper(&program, &module);
-  let handler = EventsMidiHandler::new(midi_mapper, events_producer);
+  let handler = EventsMidiHandler::new(midi_mapper, synth_client.clone());
   let _midi_driver = MidiDriver::new("kiro-synth", midi_buffer, handler)?;
 
   // UI PARAMS
@@ -64,7 +70,7 @@ fn main() -> Result<()> {
 
   // UI
 
-  ui::start(ui_params);
+  ui::start(ui_params, synth_client);
 
   Ok(())
 }
@@ -83,14 +89,14 @@ impl<'a> AudioHandler for SynthAudioHandler<'a> {
 
 struct EventsMidiHandler {
   midi_mapper: MidiMapper<f32>,
-  events: Producer<Event<f32>>,
+  synth_client: Arc<Mutex<SynthClient<f32>>>,
 }
 
 impl EventsMidiHandler {
-  pub fn new(midi_mapper: MidiMapper<f32>, events: Producer<Event<f32>>) -> Self {
+  pub fn new(midi_mapper: MidiMapper<f32>, synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
     EventsMidiHandler {
       midi_mapper,
-      events
+      synth_client
     }
   }
 }
@@ -100,21 +106,19 @@ impl MidiHandler for EventsMidiHandler {
     println!("{:014}: {:?}", timestamp, message);
     match message {
       MidiMessage::NoteOn { channel: _, key, velocity } => {
-        let message = SynthMessage::NoteOn { key, velocity: velocity as f32 / 127.0 };
-        drop(self.events.push(Event::new(0u64, message)));
+        self.synth_client.lock().unwrap().send_note_on(key, velocity as f32 / 127.0);
       },
       MidiMessage::NoteOff { channel: _, key, velocity } => {
-        let message = SynthMessage::NoteOff { key, velocity: velocity as f32 / 127.0 };
-        drop(self.events.push(Event::new(0u64, message)));
+        self.synth_client.lock().unwrap().send_note_off(key, velocity as f32 / 127.0);
       },
       MidiMessage::PitchBend { channel: _, value } => {
         if let Some(event) = self.midi_mapper.map_midi_pitch_bend(value) {
-          drop(self.events.push(event));
+          self.synth_client.lock().unwrap().send_event(event);
         }
       },
       MidiMessage::ControlChange { channel: _, controller, value } => {
         if let Some(event) = self.midi_mapper.map_midi_controller(controller, value) {
-          drop(self.events.push(event));
+          self.synth_client.lock().unwrap().send_event(event);
         }
       }
       _ => {}

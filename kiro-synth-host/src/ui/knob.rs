@@ -2,11 +2,7 @@ use core::f64::consts::{PI, FRAC_PI_2};
 use core::f64::EPSILON;
 
 use druid::kurbo::{BezPath, Arc};
-use druid::{
-  BoxConstraints, Color, Env, Event, LifeCycle, Widget,
-  EventCtx, LayoutCtx, LifeCycleCtx, PaintCtx, RenderContext, UpdateCtx,
-  Data, Size, Point, Vec2,
-};
+use druid::{BoxConstraints, Color, Env, Event, LifeCycle, Widget, EventCtx, LayoutCtx, LifeCycleCtx, PaintCtx, RenderContext, UpdateCtx, Data, Size, Point, Vec2, Selector, Command, Target};
 
 pub mod theme {
   use druid::{Key, Color, Env};
@@ -22,6 +18,8 @@ pub mod theme {
     env.set(KNOB_MODULATION, Color::rgb(0.8, 0.3, 0.0));
   }
 }
+
+pub const UPDATE_VALUE: Selector = Selector::new("knob.update-value");
 
 #[derive(Debug, Clone, Data)]
 pub struct KnobModel {
@@ -43,28 +41,29 @@ struct MouseMove {
   orig_value: f64,
 }
 
-pub struct Knob {
+pub struct Knob<F> where F: Fn(&KnobModel) -> () {
   start: f64,
   min: f64,
   max: f64,
   step: f64,
+  callback: F,
   // unit, ...
 
   sensitivity: f64,
-
   mouse_move: MouseMove,
 }
 
-impl Knob {
+impl<F> Knob<F> where F: Fn(&KnobModel) -> () {
   const START_ANGLE: f64 = 2.0 * PI * (20.0 / 360.0);
   const END_ANGLE: f64 = 2.0 * PI * (340.0 / 360.0);
 
-  pub fn new(start: f64, min: f64, max: f64, step: f64) -> Self {
+  pub fn new(start: f64, min: f64, max: f64, step: f64, callback: F) -> Self {
     Knob {
       start,
       min,
       max,
       step,
+      callback,
 
       sensitivity: 0.4,
       mouse_move: MouseMove { orig_pos: 0.0, orig_value: 0.0 },
@@ -83,8 +82,7 @@ impl Knob {
                end_angle: f64,
                color: Color,
                width: f64,
-               line_to_center: bool,
-  ) {
+               line_to_center: bool) {
 
     let sweep_angle = end_angle - start_angle;
 
@@ -114,7 +112,7 @@ impl Knob {
   }
 }
 
-impl Widget<KnobModel> for Knob {
+impl<F> Widget<KnobModel> for Knob<F> where F: Fn(&KnobModel) -> () {
   fn event(&mut self,
            ctx: &mut EventCtx,
            event: &Event,
@@ -141,6 +139,7 @@ impl Widget<KnobModel> for Knob {
           let inc = self.sensitivity * (self.mouse_move.orig_pos - mouse.pos.y);
           let value = (self.mouse_move.orig_value + self.step * inc).max(self.min).min(self.max);
           data.value = (value / self.step).round() * self.step;
+          ctx.submit_command(Command::new(UPDATE_VALUE, data.value), Target::Global);
           ctx.request_paint();
         }
       }
@@ -160,9 +159,10 @@ impl Widget<KnobModel> for Knob {
   fn update(&mut self,
             _ctx: &mut UpdateCtx,
             _old_data: &KnobModel,
-            _data: &KnobModel,
+            data: &KnobModel,
             _env: &Env) {
     // println!("{} -> {}", _old_data.value, _data.value);
+    (self.callback)(data);
   }
 
   fn layout(

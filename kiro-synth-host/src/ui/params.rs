@@ -35,9 +35,21 @@ pub struct OscParamsInfo {
   pub cents: ParamInfo,
 }
 
+pub struct EgParamsInfo {
+  pub attack: ParamInfo,
+  pub decay: ParamInfo,
+  pub sustain: ParamInfo,
+  pub release: ParamInfo,
+  pub mode: ParamInfo,
+  pub legato: ParamInfo,
+  pub reset_to_zero: ParamInfo,
+  pub dca_intensity: ParamInfo,
+}
+
 pub struct SynthParams {
   pub osc1: OscParamsInfo,
   pub osc2: OscParamsInfo,
+  pub eg1: EgParamsInfo,
 }
 
 impl SynthParams {
@@ -45,6 +57,7 @@ impl SynthParams {
     SynthParams {
       osc1: Self::osc_params(program, &params.osc3),
       osc2: Self::osc_params(program, &params.osc4),
+      eg1: Self::eg_params(program, &params.eg1),
     }
   }
 
@@ -55,6 +68,19 @@ impl SynthParams {
       octave: ParamInfo::new(program.get_param(params.octave.reference)),
       semitones: ParamInfo::new(program.get_param(params.semitones.reference)),
       cents: ParamInfo::new(program.get_param(params.cents.reference)),
+    }
+  }
+
+  fn eg_params<'a, F: Float + 'static>(program: &Program<'a, F>, params: &EnvGenParams) -> EgParamsInfo {
+    EgParamsInfo {
+      attack: ParamInfo::new(program.get_param(params.attack.reference)),
+      decay: ParamInfo::new(program.get_param(params.decay.reference)),
+      sustain: ParamInfo::new(program.get_param(params.sustain.reference)),
+      release: ParamInfo::new(program.get_param(params.release.reference)),
+      mode: ParamInfo::new(program.get_param(params.mode.reference)),
+      legato: ParamInfo::new(program.get_param(params.legato.reference)),
+      reset_to_zero: ParamInfo::new(program.get_param(params.reset_to_zero.reference)),
+      dca_intensity: ParamInfo::new(program.get_param(params.dca_intensity.reference)),
     }
   }
 }
