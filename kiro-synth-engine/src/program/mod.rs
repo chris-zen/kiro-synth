@@ -70,6 +70,12 @@ impl From<ParamBlock> for ParamRef {
   }
 }
 
+impl From<&ParamBlock> for ParamRef {
+  fn from(block: &ParamBlock) -> Self {
+    block.reference
+  }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct SignalRef(pub(crate) usize);
 
@@ -257,7 +263,6 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
 
   pub fn const_value(&mut self, value: F) -> SignalRef {
     let signal = self.signal_refs.create();
-    let block_ref = BlockRef(self.blocks.len());
     drop(self.blocks.push(Block::Const { value, signal }));
     signal
   }

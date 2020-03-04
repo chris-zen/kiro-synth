@@ -106,7 +106,7 @@ impl<F: Float> Processor<F> {
     }
   }
 
-  pub fn process<'a>(&mut self, signals: &mut SignalBus<'a, F>, program: &Program<F>) {
+  pub fn process<'a>(&mut self, signals: &mut SignalBus<'a, F>, _program: &Program<F>) {
     let Params { mode, freq, freq_mod, q } = self.block.params;
 
     signals[mode].if_updated(|value| self.set_mode(value));

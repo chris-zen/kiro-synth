@@ -26,9 +26,9 @@ pub trait AudioHandler: Send {
 }
 
 pub struct AudioDriver {
-  device: Device,
-  config: StreamConfig,
-  stream: Stream,
+  _device: Device,
+  _config: StreamConfig,
+  _stream: Stream,
 }
 
 impl AudioDriver {
@@ -74,9 +74,9 @@ impl AudioDriver {
       .map_err(|err| AudioError::PlayStream(err))?;
 
     Ok(AudioDriver {
-      device,
-      config,
-      stream,
+      _device: device,
+      _config: config,
+      _stream: stream,
     })
   }
 }

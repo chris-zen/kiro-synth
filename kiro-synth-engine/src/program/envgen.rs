@@ -2,7 +2,6 @@ use kiro_synth_core::float::Float;
 use kiro_synth_core::envgen::adsr::{EnvGen, Mode};
 
 use crate::program::{SignalRef, Program};
-use crate::synth::SynthWaveforms;
 use crate::signal::SignalBus;
 
 #[derive(Debug, Clone)]
@@ -51,7 +50,7 @@ impl<F: Float> Processor<F> {
   pub fn process<'a>(&mut self, signals: &mut SignalBus<'a, F>, program: &Program<F>) {
     let Block { inputs, outputs } = self.block.clone();
     let Inputs { attack, decay, sustain, release,
-                 mode, legato, reset_to_zero } = inputs;
+                 mode, legato: _, reset_to_zero: _ } = inputs;
     let Outputs { normal, biased, voice_off } = outputs;
 
     let voice = program.voice();

@@ -36,7 +36,7 @@ pub(crate) struct Processor<F: Float> {
 
 impl<F: Float> Processor<F> {
 
-  pub fn new(sample_rate: F, block: Block) -> Self {
+  pub fn new(_sample_rate: F, block: Block) -> Self {
     Processor {
       dca: DCA::new(),
       block,
@@ -45,7 +45,7 @@ impl<F: Float> Processor<F> {
 
   pub fn reset(&mut self) {}
 
-  pub fn process<'a>(&mut self, signals: &mut SignalBus<'a, F>, program: &Program<F>) {
+  pub fn process<'a>(&mut self, signals: &mut SignalBus<'a, F>, _program: &Program<F>) {
     let Block { inputs, outputs } = self.block.clone();
     let Inputs { left, right, velocity,
       amplitude, amp_mod, eg_mod, pan, pan_mod } = inputs;

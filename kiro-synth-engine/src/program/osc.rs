@@ -2,7 +2,7 @@ use kiro_synth_core::oscillators::pitched_oscillator::PitchedOscillator;
 
 use crate::float::Float;
 use crate::program::{SignalRef, Program};
-use crate::synth::{SynthWaveforms, SynthGlobals};
+use crate::synth::SynthGlobals;
 use crate::signal::SignalBus;
 use kiro_synth_core::oscillators::osc_waveform::OscWaveform;
 
@@ -12,7 +12,7 @@ pub struct Inputs {
   pub shape: SignalRef,
   pub amplitude: SignalRef,
   pub amp_mod: SignalRef,
-  pub octave: SignalRef,
+  pub octaves: SignalRef,
   pub semitones: SignalRef,
   pub cents: SignalRef,
   pub note_pitch: SignalRef,
@@ -53,7 +53,7 @@ impl<F: Float> Processor<F> {
 
     let Block { inputs, output } = self.block.clone();
     let Inputs { shape, amplitude, amp_mod,
-                 octave, semitones, cents,
+      octaves: octave, semitones, cents,
                  note_pitch, pitch_bend, freq_mod } = inputs;
 
     signals[shape].if_updated(|value| self.osc.set_waveform(synth_globals.waveforms[value.to_usize().unwrap()].clone()));

@@ -3,10 +3,10 @@ use heapless::Vec;
 
 use crate::float::Float;
 use crate::key_freqs::KEY_FREQ;
-use crate::program::{MaxSignals, MaxBlocks, Block, osc, Program, SignalRef, ParamRef};
+use crate::program::{MaxSignals, MaxBlocks, Block, Program};
 use crate::processor::Processor;
-use crate::synth::{SynthWaveforms, SynthGlobals};
-use crate::signal::{Signal, SignalBus, SignalState};
+use crate::synth::SynthGlobals;
+use crate::signal::{Signal, SignalBus};
 
 pub(crate) struct Voice<F: Float> {
   signals: Vec<Signal<F>, MaxSignals>,

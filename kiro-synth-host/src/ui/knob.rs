@@ -2,7 +2,8 @@ use core::f64::consts::{PI, FRAC_PI_2};
 use core::f64::EPSILON;
 
 use druid::kurbo::{BezPath, Arc};
-use druid::{BoxConstraints, Color, Env, Event, LifeCycle, Widget, EventCtx, LayoutCtx, LifeCycleCtx, PaintCtx, RenderContext, UpdateCtx, Data, Size, Point, Vec2, Selector, Command, Target};
+use druid::{Widget, BoxConstraints, Color, Env, Event, Data, Size, Point, Vec2,
+            LifeCycle, EventCtx, LayoutCtx, LifeCycleCtx, PaintCtx, RenderContext, UpdateCtx};
 
 pub mod theme {
   use druid::{Key, Color, Env};
@@ -19,17 +20,15 @@ pub mod theme {
   }
 }
 
-pub const UPDATE_VALUE: Selector = Selector::new("knob.update-value");
-
 #[derive(Debug, Clone, Data)]
-pub struct KnobModel {
+pub struct KnobData {
   pub value: f64,
   pub modulation: f64,
 }
 
-impl KnobModel {
+impl KnobData {
   pub fn new(value: f64, modulation: f64) -> Self {
-    KnobModel {
+    KnobData {
       value,
       modulation,
     }
@@ -41,8 +40,8 @@ struct MouseMove {
   orig_value: f64,
 }
 
-pub struct Knob<F> where F: Fn(&KnobModel) -> () {
-  start: f64,
+pub struct Knob<F> where F: Fn(&KnobData) -> () {
+  origin: f64,
   min: f64,
   max: f64,
   step: f64,
@@ -53,13 +52,13 @@ pub struct Knob<F> where F: Fn(&KnobModel) -> () {
   mouse_move: MouseMove,
 }
 
-impl<F> Knob<F> where F: Fn(&KnobModel) -> () {
+impl<F> Knob<F> where F: Fn(&KnobData) -> () {
   const START_ANGLE: f64 = 2.0 * PI * (20.0 / 360.0);
   const END_ANGLE: f64 = 2.0 * PI * (340.0 / 360.0);
 
-  pub fn new(start: f64, min: f64, max: f64, step: f64, callback: F) -> Self {
+  pub fn new(origin: f64, min: f64, max: f64, step: f64, callback: F) -> Self {
     Knob {
-      start,
+      origin,
       min,
       max,
       step,
@@ -112,11 +111,11 @@ impl<F> Knob<F> where F: Fn(&KnobModel) -> () {
   }
 }
 
-impl<F> Widget<KnobModel> for Knob<F> where F: Fn(&KnobModel) -> () {
+impl<F> Widget<KnobData> for Knob<F> where F: Fn(&KnobData) -> () {
   fn event(&mut self,
            ctx: &mut EventCtx,
            event: &Event,
-           data: &mut KnobModel,
+           data: &mut KnobData,
            _env: &Env) {
 
     match event {
@@ -139,7 +138,6 @@ impl<F> Widget<KnobModel> for Knob<F> where F: Fn(&KnobModel) -> () {
           let inc = self.sensitivity * (self.mouse_move.orig_pos - mouse.pos.y);
           let value = (self.mouse_move.orig_value + self.step * inc).max(self.min).min(self.max);
           data.value = (value / self.step).round() * self.step;
-          ctx.submit_command(Command::new(UPDATE_VALUE, data.value), Target::Global);
           ctx.request_paint();
         }
       }
@@ -151,15 +149,15 @@ impl<F> Widget<KnobModel> for Knob<F> where F: Fn(&KnobModel) -> () {
     &mut self,
     _ctx: &mut LifeCycleCtx,
     _event: &LifeCycle,
-    _data: &KnobModel,
+    _data: &KnobData,
     _env: &Env,
   ) {
   }
 
   fn update(&mut self,
             _ctx: &mut UpdateCtx,
-            _old_data: &KnobModel,
-            data: &KnobModel,
+            _old_data: &KnobData,
+            data: &KnobData,
             _env: &Env) {
     // println!("{} -> {}", _old_data.value, _data.value);
     (self.callback)(data);
@@ -169,7 +167,7 @@ impl<F> Widget<KnobModel> for Knob<F> where F: Fn(&KnobModel) -> () {
     &mut self,
     _layout_ctx: &mut LayoutCtx,
     bc: &BoxConstraints,
-    _data: &KnobModel,
+    _data: &KnobData,
     _env: &Env,
   ) -> Size {
     // BoxConstraints are passed by the parent widget.
@@ -186,7 +184,7 @@ impl<F> Widget<KnobModel> for Knob<F> where F: Fn(&KnobModel) -> () {
   // Basically, anything that changes the appearance of a widget causes a paint.
   fn paint(&mut self,
            paint_ctx: &mut PaintCtx,
-           data: &KnobModel,
+           data: &KnobData,
            env: &Env) {
 
     // paint_ctx.clear(env.get(theme::WINDOW_BACKGROUND_COLOR));
@@ -205,7 +203,7 @@ impl<F> Widget<KnobModel> for Knob<F> where F: Fn(&KnobModel) -> () {
                     Self::START_ANGLE, Self::END_ANGLE,
                     arc_bg_color, width, false);
 
-    let start_angle = self.value_to_angle(self.start);
+    let start_angle = self.value_to_angle(self.origin);
     let end_angle = self.value_to_angle(data.value);
     let arc_fg_color = env.get(theme::KNOB_VALUE_FG);
     Self::paint_arc(paint_ctx,

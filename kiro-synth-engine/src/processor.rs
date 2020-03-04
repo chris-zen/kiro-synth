@@ -1,12 +1,8 @@
-use heapless::Vec;
-
 use crate::float::Float;
-use crate::key_freqs::KEY_FREQ;
-use crate::program::{MaxSignals, MaxBlocks, Block, Program, SignalRef, ParamRef, ProgramBuilder, ParamBlock};
+use crate::program::{Block, Program, SignalRef, ParamRef, ParamBlock};
 use crate::program::{dca, envgen, expr, filter, osc};
-use crate::synth::{SynthWaveforms, SynthGlobals};
-use crate::signal::{Signal, SignalBus};
-use crate::voice::Voice;
+use crate::synth::SynthGlobals;
+use crate::signal::SignalBus;
 
 #[derive(Debug)]
 pub(crate) enum Processor<F: Float> {
@@ -36,14 +32,14 @@ impl<F: Float> Processor<F> {
 
   pub fn reset(&mut self) {
     match self {
-      Processor::Const(value, signal) => {},
-      Processor::Param(param, signal) => {},
+      Processor::Const(_value, _signal) => {},
+      Processor::Param(_param, _signal) => {},
       Processor::DCA(ref mut proc) => proc.reset(),
       Processor::EG(ref mut proc) => proc.reset(),
       Processor::Expr(ref mut proc) => proc.reset(),
       Processor::Filter(ref mut proc) => proc.reset(),
       Processor::Osc(ref mut proc) => proc.reset(),
-      Processor::Out(ref left, ref right) => {},
+      Processor::Out(ref _left, ref _right) => {},
     }
   }
 

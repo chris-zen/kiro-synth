@@ -14,7 +14,7 @@ pub struct EnvGenParams {
 pub struct OscParams {
   pub shape: ParamBlock,
   pub amplitude: ParamBlock,
-  pub octave: ParamBlock,
+  pub octaves: ParamBlock,
   pub semitones: ParamBlock,
   pub cents: ParamBlock,
 }

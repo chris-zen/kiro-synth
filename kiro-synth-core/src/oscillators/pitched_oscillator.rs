@@ -1,7 +1,7 @@
 use crate::float::Float;
 use crate::oscillators::osc_pitch_shift::OscPitchShift;
 use crate::oscillators::osc_waveform::OscWaveform;
-use num_traits::real::Real;
+
 
 #[derive(Debug)]
 pub struct PitchedOscillator<F: Float> {

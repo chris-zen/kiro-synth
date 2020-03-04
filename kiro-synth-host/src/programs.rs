@@ -75,7 +75,7 @@ impl KiroModule {
       osc1: OscParams {
         shape: program.param("osc1-shape", Self::enum_values(num_shapes)),
         amplitude: program.param("osc1-amplitude", Self::amplitude_values().with_initial_value(F::zero())),
-        octave: program.param("osc1-octave", Self::octave_values()),
+        octaves: program.param("osc1-octaves", Self::octave_values()),
         semitones: program.param("osc1-semitones", Self::semitones_values()),
         cents: program.param("osc1-cents", Self::cents_values()),
       },
@@ -83,7 +83,7 @@ impl KiroModule {
       osc2: OscParams {
         shape: program.param("osc2-shape", Self::enum_values(num_shapes)),
         amplitude: program.param("osc2-amplitude", Self::amplitude_values().with_initial_value(F::zero())),
-        octave: program.param("osc2-octave", Self::octave_values()),
+        octaves: program.param("osc2-octaves", Self::octave_values()),
         semitones: program.param("osc2-semitones", Self::semitones_values()),
         cents: program.param("osc2-cents", Self::cents_values()),
       },
@@ -91,7 +91,7 @@ impl KiroModule {
       osc3: OscParams {
         shape: program.param("osc3-shape", Self::enum_values(num_shapes)),
         amplitude: program.param("osc3-amplitude", Self::amplitude_values()),
-        octave: program.param("osc3-octave", Self::octave_values()),
+        octaves: program.param("osc3-octaves", Self::octave_values()),
         semitones: program.param("osc3-semitones", Self::semitones_values()),
         cents: program.param("osc3-cents", Self::cents_values()),
       },
@@ -99,7 +99,7 @@ impl KiroModule {
       osc4: OscParams {
         shape: program.param("osc4-shape", Self::enum_values(num_shapes)),
         amplitude: program.param("osc4-amplitude", Self::amplitude_values()),
-        octave: program.param("osc4-octave", Self::octave_values()),
+        octaves: program.param("osc4-octaves", Self::octave_values()),
         semitones: program.param("osc4-semitones", Self::semitones_values()),
         cents: program.param("osc4-cents", Self::cents_values()),
       },
@@ -184,7 +184,7 @@ impl KiroModule {
         shape: params.osc3.shape.signal,
         amplitude: params.osc3.amplitude.signal,
         amp_mod: zero,
-        octave: params.osc3.octave.signal,
+        octaves: params.osc3.octaves.signal,
         semitones: params.osc3.semitones.signal,
         cents: params.osc3.cents.signal,
         note_pitch: voice.note_pitch,
@@ -206,7 +206,7 @@ impl KiroModule {
         shape: params.osc4.shape.signal,
         amplitude: params.osc4.amplitude.signal,
         amp_mod: zero,
-        octave: params.osc4.octave.signal,
+        octaves: params.osc4.octaves.signal,
         semitones: params.osc4.semitones.signal,
         cents: params.osc4.cents.signal,
         note_pitch: voice.note_pitch,

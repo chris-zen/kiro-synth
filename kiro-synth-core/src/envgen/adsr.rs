@@ -1,5 +1,4 @@
 use crate::float::Float;
-use num_traits::real::Real;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Mode {

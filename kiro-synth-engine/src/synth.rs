@@ -8,7 +8,7 @@ use kiro_synth_core::oscillators::osc_waveform::OscWaveform;
 use kiro_synth_core::waveforms::saw;
 
 use crate::float::Float;
-use crate::program::{Program, ParamRef};
+use crate::program::Program;
 use crate::voice::Voice;
 use crate::event::{Message, Event};
 use kiro_synth_core::waveforms::sine::Sine;
@@ -141,7 +141,7 @@ impl<'a, F: Float> Synth<'a, F> {
     }
   }
 
-  fn allocate_voice(&mut self, key: u8, velocity: F) -> Option<usize> {
+  fn allocate_voice(&mut self, _key: u8, _velocity: F) -> Option<usize> {
     self.free_voices.pop()
   }
 
