@@ -7,6 +7,22 @@ use crate::ui::knob::KnobData;
 use crate::programs::KiroModule;
 use crate::program::params::{OscParams, EnvGenParams};
 
+pub struct ParamToKnobData;
+
+impl Lens<Param, KnobData> for ParamToKnobData {
+  fn with<V, F: FnOnce(&KnobData) -> V>(&self, data: &Param, f: F) -> V {
+    f(&KnobData::new(data.value, data.modulation))
+  }
+
+  fn with_mut<V, F: FnOnce(&mut KnobData) -> V>(&self, data: &mut Param, f: F) -> V {
+    let mut knob_data = KnobData::new(data.value, data.modulation);
+    let result = f(&mut knob_data);
+    data.value = knob_data.value;
+    // we don't need to copy back the modulation as it is a read-only attribute for the Knob
+    result
+  }
+}
+
 #[derive(Debug, Clone, Data, Lens)]
 pub struct Param {
   #[druid(same_fn = "PartialEq::eq")]
@@ -24,29 +40,13 @@ impl Param {
     let (param_ref, param) = program.get_param(param_ref.into()).unwrap();
     Param {
       param_ref,
-      origin: param.values.min.to_f64().unwrap(), // TODO Add a center equivalent to ParamValues
+      origin: param.values.min.to_f64().unwrap(), // TODO Add an equivalent to origin for ParamValues
       min: param.values.min.to_f64().unwrap(),
       max: param.values.max.to_f64().unwrap(),
       step: param.values.resolution.to_f64().unwrap(),
       value: param.values.initial_value.to_f64().unwrap(),
       modulation: 0.0,
     }
-  }
-}
-
-pub struct ParamToKnobData;
-
-impl Lens<Param, KnobData> for ParamToKnobData {
-  fn with<V, F: FnOnce(&KnobData) -> V>(&self, data: &Param, f: F) -> V {
-    f(&KnobData::new(data.value, data.modulation))
-  }
-
-  fn with_mut<V, F: FnOnce(&mut KnobData) -> V>(&self, data: &mut Param, f: F) -> V {
-    let mut knob_data = KnobData::new(data.value, data.modulation);
-    let result = f(&mut knob_data);
-    data.value = knob_data.value;
-    // we don't need to copy back the modulation as it is a read-only attribute for the Knob
-    result
   }
 }
 
@@ -99,16 +99,16 @@ impl EnvGen {
 }
 
 #[derive(Debug, Clone, Data, Lens)]
-pub struct SynthData {
+pub struct SynthModel {
   pub osc1: Osc,
   pub osc2: Osc,
   pub eg1: EnvGen,
 }
 
-impl SynthData {
+impl SynthModel {
   pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>, module: &KiroModule) -> Self {
     let params = &module.params;
-    SynthData {
+    SynthModel {
       osc1: Osc::new(program, &params.osc3),
       osc2: Osc::new(program, &params.osc4),
       eg1: EnvGen::new(program, &params.eg1),

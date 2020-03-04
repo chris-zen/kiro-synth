@@ -62,7 +62,7 @@ impl<F: Float> SynthGlobals<F> {
 }
 
 pub struct Synth<'a, F: Float> {
-  sample_rate: F,
+  _sample_rate: F,
   events: Consumer<Event<F>>,
   program: Program<'a, F>,
   globals: SynthGlobals<F>,
@@ -86,7 +86,7 @@ impl<'a, F: Float> Synth<'a, F> {
     }
 
     Synth {
-      sample_rate,
+      _sample_rate: sample_rate,
       events,
       program,
       globals,

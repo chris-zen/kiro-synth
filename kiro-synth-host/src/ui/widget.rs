@@ -5,62 +5,62 @@ use druid::widget::{Flex, WidgetExt, Label, Container};
 
 use kiro_synth_core::float::Float;
 
-use crate::ui::model::{SynthData, Osc, EnvGen, ParamToKnobData, Param};
+use crate::ui::model::{SynthModel, Osc, EnvGen, ParamToKnobData, Param};
 use crate::ui::knob::{KnobData, Knob};
 use crate::synth::SynthClient;
 
 
-pub fn build<F: Float + 'static>(data: &SynthData,
-                                 synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<SynthData> {
+pub fn build<F: Float + 'static>(synth_model: &SynthModel,
+                                 synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<SynthModel> {
 
   Flex::column()
     .with_child(
-      build_osc("OSC1", &data.osc1, synth_client.clone())
-              .lens(SynthData::osc1)
+      build_osc("OSC1", &synth_model.osc1, synth_client.clone())
+              .lens(SynthModel::osc1)
               .padding(6.0),
       1.0
     )
     .with_child(
-      build_osc("OSC2", &data.osc2, synth_client.clone())
-              .lens(SynthData::osc2)
+      build_osc("OSC2", &synth_model.osc2, synth_client.clone())
+              .lens(SynthModel::osc2)
               .padding(6.0),
       1.0
     )
     .with_child(
-      build_eg("EG1", &data.eg1, synth_client.clone())
-              .lens(SynthData::eg1)
+      build_eg("EG1", &synth_model.eg1, synth_client.clone())
+              .lens(SynthModel::eg1)
               .padding(6.0),
       1.0
     )
 }
 
 fn build_osc<F: Float + 'static>(title: &str,
-                                 data: &Osc,
+                                 osc_model: &Osc,
                                  synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<Osc> {
 
   build_panel(title, Flex::row()
     .with_child(
-      build_knob("Amplitude", "", &data.amplitude, synth_client.clone())
+      build_knob("Amplitude", "", &osc_model.amplitude, synth_client.clone())
             .lens(Osc::amplitude),
       1.0
     )
     .with_child(
-      build_knob("Shape", "", &data.shape, synth_client.clone())
+      build_knob("Shape", "", &osc_model.shape, synth_client.clone())
             .lens(Osc::shape),
       1.0
     )
     .with_child(
-      build_knob("Octaves", "", &data.octaves, synth_client.clone())
+      build_knob("Octaves", "", &osc_model.octaves, synth_client.clone())
             .lens(Osc::octaves),
       1.0
     )
     .with_child(
-      build_knob("Semitones", "", &data.semitones, synth_client.clone())
+      build_knob("Semitones", "", &osc_model.semitones, synth_client.clone())
             .lens(Osc::semitones),
       1.0
     )
     .with_child(
-      build_knob("Cents", "", &data.cents, synth_client.clone())
+      build_knob("Cents", "", &osc_model.cents, synth_client.clone())
             .lens(Osc::cents),
       1.0
     )
@@ -68,37 +68,37 @@ fn build_osc<F: Float + 'static>(title: &str,
 }
 
 fn build_eg<F: Float + 'static>(title: &str,
-                                data: &EnvGen,
+                                eg_model: &EnvGen,
                                 synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<EnvGen> {
 
   build_panel(title, Flex::row()
       .with_child(
-        build_knob("Attack", " s", &data.attack, synth_client.clone())
+        build_knob("Attack", " s", &eg_model.attack, synth_client.clone())
               .lens(EnvGen::attack),
         1.0
       )
       .with_child(
-        build_knob("Decay", " s", &data.decay, synth_client.clone())
+        build_knob("Decay", " s", &eg_model.decay, synth_client.clone())
               .lens(EnvGen::decay),
         1.0
       )
       .with_child(
-        build_knob("Sustain", " s", &data.sustain, synth_client.clone())
+        build_knob("Sustain", " s", &eg_model.sustain, synth_client.clone())
               .lens(EnvGen::sustain),
         1.0
       )
       .with_child(
-        build_knob("Release", " s", &data.release, synth_client.clone())
+        build_knob("Release", " s", &eg_model.release, synth_client.clone())
               .lens(EnvGen::release),
         1.0
       )
       .with_child(
-        build_knob("Mode", "", &data.mode, synth_client.clone())
+        build_knob("Mode", "", &eg_model.mode, synth_client.clone())
               .lens(EnvGen::mode),
         1.0
       )
       .with_child(
-        build_knob("Intensity", "", &data.dca_intensity, synth_client.clone())
+        build_knob("Intensity", "", &eg_model.dca_intensity, synth_client.clone())
               .lens(EnvGen::dca_intensity),
         1.0
       )

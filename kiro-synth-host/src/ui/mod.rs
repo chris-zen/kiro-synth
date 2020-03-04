@@ -10,15 +10,15 @@ use kiro_synth_core::float::Float;
 
 use crate::synth::SynthClient;
 
-pub use model::SynthData;
+pub use model::SynthModel;
 
 
-pub fn start<F: Float + 'static>(synth_data: SynthData,
+pub fn start<F: Float + 'static>(synth_model: SynthModel,
                                  synth_client: Arc<Mutex<SynthClient<F>>>) {
 
-  let data = synth_data.clone();
+  let data = synth_model.clone();
 
-  let window = WindowDesc::new(move || widget::build(&synth_data, synth_client.clone()))
+  let window = WindowDesc::new(move || widget::build(&synth_model, synth_client.clone()))
       .title(
         LocalizedString::new("custom-widget-demo-window-title")
             .with_placeholder("Kiro Synth")

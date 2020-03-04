@@ -21,7 +21,7 @@ use crate::programs::KiroModule;
 use crate::midi_mapper::MidiMapper;
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::Program;
-use crate::ui::SynthData;
+use crate::ui::SynthModel;
 use std::sync::{Mutex, Arc};
 use crate::synth::SynthClient;
 
@@ -49,7 +49,7 @@ fn main() -> Result<()> {
 
   // UI MODEL
 
-  let synth_data = SynthData::new(&program, &module);
+  let synth_model = SynthModel::new(&program, &module);
 
   // MIDI
 
@@ -68,7 +68,7 @@ fn main() -> Result<()> {
 
   // UI
 
-  ui::start(synth_data, synth_client);
+  ui::start(synth_model, synth_client);
 
   Ok(())
 }
