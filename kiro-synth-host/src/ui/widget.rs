@@ -5,7 +5,7 @@ use druid::widget::{Flex, WidgetExt, Label, Container};
 
 use kiro_synth_core::float::Float;
 
-use crate::ui::model::{SynthModel, Osc, EnvGen, ParamToKnobData, Param};
+use crate::ui::model::{SynthModel, Osc, EnvGen, ParamToKnobData, Param, Filter, Dca};
 use crate::ui::knob::{KnobData, Knob};
 use crate::synth::SynthClient;
 
@@ -30,6 +30,22 @@ pub fn build<F: Float + 'static>(synth_model: &SynthModel,
       build_eg("EG1", &synth_model.eg1, synth_client.clone())
               .lens(SynthModel::eg1)
               .padding(6.0),
+      1.0
+    )
+    .with_child(
+      Flex::row()
+          .with_child(
+            build_filt("FILT1", &synth_model.filt1, synth_client.clone())
+                .lens(SynthModel::filt1)
+                .padding(6.0),
+            1.0
+          )
+          .with_child(
+            build_dca("DCA", &synth_model.dca, synth_client.clone())
+                .lens(SynthModel::dca)
+                .padding(6.0),
+            1.0
+          ),
       1.0
     )
 }
@@ -105,6 +121,47 @@ fn build_eg<F: Float + 'static>(title: &str,
   )
 }
 
+fn build_filt<F: Float + 'static>(title: &str,
+                                  filt_model: &Filter,
+                                  synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<Filter> {
+
+  build_panel(title, Flex::row()
+    .with_child(
+      build_knob("Mode", "", &filt_model.mode, synth_client.clone())
+            .lens(Filter::mode),
+      1.0
+    )
+    .with_child(
+      build_knob("Cutoff", " Hz", &filt_model.freq, synth_client.clone())
+            .lens(Filter::freq),
+      1.0
+    )
+    .with_child(
+      build_knob("Res", "", &filt_model.q, synth_client.clone())
+            .lens(Filter::q),
+      1.0
+    )
+  )
+}
+
+fn build_dca<F: Float + 'static>(title: &str,
+                                 dca_model: &Dca,
+                                 synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<Dca> {
+
+  build_panel(title, Flex::row()
+      .with_child(
+        build_knob("Amplitude", " dB", &dca_model.amplitude, synth_client.clone())
+              .lens(Dca::amplitude),
+        1.0
+      )
+      .with_child(
+        build_knob("Pan", "", &dca_model.pan, synth_client.clone())
+              .lens(Dca::pan),
+        1.0
+      )
+  )
+}
+
 fn build_panel<T: Data>(title: &str, widget: impl Widget<T> + 'static) -> impl Widget<T> {
   let header = Container::new(Label::new(title).padding((8.0, 4.0, 0.0, 2.0)))
       .rounded(4.0)
@@ -126,7 +183,7 @@ fn build_knob<F: Float + 'static>(title: &str,
                                   synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<Param> {
 
   let step = param.step.max(0.001);
-  let precision = (-step.log10().floor()).min(3.0) as usize;
+  let precision = (-step.log10().floor()).max(0.0).min(3.0) as usize;
   let value_label = Label::new(move |data: &KnobData, _env: &_| {
     let value = (data.value / step).round() * step;
     format!("{:.*}{}", precision, value, unit)

@@ -64,7 +64,7 @@ impl<F> Knob<F> where F: Fn(&KnobData) -> () {
       step,
       callback,
 
-      sensitivity: 0.4,
+      sensitivity: 0.6,
       mouse_move: MouseMove { orig_pos: 0.0, orig_value: 0.0 },
     }
   }
@@ -135,8 +135,10 @@ impl<F> Widget<KnobData> for Knob<F> where F: Fn(&KnobData) -> () {
       }
       Event::MouseMoved(mouse) => {
         if ctx.is_active() {
-          let inc = self.sensitivity * (self.mouse_move.orig_pos - mouse.pos.y);
-          let value = (self.mouse_move.orig_value + self.step * inc).max(self.min).min(self.max);
+          let height = ctx.size().height;
+          let offset = self.mouse_move.orig_pos - mouse.pos.y;
+          let value_inc = (self.max - self.min) * (self.sensitivity * offset / height);
+          let value = (self.mouse_move.orig_value + value_inc).max(self.min).min(self.max);
           data.value = (value / self.step).round() * self.step;
           ctx.request_paint();
         }
@@ -216,18 +218,8 @@ impl<F> Widget<KnobData> for Knob<F> where F: Fn(&KnobData) -> () {
     let end_angle = self.value_to_angle(modulated_value);
     let arc_mod_color = env.get(theme::KNOB_MODULATION);
     Self::paint_arc(paint_ctx,
-                    center, radius + 4.0,
+                    center, radius + mod_width,
                     start_angle, end_angle,
                     arc_mod_color, mod_width, false);
   }
 }
-
-// let stroke_color = env.get(theme::BORDER_DARK);
-// let mut path = BezPath::new();
-// path.move_to(Point::new(0.0, half_size.height));
-// path.line_to(Point::new(size.width, half_size.height));
-// paint_ctx.stroke(path, &stroke_color, 1.0);
-// let mut path = BezPath::new();
-// path.move_to(Point::new(half_size.width, 0.0));
-// path.line_to(Point::new(half_size.width, size.height));
-// paint_ctx.stroke(path, &stroke_color, 1.0);

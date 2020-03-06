@@ -5,7 +5,7 @@ use kiro_synth_engine::program::{ParamRef, Program};
 
 use crate::ui::knob::KnobData;
 use crate::programs::KiroModule;
-use crate::program::params::{OscParams, EnvGenParams};
+use crate::program::params::{OscParams, EnvGenParams, FilterParams, DcaParams};
 
 pub struct ParamToKnobData;
 
@@ -46,6 +46,13 @@ impl Param {
       step: param.values.resolution.to_f64().unwrap(),
       value: param.values.initial_value.to_f64().unwrap(),
       modulation: 0.0,
+    }
+  }
+
+  pub fn with_origin(self, origin: f64) -> Self {
+    Param {
+      origin,
+      .. self
     }
   }
 }
@@ -99,10 +106,44 @@ impl EnvGen {
 }
 
 #[derive(Debug, Clone, Data, Lens)]
+pub struct Filter {
+  pub mode: Param,
+  pub freq: Param,
+  pub q: Param,
+}
+
+impl Filter {
+  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>, params: &FilterParams) -> Self {
+    Filter {
+      mode: Param::new(program, &params.mode),
+      freq: Param::new(program, &params.freq),
+      q: Param::new(program, &params.q),
+    }
+  }
+}
+
+#[derive(Debug, Clone, Data, Lens)]
+pub struct Dca {
+  pub amplitude: Param,
+  pub pan: Param,
+}
+
+impl Dca {
+  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>, params: &DcaParams) -> Self {
+    Dca {
+      amplitude: Param::new(program, &params.amplitude),
+      pan: Param::new(program, &params.pan).with_origin(0.0),
+    }
+  }
+}
+
+#[derive(Debug, Clone, Data, Lens)]
 pub struct SynthModel {
   pub osc1: Osc,
   pub osc2: Osc,
   pub eg1: EnvGen,
+  pub filt1: Filter,
+  pub dca: Dca,
 }
 
 impl SynthModel {
@@ -112,6 +153,8 @@ impl SynthModel {
       osc1: Osc::new(program, &params.osc3),
       osc2: Osc::new(program, &params.osc4),
       eg1: EnvGen::new(program, &params.eg1),
+      filt1: Filter::new(program, &params.filt1),
+      dca: Dca::new(program, &params.dca),
     }
   }
 }

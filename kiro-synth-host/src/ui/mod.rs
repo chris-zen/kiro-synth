@@ -23,7 +23,7 @@ pub fn start<F: Float + 'static>(synth_model: SynthModel,
         LocalizedString::new("custom-widget-demo-window-title")
             .with_placeholder("Kiro Synth")
       )
-      .window_size((480.0, 440.0));
+      .window_size((480.0, 560.0));
 
   AppLauncher::with_window(window)
       .configure_env(|env, _data| knob::theme::init(env))
