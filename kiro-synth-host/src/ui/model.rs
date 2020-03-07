@@ -71,9 +71,9 @@ impl Osc {
     Osc {
       amplitude: Param::new(program, &params.amplitude),
       shape: Param::new(program, &params.shape),
-      octaves: Param::new(program, &params.octaves),
-      semitones: Param::new(program, &params.semitones),
-      cents: Param::new(program, &params.cents),
+      octaves: Param::new(program, &params.octaves).with_origin(0.0),
+      semitones: Param::new(program, &params.semitones).with_origin(0.0),
+      cents: Param::new(program, &params.cents).with_origin(0.0),
     }
   }
 }

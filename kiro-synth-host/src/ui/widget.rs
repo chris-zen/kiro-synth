@@ -99,7 +99,7 @@ fn build_eg<F: Float + 'static>(title: &str,
         1.0
       )
       .with_child(
-        build_knob("Sustain", " s", &eg_model.sustain, synth_client.clone())
+        build_knob("Sustain", "", &eg_model.sustain, synth_client.clone())
               .lens(EnvGen::sustain),
         1.0
       )
