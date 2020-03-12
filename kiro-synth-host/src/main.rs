@@ -1,28 +1,25 @@
 mod audio;
 mod midi;
 mod program;
-mod programs;
-mod midi_mapper;
 mod synth;
 mod ui;
 
-use anyhow::Result;
+use std::sync::{Mutex, Arc};
 
+use anyhow::Result;
 use ringbuf::RingBuffer;
 
+use kiro_synth_core::float::Float;
 use kiro_synth_midi::messages::Message as MidiMessage;
-
 use kiro_synth_engine::synth::{Synth, SynthGlobals};
 use kiro_synth_engine::event::Event;
+use kiro_synth_engine::program::Program;
 
 use crate::audio::{AudioDriver, AudioHandler};
-use crate::midi::{MidiDriver, MidiHandler};
-use crate::programs::KiroModule;
-use crate::midi_mapper::MidiMapper;
-use kiro_synth_core::float::Float;
-use kiro_synth_engine::program::Program;
+use crate::midi::drivers::{MidiDriver, MidiHandler};
+use crate::program::kiro::KiroModule;
+use crate::midi::mapper::MidiMapper;
 use crate::ui::SynthModel;
-use std::sync::{Mutex, Arc};
 use crate::synth::SynthClient;
 
 const SAMPLE_RATE: u32 = 44100;

@@ -4,17 +4,15 @@ use typenum::marker_traits::Unsigned;
 use ringbuf::Consumer;
 use core::ops::Index;
 
-use kiro_synth_core::oscillators::osc_waveform::OscWaveform;
 use kiro_synth_core::waveforms::saw_blep;
+use kiro_synth_core::waveforms::sine_parabolic::SineParabolic;
+use kiro_synth_core::waveforms::triangle_dpw2x::TriangleDpw2x;
+use kiro_synth_core::oscillators::osc_waveform::OscWaveform;
 
 use crate::float::Float;
 use crate::program::Program;
 use crate::voice::Voice;
 use crate::event::{Message, Event};
-use kiro_synth_core::waveforms::sine_parabolic::SineParabolic;
-use kiro_synth_core::waveforms::triangle_dpw2x::TriangleDpw2x;
-use kiro_synth_core::waveforms::triangle_trivial::TriangleTrivial;
-use kiro_synth_core::waveforms::saw_trivial::SawTrivial;
 
 type MaxWaveforms = consts::U8;
 type MaxVoices = consts::U32;

@@ -6,7 +6,7 @@ use coremidi::{Client, InputPort, PacketList, Sources};
 use kiro_synth_midi::decoder::{CallbackResult, Decoder, DecoderCallbacks};
 use kiro_synth_midi::messages::Message;
 
-use crate::midi::{MidiError, MidiHandler};
+use crate::midi::drivers::{MidiError, MidiHandler};
 
 #[derive(Error, Debug)]
 #[error("CoreMidi returned OSStatus: {0}")]
