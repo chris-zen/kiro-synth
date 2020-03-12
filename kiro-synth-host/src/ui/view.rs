@@ -6,7 +6,7 @@ use druid::widget::{Flex, WidgetExt, Label, Container};
 use kiro_synth_core::float::Float;
 
 use crate::ui::model::{SynthModel, Osc, EnvGen, ParamToKnobData, Param, Filter, Dca};
-use crate::ui::knob::{KnobData, Knob};
+use crate::ui::widgets::knob::{KnobData, Knob};
 use crate::synth::SynthClient;
 
 

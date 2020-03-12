@@ -3,7 +3,7 @@ use druid::{Data, Lens};
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::{ParamRef, Program};
 
-use crate::ui::knob::KnobData;
+use crate::ui::widgets::knob::KnobData;
 use crate::programs::KiroModule;
 use crate::program::params::{OscParams, EnvGenParams, FilterParams, DcaParams};
 

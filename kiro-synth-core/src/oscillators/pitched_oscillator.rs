@@ -1,54 +1,50 @@
 use crate::float::Float;
 use crate::oscillators::osc_pitch_shift::OscPitchShift;
 use crate::oscillators::osc_waveform::OscWaveform;
+use crate::oscillators::clamp_modulo;
 
 
 #[derive(Debug)]
 pub struct PitchedOscillator<F: Float> {
-  inv_sample_rate: F,
   waveform: OscWaveform<F>,
   pitch_freq: F,
   pitch_shift: OscPitchShift<F>,
+  amplitude: F,
+  amp_mod: F,
+
   modulo: F,
   phase_inc: F,
   phase_inc_invalidated: bool,
-  amplitude: F,
-  amp_mod: F,
+  inv_sample_rate: F,
 }
 
-// TODO follow an invalidation strategy for setters
-impl<F> PitchedOscillator<F>
-where
-  F: Float,
-{
+impl<F: Float> PitchedOscillator<F> {
+
+  // FIXME do not require the waveform (and maybe the pitch_freq) in the constructor
   pub fn new(sample_rate: F, waveform: OscWaveform<F>, pitch_freq: F) -> Self {
     let pitch_shift = OscPitchShift::default();
     let modulo = waveform.initial_modulo();
 
     PitchedOscillator {
-      inv_sample_rate: sample_rate.recip(),
       waveform,
       pitch_freq,
       pitch_shift,
+      amplitude: F::one(),
+      amp_mod: F::zero(),
+
       modulo,
       phase_inc: F::zero(),
       phase_inc_invalidated: true,
-      amplitude: F::one(),
-      amp_mod: F::zero(),
+      inv_sample_rate: sample_rate.recip(),
     }
-  }
-
-  /// Set the sample rate
-  pub fn set_sample_rate(&mut self, sample_rate: F) {
-    self.inv_sample_rate = sample_rate.recip();
-    self.phase_inc_invalidated = true;
   }
 
   /// Set the waveform
   pub fn set_waveform(&mut self, waveform: OscWaveform<F>) {
     self.waveform = waveform;
     self.modulo = self.waveform.initial_modulo();
-    self.phase_inc_invalidated = true; // TODO really necessary ???
+    // FIXME figure out how to avoid clips after changing the waveform and the module
+    // self.phase_inc_invalidated = true; // TODO really necessary ???
   }
 
   /// Set the pitch frequency
@@ -97,28 +93,30 @@ where
     self.amp_mod = amp_mod;
   }
 
+  /// Set the sample rate
+  pub fn set_sample_rate(&mut self, sample_rate: F) {
+    self.inv_sample_rate = sample_rate.recip();
+    self.phase_inc_invalidated = true;
+  }
+
+  // Reset the oscillator
+  pub fn reset(&mut self) {
+    self.modulo = self.waveform.initial_modulo();
+  }
+
   /// Generate the next value
   pub fn generate(&mut self) -> F {
     if self.phase_inc_invalidated {
       self.update_phase_inc();
     }
 
-    let wf = self.waveform.generate(self.modulo, self.phase_inc);
-    self.update_modulo();
-    wf * self.amplitude + self.amp_mod
+    let signal = self.waveform.generate(self.modulo, self.phase_inc);
+    self.modulo = clamp_modulo(self.modulo + self.phase_inc);
+    signal * self.amplitude + self.amp_mod
   }
 
   fn update_phase_inc(&mut self) {
     let freq = self.pitch_freq * self.pitch_shift.multiplier();
     self.phase_inc = freq * self.inv_sample_rate;
-  }
-
-  fn update_modulo(&mut self) {
-    self.modulo = self.modulo + self.phase_inc;
-    if self.modulo < F::zero() {
-      self.modulo = self.modulo + F::one();
-    } else if self.modulo >= F::one() {
-      self.modulo = self.modulo - F::one();
-    }
   }
 }

@@ -1,10 +1,10 @@
 use kiro_synth_core::oscillators::pitched_oscillator::PitchedOscillator;
+use kiro_synth_core::oscillators::osc_waveform::OscWaveform;
 
 use crate::float::Float;
 use crate::program::{SignalRef, Program};
 use crate::synth::SynthGlobals;
 use crate::signal::SignalBus;
-use kiro_synth_core::oscillators::osc_waveform::OscWaveform;
 
 
 #[derive(Debug, Clone)]

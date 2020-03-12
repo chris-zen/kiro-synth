@@ -1,6 +1,6 @@
-pub mod knob;
+pub mod widgets;
 mod model;
-mod widget;
+mod view;
 
 use std::sync::{Arc, Mutex};
 
@@ -18,7 +18,7 @@ pub fn start<F: Float + 'static>(synth_model: SynthModel,
 
   let data = synth_model.clone();
 
-  let window = WindowDesc::new(move || widget::build(&synth_model, synth_client.clone()))
+  let window = WindowDesc::new(move || view::build(&synth_model, synth_client.clone()))
       .title(
         LocalizedString::new("custom-widget-demo-window-title")
             .with_placeholder("Kiro Synth")
@@ -26,7 +26,7 @@ pub fn start<F: Float + 'static>(synth_model: SynthModel,
       .window_size((480.0, 560.0));
 
   AppLauncher::with_window(window)
-      .configure_env(|env, _data| knob::theme::init(env))
+      .configure_env(|env, _data| widgets::knob::theme::init(env))
       .use_simple_logger()
       .launch(data)
       .expect("UI launch failed");

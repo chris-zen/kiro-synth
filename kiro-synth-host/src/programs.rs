@@ -367,7 +367,7 @@ impl KiroModule {
 
   fn filt_q_values<F: Float>() -> ParamValues<F> {
     ParamValues {
-      initial_value: F::val(0.01),
+      initial_value: F::val(0.5),
       min: F::zero(),
       max: F::one(),
       resolution: F::val(0.01),

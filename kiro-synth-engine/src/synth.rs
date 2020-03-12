@@ -5,13 +5,16 @@ use ringbuf::Consumer;
 use core::ops::Index;
 
 use kiro_synth_core::oscillators::osc_waveform::OscWaveform;
-use kiro_synth_core::waveforms::saw;
+use kiro_synth_core::waveforms::saw_blep;
 
 use crate::float::Float;
 use crate::program::Program;
 use crate::voice::Voice;
 use crate::event::{Message, Event};
-use kiro_synth_core::waveforms::sine::Sine;
+use kiro_synth_core::waveforms::sine_parabolic::SineParabolic;
+use kiro_synth_core::waveforms::triangle_dpw2x::TriangleDpw2x;
+use kiro_synth_core::waveforms::triangle_trivial::TriangleTrivial;
+use kiro_synth_core::waveforms::saw_trivial::SawTrivial;
 
 type MaxWaveforms = consts::U8;
 type MaxVoices = consts::U32;
@@ -22,17 +25,13 @@ pub struct SynthWaveforms<F: Float>(Vec<OscWaveform<F>, MaxWaveforms>);
 impl<F: Float> SynthWaveforms<F> {
   pub fn new() -> Self {
     let mut waveforms: Vec<OscWaveform<F>, MaxWaveforms> = heapless::Vec::new();
-    drop(waveforms.push(OscWaveform::Sine(Sine)));
-    drop(waveforms.push(OscWaveform::Saw(saw::Saw::new(
-      saw::Mode::Bipolar,
-      saw::Correction::EightPointBlepWithInterpolation,
-      saw::Saw::default_saturation()
-    ))));
-    drop(waveforms.push(OscWaveform::Saw(saw::Saw::new(
-      saw::Mode::Unipolar,
-      saw::Correction::TwoPointBlepWithInterpolation,
-      saw::Saw::default_saturation()
-    ))));
+    drop(waveforms.extend_from_slice(&[
+      OscWaveform::SineParabolic(SineParabolic),
+      OscWaveform::TriangleDpw2x(TriangleDpw2x::default()),
+      OscWaveform::SawBlep(saw_blep::SawBlep::default()
+          .with_mode(saw_blep::Mode::Bipolar)
+          .with_correction(saw_blep::Correction::EightPointBlepWithInterpolation)),
+    ]));
     SynthWaveforms(waveforms)
   }
 
