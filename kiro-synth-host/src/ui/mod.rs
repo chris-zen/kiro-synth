@@ -32,9 +32,18 @@ pub fn start<F: Float + 'static>(synth_model: SynthModel,
       .expect("UI launch failed");
 }
 
+pub const ORANGE: Color = Color::rgb8(236, 138, 56);
+pub const GREY_46: Color = Color::grey8(46);
+pub const GREY_65: Color = Color::grey8(65);
+pub const GREY_83: Color = Color::grey8(83);
+pub const GREY_214: Color = Color::grey8(214);
+
 fn setup_theme(env: &mut Env, _data: &SynthModel) {
   widgets::knob::theme::init(env);
 
-  env.set(theme::WINDOW_BACKGROUND_COLOR, Color::grey8(46));
+  env.set(theme::WINDOW_BACKGROUND_COLOR, GREY_46);
   env.set(theme::TEXT_SIZE_NORMAL, 11.0);
+  env.set(theme::LABEL_COLOR, GREY_214);
+  env.set(widgets::knob::theme::KNOB_VALUE_FG, ORANGE);
+  env.set(widgets::knob::theme::KNOB_VALUE_BG, GREY_83);
 }

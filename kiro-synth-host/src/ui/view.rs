@@ -8,6 +8,7 @@ use kiro_synth_core::float::Float;
 use crate::synth::SynthClient;
 use crate::ui::model::{SynthModel, Osc, EnvGen, ParamToKnobData, Param, Filter, Dca};
 use crate::ui::widgets::knob::{KnobData, Knob};
+use crate::ui::GREY_83;
 
 
 pub fn build<F: Float + 'static>(synth_model: &SynthModel,
@@ -166,14 +167,16 @@ fn build_dca<F: Float + 'static>(title: &str,
 }
 
 fn build_panel<T: Data>(title: &str, widget: impl Widget<T> + 'static) -> impl Widget<T> {
-  let header = Container::new(Label::new(title).padding((8.0, 4.0, 0.0, 2.0)))
-      .rounded(4.0)
-      // .background(Color::WHITE)
-      .border(Color::WHITE, 1.0);
+  let header = Container::new(
+    Label::new(title)
+        .padding((6.0, 2.0, 2.0, 0.0))
+        .background(GREY_83)
+        .border(GREY_83, 2.0)
+  );
 
   let body = Container::new(widget.padding(6.0))
-      .rounded(4.0)
-      .border(Color::WHITE, 1.0);
+      // .rounded(4.0)
+      .border(GREY_83, 2.0);
 
   Flex::column()
       .with_child(header, 0.0)
@@ -215,11 +218,7 @@ fn build_knob<F: Float + 'static>(title: &'static str,
 
   Flex::column()
     .with_child(Label::new(title).center(), 0.0)
-    .with_child(
-      Knob::new(param.origin, param.min, param.max, param.step, callback)
-              .fix_size(48.0, 48.0),
-      0.0
-    )
+    .with_child(Knob::new(param.origin, param.min, param.max, param.step, callback).fix_size(48.0, 48.0).center(),0.0)
     .with_child(Label::new(move |data: &KnobData, _env: &Env| value_fn(data)).center(), 0.0)
     .lens(ParamToKnobData)
 }

@@ -96,15 +96,25 @@ impl<F> Knob<F> where F: Fn(&KnobData) -> () {
     let mut arc_curve = BezPath::from_vec(arc.append_iter(1e-12).collect());
 
     if line_to_center {
+      let angle_from = start_angle + FRAC_PI_2;
+      let p_from = Point::new(
+        center.x + radius * angle_from.cos(),
+        center.y + radius * angle_from.sin(),
+      );
+
+      let angle_to = end_angle + FRAC_PI_2;
+      let radius_to = radius * 0.30;
+      let p_to = Point::new(
+        center.x + radius_to * angle_to.cos(),
+        center.y + radius_to * angle_to.sin(),
+      );
+      // let p_to = center;
+
       if sweep_angle.abs() <= EPSILON {
-        let angle = start_angle + FRAC_PI_2;
-        let p = Point::new(
-          center.x + radius * angle.cos(),
-          center.y + radius * angle.sin(),
-        );
-        arc_curve.move_to(p);
+        arc_curve.move_to(p_from);
       }
-      arc_curve.line_to(center);
+
+      arc_curve.line_to(p_to);
     }
 
     paint_ctx.stroke(arc_curve, &color, width);
