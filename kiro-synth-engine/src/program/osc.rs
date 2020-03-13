@@ -56,7 +56,9 @@ impl<F: Float> Processor<F> {
       octaves: octave, semitones, cents,
                  note_pitch, pitch_bend, freq_mod } = inputs;
 
-    signals[shape].if_updated(|value| self.osc.set_waveform(synth_globals.waveforms[value.to_usize().unwrap()].clone()));
+    signals[shape].if_updated(|value| {
+      self.osc.set_waveform(synth_globals.waveforms.waveform(value.to_usize().unwrap()).clone())
+    });
     signals[amplitude].if_updated(|value| self.osc.set_amplitude(value));
     signals[amp_mod].if_updated(|value| self.osc.set_amplitude_modulation(value));
     signals[octave].if_updated(|value| self.osc.set_octaves(value));

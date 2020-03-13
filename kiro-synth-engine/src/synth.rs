@@ -2,7 +2,6 @@ use heapless::Vec;
 use heapless::consts;
 use typenum::marker_traits::Unsigned;
 use ringbuf::Consumer;
-use core::ops::Index;
 
 use kiro_synth_core::waveforms::saw_blep;
 use kiro_synth_core::waveforms::sine_parabolic::SineParabolic;
@@ -18,17 +17,17 @@ type MaxWaveforms = consts::U8;
 type MaxVoices = consts::U32;
 
 #[derive(Debug, Clone)]
-pub struct SynthWaveforms<F: Float>(Vec<OscWaveform<F>, MaxWaveforms>);
+pub struct SynthWaveforms<F: Float>(Vec<(&'static str, OscWaveform<F>), MaxWaveforms>);
 
 impl<F: Float> SynthWaveforms<F> {
   pub fn new() -> Self {
-    let mut waveforms: Vec<OscWaveform<F>, MaxWaveforms> = heapless::Vec::new();
+    let mut waveforms: Vec<(&'static str, OscWaveform<F>), MaxWaveforms> = heapless::Vec::new();
     drop(waveforms.extend_from_slice(&[
-      OscWaveform::SineParabolic(SineParabolic),
-      OscWaveform::TriangleDpw2x(TriangleDpw2x::default()),
-      OscWaveform::SawBlep(saw_blep::SawBlep::default()
+      ("sin", OscWaveform::SineParabolic(SineParabolic)),
+      ("tri", OscWaveform::TriangleDpw2x(TriangleDpw2x::default())),
+      ("saw", OscWaveform::SawBlep(saw_blep::SawBlep::default()
           .with_mode(saw_blep::Mode::Bipolar)
-          .with_correction(saw_blep::Correction::EightPointBlepWithInterpolation)),
+          .with_correction(saw_blep::Correction::EightPointBlepWithInterpolation))),
     ]));
     SynthWaveforms(waveforms)
   }
@@ -36,16 +35,17 @@ impl<F: Float> SynthWaveforms<F> {
   pub fn len(&self) -> usize {
     self.0.len()
   }
-}
 
-impl<F: Float> Index<usize> for SynthWaveforms<F> {
-  type Output = OscWaveform<F>;
+  pub fn name(&self, index: usize) -> &'static str {
+    self.0[index].0
+  }
 
-  fn index(&self, index: usize) -> &Self::Output {
-    &self.0[index]
+  pub fn waveform(&self, index: usize) -> &OscWaveform<F> {
+    &self.0[index].1
   }
 }
 
+#[derive(Debug, Clone)]
 pub struct SynthGlobals<F: Float> {
   pub waveforms: SynthWaveforms<F>,
 }

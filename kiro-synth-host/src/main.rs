@@ -38,7 +38,7 @@ fn main() -> Result<()> {
 
   let events_ring_buffer = RingBuffer::<Event<f32>>::new(1024);
   let (events_producer, events_consumer) = events_ring_buffer.split();
-  let synth_client = Arc::new(Mutex::new(SynthClient::new(events_producer)));
+  let synth_client = Arc::new(Mutex::new(SynthClient::new(synth_globals.clone(), events_producer)));
 
   // PROGRAM
 

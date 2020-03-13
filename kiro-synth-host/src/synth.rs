@@ -3,16 +3,23 @@ use ringbuf::Producer;
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::event::{Event, Message};
 use kiro_synth_engine::program::ParamRef;
+use kiro_synth_engine::synth::{SynthGlobals, SynthWaveforms};
 
 pub struct SynthClient<F: Float> {
+  globals: SynthGlobals<F>,
   events: Producer<Event<F>>,
 }
 
 impl<F: Float> SynthClient<F> {
-  pub fn new(events: Producer<Event<F>>) -> Self {
+  pub fn new(globals: SynthGlobals<F>, events: Producer<Event<F>>) -> Self {
     SynthClient {
+      globals,
       events
     }
+  }
+
+  pub fn waveforms(&self) -> &SynthWaveforms<F> {
+    &self.globals.waveforms
   }
 
   pub fn send_event(&mut self, event: Event<F>) {
