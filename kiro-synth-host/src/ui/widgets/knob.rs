@@ -171,7 +171,7 @@ impl<F> Widget<KnobData> for Knob<F> where F: Fn(&KnobData) -> () {
             _old_data: &KnobData,
             data: &KnobData,
             _env: &Env) {
-    // println!("{} -> {}", _old_data.value, _data.value);
+    // println!("{} -> {}", _old_data.value, data.value);
     (self.callback)(data);
   }
 

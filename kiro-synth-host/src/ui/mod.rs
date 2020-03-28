@@ -33,8 +33,11 @@ pub fn start<F: Float + 'static>(synth_model: SynthModel,
 }
 
 pub const ORANGE: Color = Color::rgb8(236, 138, 56);
+// pub const GREY_23: Color = Color::grey8(23);
 pub const GREY_46: Color = Color::grey8(46);
+// pub const GREY_54: Color = Color::grey8(54);
 pub const GREY_65: Color = Color::grey8(65);
+pub const GREY_74: Color = Color::grey8(74);
 pub const GREY_83: Color = Color::grey8(83);
 pub const GREY_214: Color = Color::grey8(214);
 
