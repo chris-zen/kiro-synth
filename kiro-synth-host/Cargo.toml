@@ -17,7 +17,10 @@ heapless = "0.5.2"
 
 cpal = { git = "https://github.com/RustAudio/cpal", branch = "master" }
 
-druid = { git = "https://github.com/xi-editor/druid", branch = "master" }
+# Updating druid v0.6.0 (https://github.com/xi-editor/druid#b5dcedf0) -> #342264d1
+# Updating druid v0.6.0 (https://github.com/xi-editor/druid#342264d1) -> #780fa885
+druid = { git = "https://github.com/xi-editor/druid", branch = "master", features = ["im"] }
+#druid = { path = "../../druid/druid" }
 
 kiro-synth-core = { path = "../kiro-synth-core" }
 kiro-synth-midi = { path = "../kiro-synth-midi" }

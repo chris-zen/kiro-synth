@@ -4,7 +4,7 @@ mod view;
 
 use std::sync::{Arc, Mutex};
 
-use druid::{WindowDesc, LocalizedString, AppLauncher, Env, theme, Color};
+use druid::{WindowDesc, LocalizedString, AppLauncher, Env, theme, Color, Data};
 
 use kiro_synth_core::float::Float;
 
@@ -23,7 +23,7 @@ pub fn start<F: Float + 'static>(synth_model: SynthModel,
         LocalizedString::new("custom-widget-demo-window-title")
             .with_placeholder("Kiro Synth")
       )
-      .window_size((340.0, 480.0));
+      .window_size((480.0, 454.0));
 
   AppLauncher::with_window(window)
       .configure_env(setup_theme)
@@ -41,7 +41,7 @@ pub const GREY_74: Color = Color::grey8(74);
 pub const GREY_83: Color = Color::grey8(83);
 pub const GREY_214: Color = Color::grey8(214);
 
-fn setup_theme(env: &mut Env, _data: &SynthModel) {
+fn setup_theme<T: Data>(env: &mut Env, _data: &T) {
   widgets::knob::theme::init(env);
 
   env.set(theme::WINDOW_BACKGROUND_COLOR, GREY_46);

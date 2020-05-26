@@ -94,6 +94,24 @@ pub fn cents<F: Float>() -> ParamValues<F> {
   }
 }
 
+pub fn lfo_rate<F: Float>() -> ParamValues<F> {
+  ParamValues {
+    initial_value: F::one(),
+    min: F::zero(),
+    max: F::val(20.0),
+    resolution: F::val(0.01),
+  }
+}
+
+pub fn lfo_phase<F: Float>() -> ParamValues<F> {
+  ParamValues {
+    initial_value: F::zero(),
+    min: F::zero(),
+    max: F::one(),
+    resolution: F::val(1.0 / 8.0),
+  }
+}
+
 pub fn filt_freq<F: Float>() -> ParamValues<F> {
   ParamValues {
     initial_value: FreqControl::default_frequency(),
@@ -121,11 +139,47 @@ pub fn pan<F: Float>() -> ParamValues<F> {
   }
 }
 
-pub fn intensity<F: Float>() -> ParamValues<F> {
+pub fn eg1_dca_amp_mod<F: Float>() -> ParamValues<F> {
   ParamValues {
     initial_value: F::one(),
     min: F::zero(),
     max: F::val(4.0),
+    resolution: F::val(0.01),
+  }
+}
+
+pub fn lfo_osc_pitch_mod<F: Float>() -> ParamValues<F> {
+  ParamValues {
+    initial_value: F::zero(),
+    min: F::one().neg(),
+    max: F::one(),
+    resolution: F::val(0.01),
+  }
+}
+
+pub fn lfo_filt_cutoff_mod<F: Float>() -> ParamValues<F> {
+  ParamValues {
+    initial_value: F::zero(),
+    min: F::one().neg(),
+    max: F::one(),
+    resolution: F::val(0.01),
+  }
+}
+
+pub fn lfo_dca_amp_mod<F: Float>() -> ParamValues<F> {
+  ParamValues {
+    initial_value: F::val(0.0),
+    min: F::zero(),
+    max: F::val(24.0),
+    resolution: F::val(0.1),
+  }
+}
+
+pub fn lfo_dca_pan_mod<F: Float>() -> ParamValues<F> {
+  ParamValues {
+    initial_value: F::zero(),
+    min: F::zero(),
+    max: F::one(),
     resolution: F::val(0.01),
   }
 }

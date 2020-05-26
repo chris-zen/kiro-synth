@@ -1,9 +1,9 @@
 use core::f64::consts::{PI, FRAC_PI_2};
-use core::f64::EPSILON;
 
-use druid::kurbo::{BezPath, Arc};
+use druid::kurbo::{Arc, Shape};
 use druid::{Widget, BoxConstraints, Color, Env, Event, Data, Size, Point, Vec2,
             LifeCycle, EventCtx, LayoutCtx, LifeCycleCtx, PaintCtx, RenderContext, UpdateCtx};
+use std::marker::PhantomData;
 
 pub mod theme {
   use druid::{Key, Color, Env};
@@ -20,15 +20,25 @@ pub mod theme {
   }
 }
 
+const ARC_TOLERANCE: f64 = 0.1;
+
 #[derive(Debug, Clone, Data)]
 pub struct KnobData {
+  pub origin: f64,
+  pub min: f64,
+  pub max: f64,
+  pub step: f64,
   pub value: f64,
   pub modulation: f64,
 }
 
 impl KnobData {
-  pub fn new(value: f64, modulation: f64) -> Self {
+  pub fn new(origin: f64, min: f64, max: f64, step: f64, value: f64, modulation: f64) -> Self {
     KnobData {
+      origin,
+      min,
+      max,
+      step,
       value,
       modulation,
     }
@@ -40,38 +50,37 @@ struct MouseMove {
   orig_value: f64,
 }
 
-pub struct Knob<F> where F: Fn(&KnobData) -> () {
-  origin: f64,
-  min: f64,
-  max: f64,
-  step: f64,
-  callback: F,
-  // unit, ...
+pub struct Knob<D, CF>
+  where
+      D: Data,
+      CF: Fn(&D, &KnobData) -> () {
 
+  callback: CF,
   sensitivity: f64,
   mouse_move: MouseMove,
+  _phantom: PhantomData<D>,
 }
 
-impl<F> Knob<F> where F: Fn(&KnobData) -> () {
+impl<D, CF> Knob<D, CF>
+  where
+      D: Data,
+      CF: Fn(&D, &KnobData) -> () {
+  
   const START_ANGLE: f64 = 2.0 * PI * (20.0 / 360.0);
   const END_ANGLE: f64 = 2.0 * PI * (340.0 / 360.0);
 
-  pub fn new(origin: f64, min: f64, max: f64, step: f64, callback: F) -> Self {
+  pub fn new(callback: CF) -> Self {
     Knob {
-      origin,
-      min,
-      max,
-      step,
       callback,
-
       sensitivity: 0.6,
       mouse_move: MouseMove { orig_pos: 0.0, orig_value: 0.0 },
+      _phantom: PhantomData,
     }
   }
 
-  fn value_to_angle(&self, value: f64) -> f64 {
-    let range = self.max - self.min;
-    Self::START_ANGLE + (Self::END_ANGLE - Self::START_ANGLE) * (value - self.min) / range
+  fn value_to_angle(&self, value: f64, min: f64, max: f64) -> f64 {
+    let range = max - min;
+    Self::START_ANGLE + (Self::END_ANGLE - Self::START_ANGLE) * (value - min) / range
   }
 
   fn paint_arc(paint_ctx: &mut PaintCtx,
@@ -93,27 +102,15 @@ impl<F> Knob<F> where F: Fn(&KnobData) -> () {
       x_rotation: FRAC_PI_2,
     };
 
-    let mut arc_curve = BezPath::from_vec(arc.append_iter(1e-12).collect());
+    let mut arc_curve = arc.into_bez_path(ARC_TOLERANCE);
 
     if line_to_center {
-      let angle_from = start_angle + FRAC_PI_2;
-      let p_from = Point::new(
-        center.x + radius * angle_from.cos(),
-        center.y + radius * angle_from.sin(),
-      );
-
       let angle_to = end_angle + FRAC_PI_2;
       let radius_to = radius * 0.30;
       let p_to = Point::new(
         center.x + radius_to * angle_to.cos(),
         center.y + radius_to * angle_to.sin(),
       );
-      // let p_to = center;
-
-      if sweep_angle.abs() <= EPSILON {
-        arc_curve.move_to(p_from);
-      }
-
       arc_curve.line_to(p_to);
     }
 
@@ -121,13 +118,21 @@ impl<F> Knob<F> where F: Fn(&KnobData) -> () {
   }
 }
 
-impl<F> Widget<KnobData> for Knob<F> where F: Fn(&KnobData) -> () {
+impl<D, CF> Widget<(D, KnobData)> for Knob<D, CF>
+  where
+      D: Data,
+      CF: Fn(&D, &KnobData) -> () {
+  
   fn event(&mut self,
            ctx: &mut EventCtx,
            event: &Event,
-           data: &mut KnobData,
+           data: &mut (D, KnobData),
            _env: &Env) {
 
+    // println!("event {:?}: {:#?}", self.id(), event);
+
+    let data = &mut data.1;
+    
     match event {
       Event::MouseDown(mouse) => {
         ctx.set_active(true);
@@ -143,13 +148,13 @@ impl<F> Widget<KnobData> for Knob<F> where F: Fn(&KnobData) -> () {
           ctx.request_paint();
         }
       }
-      Event::MouseMoved(mouse) => {
+      Event::MouseMove(mouse) => {
         if ctx.is_active() {
           let height = ctx.size().height;
           let offset = self.mouse_move.orig_pos - mouse.pos.y;
-          let value_inc = (self.max - self.min) * (self.sensitivity * offset / height);
-          let value = (self.mouse_move.orig_value + value_inc).max(self.min).min(self.max);
-          data.value = (value / self.step).round() * self.step;
+          let value_inc = (data.max - data.min) * (self.sensitivity * offset / height);
+          let value = (self.mouse_move.orig_value + value_inc).max(data.min).min(data.max);
+          data.value = (value / data.step).round() * data.step;
           ctx.request_paint();
         }
       }
@@ -161,27 +166,30 @@ impl<F> Widget<KnobData> for Knob<F> where F: Fn(&KnobData) -> () {
     &mut self,
     _ctx: &mut LifeCycleCtx,
     _event: &LifeCycle,
-    _data: &KnobData,
+    _data: &(D, KnobData),
     _env: &Env,
   ) {
+    // println!("lifecycle {:?}: {:#?}", self.id(), _event);
   }
 
   fn update(&mut self,
             _ctx: &mut UpdateCtx,
-            _old_data: &KnobData,
-            data: &KnobData,
+            _old_data: &(D, KnobData),
+            data: &(D, KnobData),
             _env: &Env) {
-    // println!("{} -> {}", _old_data.value, data.value);
-    (self.callback)(data);
+    // println!("update {:?}: {} -> {}", self.id(), _old_data.1.value, data.1.value);
+    (self.callback)(&data.0, &data.1);
   }
 
   fn layout(
     &mut self,
     _layout_ctx: &mut LayoutCtx,
     bc: &BoxConstraints,
-    _data: &KnobData,
+    _data: &(D, KnobData),
     _env: &Env,
   ) -> Size {
+    // println!("layout {:?}: {:#?}", self.id(), bc);
+
     // BoxConstraints are passed by the parent widget.
     // This method can return any Size within those constraints:
     // bc.constrain(my_size)
@@ -196,10 +204,10 @@ impl<F> Widget<KnobData> for Knob<F> where F: Fn(&KnobData) -> () {
   // Basically, anything that changes the appearance of a widget causes a paint.
   fn paint(&mut self,
            paint_ctx: &mut PaintCtx,
-           data: &KnobData,
+           data: &(D, KnobData),
            env: &Env) {
 
-    // paint_ctx.clear(env.get(theme::WINDOW_BACKGROUND_COLOR));
+    let data = &data.1;
 
     let size = paint_ctx.size();
     let half_size = size * 0.5;
@@ -215,17 +223,17 @@ impl<F> Widget<KnobData> for Knob<F> where F: Fn(&KnobData) -> () {
                     Self::START_ANGLE, Self::END_ANGLE,
                     arc_bg_color, width, false);
 
-    let start_angle = self.value_to_angle(self.origin);
-    let end_angle = self.value_to_angle(data.value);
+    let start_angle = self.value_to_angle(data.origin, data.min, data.max);
+    let end_angle = self.value_to_angle(data.value, data.min, data.max);
     let arc_fg_color = env.get(theme::KNOB_VALUE_FG);
     Self::paint_arc(paint_ctx,
                     center, radius,
                     start_angle, end_angle,
                     arc_fg_color, width, true);
 
-    let modulated_value = (data.value + data.modulation).max(self.min).min(self.max);
-    let start_angle = self.value_to_angle(data.value);
-    let end_angle = self.value_to_angle(modulated_value);
+    let modulated_value = (data.value + data.modulation).max(data.min).min(data.max);
+    let start_angle = self.value_to_angle(data.value, data.min, data.max);
+    let end_angle = self.value_to_angle(modulated_value, data.min, data.max);
     let arc_mod_color = env.get(theme::KNOB_MODULATION);
     Self::paint_arc(paint_ctx,
                     center, radius + mod_width,

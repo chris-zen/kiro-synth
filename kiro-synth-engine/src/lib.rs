@@ -10,7 +10,9 @@ mod voice;
 mod key_freqs;
 
 pub mod program;
-pub mod synth;
 pub mod event;
+pub mod waveforms;
+pub mod globals;
+pub mod synth;
 
 pub use kiro_synth_core::float;

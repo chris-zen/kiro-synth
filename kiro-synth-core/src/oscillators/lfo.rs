@@ -2,6 +2,10 @@ use crate::float::Float;
 use crate::oscillators::osc_waveform::OscWaveform;
 use crate::oscillators::clamp_modulo;
 
+// TODO add another waveform for quadrature phase output
+
+// TODO Mode: free-running, synchronized, one-shot
+
 #[derive(Debug, Clone)]
 pub struct Lfo<F: Float> {
   waveform: OscWaveform<F>,

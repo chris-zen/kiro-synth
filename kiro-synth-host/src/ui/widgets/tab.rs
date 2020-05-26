@@ -193,7 +193,7 @@ impl<T: Data> Widget<T> for Tab<T> {
     let inner_bc = bc.shrink((2.0 * border_width, 2.0 * border_width));
     let inner_size = self.inner.layout(ctx, &inner_bc, data, env);
     let origin = Point::new(border_width, border_width);
-    self.inner.set_layout_rect(Rect::from_origin_size(origin, inner_size));
+    self.inner.set_layout_rect(ctx, data, env, Rect::from_origin_size(origin, inner_size));
 
     let total_size = Size::new(
       inner_size.width + 2.0 * border_width,

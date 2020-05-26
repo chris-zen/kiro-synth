@@ -112,28 +112,15 @@ impl<'a, F: Float> SignalBus<'a, F> {
   }
 }
 
-impl<'a, F: Float> Index<&SignalRef> for SignalBus<'a, F> {
+impl<'a, F: Float, S: Into<SignalRef>> Index<S> for SignalBus<'a, F> {
   type Output = Signal<F>;
-  fn index(&self, index: &SignalRef) -> &Self::Output {
-    &self.signals[index.0]
+  fn index(&self, index: S) -> &Self::Output {
+    &self.signals[index.into().0]
   }
 }
 
-impl<'a, F: Float> IndexMut<&SignalRef> for SignalBus<'a, F> {
-  fn index_mut(&mut self, index: &SignalRef) -> &mut Self::Output {
-    &mut self.signals[index.0]
-  }
-}
-
-impl<'a, F: Float> Index<SignalRef> for SignalBus<'a, F> {
-  type Output = Signal<F>;
-  fn index(&self, index: SignalRef) -> &Self::Output {
-    &self.signals[index.0]
-  }
-}
-
-impl<'a, F: Float> IndexMut<SignalRef> for SignalBus<'a, F> {
-  fn index_mut(&mut self, index: SignalRef) -> &mut Self::Output {
-    &mut self.signals[index.0]
+impl<'a, F: Float, S: Into<SignalRef>> IndexMut<S> for SignalBus<'a, F> {
+  fn index_mut(&mut self, index: S) -> &mut Self::Output {
+    &mut self.signals[index.into().0]
   }
 }

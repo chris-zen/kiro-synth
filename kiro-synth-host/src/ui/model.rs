@@ -1,21 +1,27 @@
+use std::sync::{Arc, Mutex, PoisonError, MutexGuard};
+
 use druid::{Data, Lens};
+// use druid::im::{vector, Vector};
 
 use kiro_synth_core::float::Float;
-use kiro_synth_engine::program::{ParamRef, Program};
+use kiro_synth_engine::program::{ParamRef, Program, Param as ProgParam};
 
 use crate::ui::widgets::knob::KnobData;
 use crate::program::kiro::KiroModule;
-use crate::program::params::{OscParams, EnvGenParams, FilterParams, DcaParams};
+use crate::program::params::{OscParams, EnvGenParams, FilterParams, DcaParams, LfoParams};
+use crate::synth::SynthClient;
 
 pub struct OscFromSynth;
 
 impl Lens<SynthModel, Osc> for OscFromSynth {
   fn with<V, F: FnOnce(&Osc) -> V>(&self, data: &SynthModel, f: F) -> V {
-    f(&data.osc[data.osc_index])
+    let oscs = data.osc.lock().unwrap();
+    f(&oscs[data.osc_index])
   }
 
   fn with_mut<V, F: FnOnce(&mut Osc) -> V>(&self, data: &mut SynthModel, f: F) -> V {
-    f(&mut data.osc[data.osc_index])
+    let mut oscs = data.osc.lock().unwrap();
+    f(&mut oscs[data.osc_index])
   }
 }
 
@@ -23,11 +29,29 @@ pub struct EgFromSynth;
 
 impl Lens<SynthModel, EnvGen> for EgFromSynth {
   fn with<V, F: FnOnce(&EnvGen) -> V>(&self, data: &SynthModel, f: F) -> V {
-    f(&data.eg[data.eg_index])
+    let egs = data.eg.lock().unwrap();
+    f(&egs[data.mod_index])
   }
 
   fn with_mut<V, F: FnOnce(&mut EnvGen) -> V>(&self, data: &mut SynthModel, f: F) -> V {
-    f(&mut data.eg[data.eg_index])
+    let mut egs = data.eg.lock().unwrap();
+    f(&mut egs[data.mod_index])
+  }
+}
+
+pub struct LfoFromSynth;
+
+impl Lens<SynthModel, Lfo> for LfoFromSynth {
+  fn with<V, F: FnOnce(&Lfo) -> V>(&self, data: &SynthModel, f: F) -> V {
+    let egs = data.eg.lock().unwrap();
+    let lfos = data.lfo.lock().unwrap();
+    f(&lfos[data.mod_index - egs.len()])
+  }
+
+  fn with_mut<V, F: FnOnce(&mut Lfo) -> V>(&self, data: &mut SynthModel, f: F) -> V {
+    let egs = data.eg.lock().unwrap();
+    let mut lfos = data.lfo.lock().unwrap();
+    f(&mut lfos[data.mod_index - egs.len()])
   }
 }
 
@@ -35,11 +59,13 @@ pub struct FilterFromSynth;
 
 impl Lens<SynthModel, Filter> for FilterFromSynth {
   fn with<V, F: FnOnce(&Filter) -> V>(&self, data: &SynthModel, f: F) -> V {
-    f(&data.filter[data.filter_index])
+    let filters = data.filter.lock().unwrap();
+    f(&filters[data.filter_index])
   }
 
   fn with_mut<V, F: FnOnce(&mut Filter) -> V>(&self, data: &mut SynthModel, f: F) -> V {
-    f(&mut data.filter[data.filter_index])
+    let mut filters = data.filter.lock().unwrap();
+    f(&mut filters[data.filter_index])
   }
 }
 
@@ -59,21 +85,21 @@ pub struct KnobDataFromParam;
 
 impl Lens<Param, KnobData> for KnobDataFromParam {
   fn with<V, F: FnOnce(&KnobData) -> V>(&self, data: &Param, f: F) -> V {
-    f(&KnobData::new(data.value, data.modulation))
+    f(&KnobData::new(data.origin, data.min, data.max, data.step, data.value, data.modulation))
   }
 
   fn with_mut<V, F: FnOnce(&mut KnobData) -> V>(&self, data: &mut Param, f: F) -> V {
-    let mut knob_data = KnobData::new(data.value, data.modulation);
+    let mut knob_data = KnobData::new(data.origin, data.min, data.max, data.step, data.value, data.modulation);
     let result = f(&mut knob_data);
     data.value = knob_data.value;
-    // we don't need to copy back the modulation as it is a read-only attribute for the Knob
+    // we don't need to copy back the rest of attributes as they are read-only for the Knob
     result
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Data, Lens)]
+#[derive(Debug, Clone, Data, Lens)]
 pub struct Param {
-  #[druid(same_fn = "PartialEq::eq")]
+  #[data(same_fn = "PartialEq::eq")]
   pub param_ref: ParamRef,
   pub origin: f64,
   pub min: f64,
@@ -81,11 +107,22 @@ pub struct Param {
   pub step: f64,
   pub value: f64,
   pub modulation: f64,
+  #[data(ignore)]
+  synth_client: Arc<Mutex<SynthClient<f32>>>,
 }
 
 impl Param {
-  pub fn new<F: Float, P: Into<ParamRef>>(program: &Program<F>, param_ref: P) -> Self {
+  pub fn new<F: Float, P: Into<ParamRef>>(program: &Program<F>,
+                                          param_ref: P,
+                                          synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
+
     let (param_ref, param) = program.get_param(param_ref.into()).unwrap();
+    Self::from(param_ref, param, synth_client)
+  }
+
+  pub fn from<F: Float>(param_ref: ParamRef,
+                        param: &ProgParam<F>,
+                        synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
     Param {
       param_ref,
       origin: param.values.min.to_f64().unwrap(), // TODO Add an equivalent to origin for ParamValues
@@ -94,6 +131,7 @@ impl Param {
       step: param.values.resolution.to_f64().unwrap(),
       value: param.values.initial_value.to_f64().unwrap(),
       modulation: 0.0,
+      synth_client,
     }
   }
 
@@ -103,30 +141,14 @@ impl Param {
       .. self
     }
   }
-}
 
-#[derive(Debug, Clone, PartialEq, Data, Lens)]
-pub struct Osc {
-  pub amplitude: Param,
-  pub shape: Param,
-  pub octaves: Param,
-  pub semitones: Param,
-  pub cents: Param,
-}
-
-impl Osc {
-  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>, params: &OscParams) -> Self {
-    Osc {
-      amplitude: Param::new(program, &params.amplitude),
-      shape: Param::new(program, &params.shape),
-      octaves: Param::new(program, &params.octaves).with_origin(0.0),
-      semitones: Param::new(program, &params.semitones).with_origin(0.0),
-      cents: Param::new(program, &params.cents).with_origin(0.0),
-    }
+  pub fn send_value(&self, value: f64) -> Result<(), PoisonError<MutexGuard<'_, SynthClient<f32>>>> {
+    self.synth_client.lock()
+        .map(|mut client| client.send_param_value(self.param_ref, value as f32))
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Data, Lens)]
+#[derive(Debug, Clone, Data, Lens)]
 pub struct EnvGen {
   pub attack: Param,
   pub decay: Param,
@@ -139,21 +161,75 @@ pub struct EnvGen {
 }
 
 impl EnvGen {
-  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>, params: &EnvGenParams) -> Self {
+  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
+                                     params: &EnvGenParams,
+                                     synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
     EnvGen {
-      attack: Param::new(program, &params.attack),
-      decay: Param::new(program, &params.decay),
-      sustain: Param::new(program, &params.sustain),
-      release: Param::new(program, &params.release),
-      mode: Param::new(program, &params.mode),
-      legato: Param::new(program, &params.legato),
-      reset_to_zero: Param::new(program, &params.reset_to_zero),
-      dca_intensity: Param::new(program, &params.dca_intensity),
+      attack: Param::new(program, &params.attack, synth_client.clone()),
+      decay: Param::new(program, &params.decay, synth_client.clone()),
+      sustain: Param::new(program, &params.sustain, synth_client.clone()),
+      release: Param::new(program, &params.release, synth_client.clone()),
+      mode: Param::new(program, &params.mode, synth_client.clone()),
+      legato: Param::new(program, &params.legato, synth_client.clone()),
+      reset_to_zero: Param::new(program, &params.reset_to_zero, synth_client.clone()),
+      dca_intensity: Param::new(program, &params.dca_mod, synth_client.clone()),
     }
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Data, Lens)]
+#[derive(Debug, Clone, Data, Lens)]
+pub struct Lfo {
+  pub shape: Param,
+  pub rate: Param,
+  pub phase: Param,
+  pub depth: Param,
+  pub osc_pitch_mod: Param,
+  pub filter_cutoff_mod: Param,
+  pub dca_amp_mod: Param,
+  pub dca_pan_mod: Param,
+}
+
+impl Lfo {
+  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
+                                     params: &LfoParams,
+                                     synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
+    Lfo {
+      shape: Param::new(program, &params.shape, synth_client.clone()),
+      rate: Param::new(program, &params.rate, synth_client.clone()),
+      phase: Param::new(program, &params.phase, synth_client.clone()),
+      depth: Param::new(program, &params.depth, synth_client.clone()),
+      osc_pitch_mod: Param::new(program, &params.modulation.osc_pitch, synth_client.clone()).with_origin(0.0),
+      filter_cutoff_mod: Param::new(program, &params.modulation.filter_cutoff, synth_client.clone()).with_origin(0.0),
+      dca_amp_mod: Param::new(program, &params.modulation.dca_amp, synth_client.clone()),
+      dca_pan_mod: Param::new(program, &params.modulation.dca_pan, synth_client.clone()),
+    }
+  }
+}
+
+#[derive(Debug, Clone, Data, Lens)]
+pub struct Osc {
+  pub shape: Param,
+  pub octaves: Param,
+  pub semitones: Param,
+  pub cents: Param,
+  pub amplitude: Param,
+}
+
+impl Osc {
+  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
+                                     params: &OscParams,
+                                     synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
+    Osc {
+      shape: Param::new(program, &params.shape, synth_client.clone()),
+      octaves: Param::new(program, &params.octaves, synth_client.clone()).with_origin(0.0),
+      semitones: Param::new(program, &params.semitones, synth_client.clone()).with_origin(0.0),
+      cents: Param::new(program, &params.cents, synth_client.clone()).with_origin(0.0),
+      amplitude: Param::new(program, &params.amplitude, synth_client.clone()),
+    }
+  }
+}
+
+#[derive(Debug, Clone, Data, Lens)]
 pub struct Filter {
   pub mode: Param,
   pub freq: Param,
@@ -161,11 +237,13 @@ pub struct Filter {
 }
 
 impl Filter {
-  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>, params: &FilterParams) -> Self {
+  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
+                                     params: &FilterParams,
+                                     synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
     Filter {
-      mode: Param::new(program, &params.mode),
-      freq: Param::new(program, &params.freq),
-      q: Param::new(program, &params.q),
+      mode: Param::new(program, &params.mode, synth_client.clone()),
+      freq: Param::new(program, &params.freq, synth_client.clone()),
+      q: Param::new(program, &params.q, synth_client.clone()),
     }
   }
 }
@@ -177,53 +255,113 @@ pub struct Dca {
 }
 
 impl Dca {
-  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>, params: &DcaParams) -> Self {
+  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
+                                     params: &DcaParams,
+                                     synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
     Dca {
-      amplitude: Param::new(program, &params.amplitude),
-      pan: Param::new(program, &params.pan).with_origin(0.0),
+      amplitude: Param::new(program, &params.amplitude, synth_client.clone()),
+      pan: Param::new(program, &params.pan, synth_client.clone()).with_origin(0.0),
     }
   }
 }
 
 #[derive(Debug, Clone, Data, Lens)]
+pub struct ParamModulation {
+  pub name: String,
+  pub param: Param,
+  pub modulators: Arc<Vec<Modulator>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Data, Lens)]
+pub struct Modulator {
+  pub name: String,
+  pub amount: f64,
+}
+
+#[derive(Debug, Clone, Data, Lens)]
 pub struct SynthModel {
-  #[druid(same_fn = "PartialEq::eq")]
-  pub osc: Vec<Osc>,
+
+  pub osc: Arc<Mutex<Vec<Osc>>>,
   pub osc_index: usize,
 
-  #[druid(same_fn = "PartialEq::eq")]
-  pub eg: Vec<EnvGen>,
-  pub eg_index: usize,
+  pub mod_index: usize,
 
-  #[druid(same_fn = "PartialEq::eq")]
-  pub filter: Vec<Filter>,
+  pub eg: Arc<Mutex<Vec<EnvGen>>>,
+
+  pub lfo: Arc<Mutex<Vec<Lfo>>>,
+
+  pub filter: Arc<Mutex<Vec<Filter>>>,
   pub filter_index: usize,
 
   pub dca: Dca,
+
+  pub param_modulations: Arc<Vec<ParamModulation>>
 }
 
 impl SynthModel {
-  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>, module: &KiroModule) -> Self {
+  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
+                                     module: &KiroModule,
+                                     synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
+
     let params = &module.params;
 
     SynthModel {
-      osc: vec![
-        Osc::new(program, &params.osc3),
-        Osc::new(program, &params.osc4),
-      ],
+      osc: Arc::new(Mutex::new(vec![
+        Osc::new(program, &params.osc1, synth_client.clone()),
+        Osc::new(program, &params.osc2, synth_client.clone()),
+        Osc::new(program, &params.osc3, synth_client.clone()),
+        Osc::new(program, &params.osc4, synth_client.clone()),
+      ])),
       osc_index: 0,
 
-      eg: vec![
-        EnvGen::new(program, &params.eg1),
-      ],
-      eg_index: 0,
+      mod_index: 0,
 
-      filter: vec![
-        Filter::new(program, &params.filt1),
-      ],
+      eg: Arc::new(Mutex::new(vec![
+        EnvGen::new(program, &params.eg1, synth_client.clone()),
+      ])),
+
+      lfo: Arc::new(Mutex::new(vec![
+        Lfo::new(program, &params.lfo1, synth_client.clone()),
+        Lfo::new(program, &params.lfo2, synth_client.clone()),
+      ])),
+
+      filter: Arc::new(Mutex::new(vec![
+        Filter::new(program, &params.filter1, synth_client.clone()),
+      ])),
       filter_index: 0,
 
-      dca: Dca::new(program, &params.dca),
+      dca: Dca::new(program, &params.dca, synth_client.clone()),
+
+      param_modulations: Self::build_param_modulators(program, module, synth_client.clone()),
     }
+  }
+
+  fn build_param_modulators<'a, F: Float + 'static>(program: &Program<'a, F>,
+                                                    _module: &KiroModule,
+                                                    synth_client: Arc<Mutex<SynthClient<f32>>>) -> Arc<Vec<ParamModulation>> {
+
+    let mut param_modulators = Vec::new();
+    for (index, param) in program.get_params().iter().enumerate() {
+      let param_ref = ParamRef(index);
+      let modulators = param.modulators.iter()
+          .filter_map(|modulator| {
+            program
+                .get_source(modulator.source)
+                .map(|source| {
+                  Modulator {
+                    name: source.id.to_string(),
+                    amount: modulator.amount.to_f64().unwrap(),
+                  }
+                })
+          })
+          .collect();
+
+      param_modulators.push(ParamModulation {
+        name: param.id.to_string(),
+        param: Param::from(param_ref, param, synth_client.clone()),
+        modulators: Arc::new(modulators),
+      });
+    }
+    Arc::new(param_modulators)
   }
 }

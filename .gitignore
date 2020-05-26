@@ -2,7 +2,7 @@
 .gdb_history
 [._]*.sw[a-p]
 **/*.rs.bk
-Cargo.lock
+#Cargo.lock
 
 # Created by https://www.gitignore.io/api/intellij+all
 

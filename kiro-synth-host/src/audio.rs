@@ -1,7 +1,7 @@
 use anyhow::Result;
 use thiserror::Error;
 
-use cpal::{Device, StreamConfig, SampleRate, Stream};
+use cpal::{Device, StreamConfig, SampleRate, Stream, OutputCallbackInfo};
 use cpal::{DefaultStreamConfigError, BuildStreamError, PlayStreamError};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
@@ -51,7 +51,7 @@ impl AudioDriver {
 
     let stream = device.build_output_stream(
       &config,
-      move |data: &mut [f32]| {
+      move |data: &mut [f32], _: &OutputCallbackInfo| {
         handler.prepare(data.len());
         for sample in data.chunks_mut(channels) {
           let (left, right) = handler.next();

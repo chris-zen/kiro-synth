@@ -3,11 +3,19 @@ use ringbuf::Producer;
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::event::{Event, Message};
 use kiro_synth_engine::program::ParamRef;
-use kiro_synth_engine::synth::{SynthGlobals, SynthWaveforms};
+use kiro_synth_engine::globals::SynthGlobals;
+use kiro_synth_engine::waveforms::{OscWaveforms, LfoWaveforms};
+use std::fmt::Formatter;
 
 pub struct SynthClient<F: Float> {
   globals: SynthGlobals<F>,
   events: Producer<Event<F>>,
+}
+
+impl<F: Float> std::fmt::Debug for SynthClient<F> {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    f.write_str("SynthClient")
+  }
 }
 
 impl<F: Float> SynthClient<F> {
@@ -18,8 +26,12 @@ impl<F: Float> SynthClient<F> {
     }
   }
 
-  pub fn waveforms(&self) -> &SynthWaveforms<F> {
-    &self.globals.waveforms
+  pub fn osc_waveforms(&self) -> &OscWaveforms<F> {
+    &self.globals.osc_waveforms
+  }
+
+  pub fn lfo_waveforms(&self) -> &LfoWaveforms<F> {
+    &self.globals.lfo_waveforms
   }
 
   pub fn send_event(&mut self, event: Event<F>) {

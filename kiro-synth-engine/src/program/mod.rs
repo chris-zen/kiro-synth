@@ -2,6 +2,7 @@ pub mod dca;
 pub mod envgen;
 pub mod expr;
 pub mod filter;
+pub mod lfo;
 pub mod osc;
 
 use heapless::Vec;
@@ -13,8 +14,35 @@ use std::ops::{Deref, DerefMut};
 use crate::program::expr::{ExprBuilder, OpRef};
 
 pub type MaxSignals = consts::U256;
-pub type MaxParams = consts::U512;
-pub type MaxBlocks = consts::U64;
+pub type MaxSources = consts::U32;
+pub type MaxModulators = consts::U4;
+pub type MaxParams = consts::U128;
+pub type MaxBlocks = consts::U128;
+
+#[derive(Debug, Clone, Copy)]
+pub struct SignalRef(pub(crate) usize);
+
+#[derive(Debug, Clone)]
+pub struct Source<'a> {
+  pub id: &'a str,
+  pub signal: SignalRef,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct SourceRef(pub(crate) usize);
+
+impl Into<SignalRef> for SourceRef {
+  fn into(self) -> SignalRef {
+    SignalRef(self.0)
+  }
+}
+
+#[derive(Debug, Clone)]
+pub struct Modulator<F: Float> {
+  pub source: SourceRef,
+  pub amount: F,
+}
+
 
 #[derive(Debug, Clone)]
 pub struct ParamValues<F: Float> {
@@ -22,6 +50,8 @@ pub struct ParamValues<F: Float> {
   pub min: F,
   pub max: F,
   pub resolution: F,
+  // pub mod_min: F,
+  // pub mod_max: F,
 }
 
 impl<F: Float> ParamValues<F> {
@@ -34,25 +64,11 @@ impl<F: Float> ParamValues<F> {
 }
 
 #[derive(Debug, Clone)]
-pub struct ParamDesc<'a> {
-  pub id: &'a str,
-  pub name: &'a str,
-}
-
-impl<'a> ParamDesc<'a> {
-  pub const fn new(id: &'a str, name: &'a str) -> Self {
-    ParamDesc {
-      id,
-      name,
-    }
-  }
-}
-
-#[derive(Debug, Clone)]
 pub struct Param<'a, F: Float> {
   pub id: &'a str,
   pub values: ParamValues<F>,
   pub signal: Signal<F>,
+  pub modulators: Vec<Modulator<F>, MaxModulators>,
 }
 
 #[derive(Debug, Clone)]
@@ -76,9 +92,6 @@ impl From<&ParamBlock> for ParamRef {
   }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct SignalRef(pub(crate) usize);
-
 #[derive(Debug, Clone)]
 pub enum Block<F: Float> {
   Const {
@@ -95,6 +108,8 @@ pub enum Block<F: Float> {
   Expr(expr::Block<F>),
 
   Filter(filter::Block),
+
+  Lfo(lfo::Block),
 
   Osc(osc::Block),
 
@@ -141,6 +156,7 @@ impl SignalRefs {
 pub struct Program<'a, F:Float> {
   signals_count: usize,
   voice: VoiceBlock,
+  sources: Vec<Source<'a>, MaxSources>,
   params: Vec<Param<'a, F>, MaxParams>,
   blocks: Vec<Block<F>, MaxBlocks>,
 }
@@ -221,6 +237,10 @@ impl<'a, F: Float> Program<'a, F> {
     }
   }
 
+  pub fn get_source(&self, source: SourceRef) -> Option<&Source<'a>> {
+    self.sources.get(source.0)
+  }
+
   pub fn get_blocks(&self) -> &[Block<F>] {
     &*self.blocks
   }
@@ -229,6 +249,7 @@ impl<'a, F: Float> Program<'a, F> {
 pub struct ProgramBuilder<'a, F: Float> {
   signal_refs: SignalRefs,
   voice: VoiceBlock,
+  sources: Vec<Source<'a>, MaxSources>,
   params: Vec<Param<'a, F>, MaxParams>,
   blocks: Vec<Block<F>, MaxBlocks>,
 }
@@ -252,6 +273,7 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
     ProgramBuilder {
       signal_refs,
       voice,
+      sources: Vec::new(),
       params: Vec::new(),
       blocks: Vec::new(),
     }
@@ -263,7 +285,7 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
 
   pub fn const_value(&mut self, value: F) -> SignalRef {
     let signal = self.signal_refs.create();
-    drop(self.blocks.push(Block::Const { value, signal }));
+    self.blocks.push(Block::Const { value, signal }).unwrap();
     signal
   }
 
@@ -275,31 +297,45 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
     self.const_value(F::one())
   }
 
+  pub fn source(&mut self, name: &'a str, signal: SignalRef) -> SourceRef {
+    let source = Source {
+      id: name,
+      signal,
+    };
+
+    self.sources.push(source).unwrap();
+
+    SourceRef(self.sources.len() - 1)
+  }
+
   pub fn param(&mut self, id: &'a str, values: ParamValues<F>) -> ParamBlock {
     let initial_value = values.initial_value;
     let param = Param {
       id,
       values,
-      signal: Signal::new(initial_value)
+      signal: Signal::new(initial_value),
+      modulators: Vec::new(),
     };
 
-    let param_ref = ParamRef(self.params.len());
-    drop(self.params.push(param));
+    self.params.push(param).unwrap();
 
-    let signal_ref = self.signal_refs.create();
-
-    let param_block = ParamBlock {
-      reference: param_ref,
-      signal: signal_ref,
-    };
-
-    drop(self.blocks.push(Block::Param(param_block.clone())));
-
-    param_block
+    ParamBlock {
+      reference: ParamRef(self.params.len() - 1),
+      signal: self.signal_refs.create(),
+    }
   }
 
   pub fn signal(&mut self) -> SignalRef {
     self.signal_refs.create()
+  }
+
+  pub fn modulation<P: Into<ParamRef>>(&mut self, param: P, source: SourceRef, amount: F) {
+    let param_index = param.into().0;
+    let modulator = Modulator {
+      source,
+      amount
+    };
+    self.params[param_index].modulators.push(modulator).unwrap();
   }
 
   pub fn expr<B: Fn(&mut ExprBuilder<F>) -> OpRef>(&mut self, build_expr: B) -> expr::Block<F> {
@@ -310,13 +346,13 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
 
   pub fn block(&mut self, block: Block<F>) -> BlockRef {
     let block_ref = BlockRef(self.blocks.len());
-    drop(self.blocks.push(block));
+    self.blocks.push(block).unwrap();
     block_ref
   }
 
   pub fn out(&mut self, left: SignalRef, right: SignalRef) -> BlockRef {
     let block_ref = BlockRef(self.blocks.len());
-    drop(self.blocks.push(Block::Out { left: left.clone(), right: right.clone() }));
+    self.blocks.push(Block::Out { left: left.clone(), right: right.clone() }).unwrap();
     block_ref
   }
 
@@ -324,6 +360,7 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
     Program {
       signals_count: self.signal_refs.count(),
       voice: self.voice,
+      sources: self.sources,
       params: self.params,
       blocks: self.blocks,
     }
