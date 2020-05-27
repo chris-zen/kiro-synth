@@ -9,7 +9,7 @@ pub struct FiltersView;
 impl FiltersView {
   pub fn new(synth_model: &SynthModel) -> impl Widget<SynthModel> {
 
-    let filter_len = synth_model.filter.lock().unwrap().len();
+    let filter_len = synth_model.filter.len();
     let tabs = build_tabs(filter_len, |index| format!("FILTER{}", index + 1))
         .lens(SynthModel::filter_index);
 

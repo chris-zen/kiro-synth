@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex, PoisonError, MutexGuard};
 
 use druid::{Data, Lens};
-// use druid::im::{vector, Vector};
+use druid::im::{vector, Vector};
 
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::{ParamRef, Program, Param as ProgParam};
@@ -15,13 +15,11 @@ pub struct OscFromSynth;
 
 impl Lens<SynthModel, Osc> for OscFromSynth {
   fn with<V, F: FnOnce(&Osc) -> V>(&self, data: &SynthModel, f: F) -> V {
-    let oscs = data.osc.lock().unwrap();
-    f(&oscs[data.osc_index])
+    f(&data.osc[data.osc_index])
   }
 
   fn with_mut<V, F: FnOnce(&mut Osc) -> V>(&self, data: &mut SynthModel, f: F) -> V {
-    let mut oscs = data.osc.lock().unwrap();
-    f(&mut oscs[data.osc_index])
+    f(&mut data.osc[data.osc_index])
   }
 }
 
@@ -29,13 +27,11 @@ pub struct EgFromSynth;
 
 impl Lens<SynthModel, EnvGen> for EgFromSynth {
   fn with<V, F: FnOnce(&EnvGen) -> V>(&self, data: &SynthModel, f: F) -> V {
-    let egs = data.eg.lock().unwrap();
-    f(&egs[data.mod_index])
+    f(&data.eg[data.mod_index])
   }
 
   fn with_mut<V, F: FnOnce(&mut EnvGen) -> V>(&self, data: &mut SynthModel, f: F) -> V {
-    let mut egs = data.eg.lock().unwrap();
-    f(&mut egs[data.mod_index])
+    f(&mut data.eg[data.mod_index])
   }
 }
 
@@ -43,15 +39,11 @@ pub struct LfoFromSynth;
 
 impl Lens<SynthModel, Lfo> for LfoFromSynth {
   fn with<V, F: FnOnce(&Lfo) -> V>(&self, data: &SynthModel, f: F) -> V {
-    let egs = data.eg.lock().unwrap();
-    let lfos = data.lfo.lock().unwrap();
-    f(&lfos[data.mod_index - egs.len()])
+    f(&data.lfo[data.mod_index - data.eg.len()])
   }
 
   fn with_mut<V, F: FnOnce(&mut Lfo) -> V>(&self, data: &mut SynthModel, f: F) -> V {
-    let egs = data.eg.lock().unwrap();
-    let mut lfos = data.lfo.lock().unwrap();
-    f(&mut lfos[data.mod_index - egs.len()])
+    f(&mut data.lfo[data.mod_index - data.eg.len()])
   }
 }
 
@@ -59,13 +51,11 @@ pub struct FilterFromSynth;
 
 impl Lens<SynthModel, Filter> for FilterFromSynth {
   fn with<V, F: FnOnce(&Filter) -> V>(&self, data: &SynthModel, f: F) -> V {
-    let filters = data.filter.lock().unwrap();
-    f(&filters[data.filter_index])
+    f(&data.filter[data.filter_index])
   }
 
   fn with_mut<V, F: FnOnce(&mut Filter) -> V>(&self, data: &mut SynthModel, f: F) -> V {
-    let mut filters = data.filter.lock().unwrap();
-    f(&mut filters[data.filter_index])
+    f(&mut data.filter[data.filter_index])
   }
 }
 
@@ -281,16 +271,16 @@ pub struct Modulator {
 #[derive(Debug, Clone, Data, Lens)]
 pub struct SynthModel {
 
-  pub osc: Arc<Mutex<Vec<Osc>>>,
+  pub osc: Vector<Osc>,
   pub osc_index: usize,
 
   pub mod_index: usize,
 
-  pub eg: Arc<Mutex<Vec<EnvGen>>>,
+  pub eg: Vector<EnvGen>,
 
-  pub lfo: Arc<Mutex<Vec<Lfo>>>,
+  pub lfo: Vector<Lfo>,
 
-  pub filter: Arc<Mutex<Vec<Filter>>>,
+  pub filter: Vector<Filter>,
   pub filter_index: usize,
 
   pub dca: Dca,
@@ -306,28 +296,28 @@ impl SynthModel {
     let params = &module.params;
 
     SynthModel {
-      osc: Arc::new(Mutex::new(vec![
+      osc: vector![
         Osc::new(program, &params.osc1, synth_client.clone()),
         Osc::new(program, &params.osc2, synth_client.clone()),
         Osc::new(program, &params.osc3, synth_client.clone()),
         Osc::new(program, &params.osc4, synth_client.clone()),
-      ])),
+      ],
       osc_index: 0,
 
       mod_index: 0,
 
-      eg: Arc::new(Mutex::new(vec![
+      eg: vector![
         EnvGen::new(program, &params.eg1, synth_client.clone()),
-      ])),
+      ],
 
-      lfo: Arc::new(Mutex::new(vec![
+      lfo: vector![
         Lfo::new(program, &params.lfo1, synth_client.clone()),
         Lfo::new(program, &params.lfo2, synth_client.clone()),
-      ])),
+      ],
 
-      filter: Arc::new(Mutex::new(vec![
+      filter: vector![
         Filter::new(program, &params.filter1, synth_client.clone()),
-      ])),
+      ],
       filter_index: 0,
 
       dca: Dca::new(program, &params.dca, synth_client.clone()),

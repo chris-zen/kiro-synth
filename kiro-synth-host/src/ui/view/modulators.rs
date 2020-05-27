@@ -16,8 +16,8 @@ impl ModulatorsView {
   pub fn new<F: Float + 'static>(synth_model: &SynthModel,
                                  synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<SynthModel> {
 
-    let eg_len = synth_model.eg.lock().unwrap().len();
-    let tabs_len = eg_len + synth_model.lfo.lock().unwrap().len();
+    let eg_len = synth_model.eg.len();
+    let tabs_len = eg_len + synth_model.lfo.len();
     let tab_title = move |index| {
       if index < eg_len {
         format!("EG{}", index + 1)

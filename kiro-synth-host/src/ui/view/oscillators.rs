@@ -17,7 +17,7 @@ impl OscillatorsView {
   pub fn new<F: Float + 'static>(synth_model: &SynthModel,
                                  synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<SynthModel> {
 
-    let osc_len = synth_model.osc.lock().unwrap().len();
+    let osc_len = synth_model.osc.len();
     let tabs = build_tabs(osc_len, |index| format!("OSC{}", index + 1))
         .lens(SynthModel::osc_index);
 

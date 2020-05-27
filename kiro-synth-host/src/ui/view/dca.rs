@@ -9,7 +9,7 @@ pub struct DcaView;
 
 impl DcaView {
   pub fn new(synth_model: &SynthModel) -> impl Widget<SynthModel> {
-    let eg_len = synth_model.eg.lock().unwrap().len();
+    let eg_len = synth_model.eg.len();
     let tabs = build_tabs(eg_len, |_index| "DCA".to_string())
         .lens(ZeroIndex);
 
