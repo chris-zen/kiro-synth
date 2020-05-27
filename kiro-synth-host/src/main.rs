@@ -53,9 +53,9 @@ fn main() -> Result<()> {
 
   // MIDI
 
-  let midi_mapper = create_midi_mapper(&program, &module);
-  let handler = EventsMidiHandler::new(midi_mapper, synth_client.clone());
-  let _midi_driver = MidiDriver::new("kiro-synth", midi_buffer, handler)?;
+  // let midi_mapper = create_midi_mapper(&program, &module);
+  // let handler = EventsMidiHandler::new(midi_mapper, synth_client.clone());
+  // let _midi_driver = MidiDriver::new("kiro-synth", midi_buffer, handler)?;
 
   // SYNTH
 
@@ -63,8 +63,8 @@ fn main() -> Result<()> {
 
   // AUDIO
 
-  let handler = SynthAudioHandler(synth);
-  let _audio_driver = AudioDriver::new(SAMPLE_RATE, handler)?;
+  // let handler = SynthAudioHandler(synth);
+  // let _audio_driver = AudioDriver::new(SAMPLE_RATE, handler)?;
 
   // UI
 
