@@ -206,31 +206,32 @@ impl KiroModule {
       output: signals.lfo2,
     };
 
-    program.modulation(&params.osc1.cents, sources.lfo1, F::val(100.0));
+    program.modulation(&params.filter1.freq, sources.lfo1, F::val(1000));
+    program.modulation(&params.osc1.amplitude, sources.lfo2, F::val(0.1));
 
-    let osc_pitch_mod = program.expr(|expr| {
-      let lfo1 = expr.mul_signal_param(lfo1.output, params.lfo1.modulation.osc_pitch.reference);
-      let lfo2 = expr.mul_signal_param(lfo2.output, params.lfo2.modulation.osc_pitch.reference);
-      expr.add(lfo1, lfo2)
-    });
-
-    let filter_cutoff_mod = program.expr(|expr| {
-      let lfo1 = expr.mul_signal_param(lfo1.output, params.lfo1.modulation.filter_cutoff.reference);
-      let lfo2 = expr.mul_signal_param(lfo2.output, params.lfo2.modulation.filter_cutoff.reference);
-      expr.add(lfo1, lfo2)
-    });
-
-    let dca_amp_mod = program.expr(|expr| {
-      let lfo1 = expr.mul_signal_param(lfo1.output, params.lfo1.modulation.dca_amp.reference);
-      let lfo2 = expr.mul_signal_param(lfo2.output, params.lfo2.modulation.dca_amp.reference);
-      expr.add(lfo1, lfo2)
-    });
-
-    let dca_pan_mod = program.expr(|expr| {
-      let lfo1 = expr.mul_signal_param(lfo1.output, params.lfo1.modulation.dca_pan.reference);
-      let lfo2 = expr.mul_signal_param(lfo2.output, params.lfo2.modulation.dca_pan.reference);
-      expr.add(lfo1, lfo2)
-    });
+    // let osc_pitch_mod = program.expr(|expr| {
+    //   let lfo1 = expr.mul_signal_param(lfo1.output, params.lfo1.modulation.osc_pitch.reference);
+    //   let lfo2 = expr.mul_signal_param(lfo2.output, params.lfo2.modulation.osc_pitch.reference);
+    //   expr.add(lfo1, lfo2)
+    // });
+    //
+    // let filter_cutoff_mod = program.expr(|expr| {
+    //   let lfo1 = expr.mul_signal_param(lfo1.output, params.lfo1.modulation.filter_cutoff.reference);
+    //   let lfo2 = expr.mul_signal_param(lfo2.output, params.lfo2.modulation.filter_cutoff.reference);
+    //   expr.add(lfo1, lfo2)
+    // });
+    //
+    // let dca_amp_mod = program.expr(|expr| {
+    //   let lfo1 = expr.mul_signal_param(lfo1.output, params.lfo1.modulation.dca_amp.reference);
+    //   let lfo2 = expr.mul_signal_param(lfo2.output, params.lfo2.modulation.dca_amp.reference);
+    //   expr.add(lfo1, lfo2)
+    // });
+    //
+    // let dca_pan_mod = program.expr(|expr| {
+    //   let lfo1 = expr.mul_signal_param(lfo1.output, params.lfo1.modulation.dca_pan.reference);
+    //   let lfo2 = expr.mul_signal_param(lfo2.output, params.lfo2.modulation.dca_pan.reference);
+    //   expr.add(lfo1, lfo2)
+    // });
 
     let eg1 = envgen::Block {
       inputs: envgen::Inputs {
@@ -263,7 +264,7 @@ impl KiroModule {
         cents: params.osc1.cents.signal,
         note_pitch: voice.note_pitch,
         pitch_bend: params.pitch_bend.signal,
-        freq_mod: osc_pitch_mod.output,
+        freq_mod: zero,
       },
       output: signals.osc1,
     };
@@ -278,7 +279,7 @@ impl KiroModule {
         cents: params.osc2.cents.signal,
         note_pitch: voice.note_pitch,
         pitch_bend: params.pitch_bend.signal,
-        freq_mod: osc_pitch_mod.output,
+        freq_mod: zero,
       },
       output: signals.osc2,
     };
@@ -293,17 +294,10 @@ impl KiroModule {
         cents: params.osc3.cents.signal,
         note_pitch: voice.note_pitch,
         pitch_bend: params.pitch_bend.signal,
-        freq_mod: osc_pitch_mod.output,
+        freq_mod: zero,
       },
       output: signals.osc3,
     };
-
-//    let osc4_freq_mod = {
-//      let mut expr = ExprBuilder::new();
-//      let osc2_output_expr = expr.signal(signals.osc2_output);
-//      expr.mul_value(osc2_output_expr, F::val(10.0));
-//      expr.build(program)
-//    };
 
     let osc4 = osc::Block {
       inputs: osc::Inputs {
@@ -315,7 +309,7 @@ impl KiroModule {
         cents: params.osc4.cents.signal,
         note_pitch: voice.note_pitch,
         pitch_bend: params.pitch_bend.signal,
-        freq_mod: osc_pitch_mod.output,
+        freq_mod: zero,
       },
       output: signals.osc4,
     };
@@ -331,7 +325,7 @@ impl KiroModule {
       params: filter::Params {
         mode: params.filter1.mode.signal,
         freq: params.filter1.freq.signal,
-        freq_mod: filter_cutoff_mod.output,
+        freq_mod: zero,
         q: params.filter1.q.signal,
       },
       output: signals.filter1,
@@ -343,10 +337,10 @@ impl KiroModule {
         right: filter1.output,
         velocity: voice.velocity,
         amplitude: params.dca.amplitude.signal,
-        amp_mod: dca_amp_mod.output,
+        amp_mod: zero,
         eg_mod: eg1_dca_mod.output,
         pan: params.dca.pan.signal,
-        pan_mod: dca_pan_mod.output,
+        pan_mod: zero,
       },
       outputs: dca::Outputs {
         left: signals.dca_left,
@@ -359,11 +353,6 @@ impl KiroModule {
 
     params.lfo2.add_param_blocks(program);
     program.block(Block::Lfo(lfo2));
-
-    // program.block(Block::Expr(osc_pitch_mod));
-    program.block(Block::Expr(filter_cutoff_mod));
-    program.block(Block::Expr(dca_amp_mod));
-    program.block(Block::Expr(dca_pan_mod));
 
     params.eg1.add_param_blocks(program);
     program.block(Block::EG(eg1));
@@ -378,8 +367,6 @@ impl KiroModule {
 
     params.osc3.add_param_blocks(program);
     program.block(Block::Osc(osc3));
-
-    // program.block(Block::Expr(osc4_freq_mod));
 
     params.osc4.add_param_blocks(program);
     program.block(Block::Osc(osc4));

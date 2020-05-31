@@ -19,7 +19,7 @@ pub type MaxModulators = consts::U4;
 pub type MaxParams = consts::U128;
 pub type MaxBlocks = consts::U128;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SignalRef(pub(crate) usize);
 
 #[derive(Debug, Clone)]
@@ -28,14 +28,8 @@ pub struct Source<'a> {
   pub signal: SignalRef,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SourceRef(pub(crate) usize);
-
-impl Into<SignalRef> for SourceRef {
-  fn into(self) -> SignalRef {
-    SignalRef(self.0)
-  }
-}
 
 #[derive(Debug, Clone)]
 pub struct Modulator<F: Float> {
@@ -47,6 +41,7 @@ pub struct Modulator<F: Float> {
 #[derive(Debug, Clone)]
 pub struct ParamValues<F: Float> {
   pub initial_value: F,
+  pub origin: F,
   pub min: F,
   pub max: F,
   pub resolution: F,
@@ -352,7 +347,7 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
 
   pub fn out(&mut self, left: SignalRef, right: SignalRef) -> BlockRef {
     let block_ref = BlockRef(self.blocks.len());
-    self.blocks.push(Block::Out { left: left.clone(), right: right.clone() }).unwrap();
+    self.blocks.push(Block::Out { left, right }).unwrap();
     block_ref
   }
 

@@ -4,7 +4,7 @@ use druid::{Data, Lens};
 use druid::im::{vector, Vector};
 
 use kiro_synth_core::float::Float;
-use kiro_synth_engine::program::{ParamRef, Program, Param as ProgParam};
+use kiro_synth_engine::program::{ParamRef, Program, Param as ProgParam, SourceRef};
 
 use crate::ui::widgets::knob::KnobData;
 use crate::program::kiro::KiroModule;
@@ -98,7 +98,7 @@ pub struct Param {
   pub value: f64,
   pub modulation: f64,
   #[data(ignore)]
-  synth_client: Arc<Mutex<SynthClient<f32>>>,
+  pub synth_client: Arc<Mutex<SynthClient<f32>>>,
 }
 
 impl Param {
@@ -115,7 +115,7 @@ impl Param {
                         synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
     Param {
       param_ref,
-      origin: param.values.min.to_f64().unwrap(), // TODO Add an equivalent to origin for ParamValues
+      origin: param.values.origin.to_f64().unwrap(),
       min: param.values.min.to_f64().unwrap(),
       max: param.values.max.to_f64().unwrap(),
       step: param.values.resolution.to_f64().unwrap(),
@@ -135,6 +135,11 @@ impl Param {
   pub fn send_value(&self, value: f64) -> Result<(), PoisonError<MutexGuard<'_, SynthClient<f32>>>> {
     self.synth_client.lock()
         .map(|mut client| client.send_param_value(self.param_ref, value as f32))
+  }
+
+  pub fn send_modulation_amount(&self, source_ref: SourceRef, amount: f64) -> Result<(), PoisonError<MutexGuard<'_, SynthClient<f32>>>> {
+    self.synth_client.lock()
+        .map(|mut client| client.send_modulation_amount(self.param_ref, source_ref, amount as f32))
   }
 }
 
@@ -265,6 +270,8 @@ pub struct ParamModulation {
 #[derive(Debug, Clone, PartialEq, Data, Lens)]
 pub struct Modulator {
   pub name: String,
+  #[data(same_fn="PartialEq::eq")]
+  pub source: SourceRef,
   pub amount: f64,
 }
 
@@ -340,6 +347,7 @@ impl SynthModel {
                 .map(|source| {
                   Modulator {
                     name: source.id.to_string(),
+                    source: modulator.source,
                     amount: modulator.amount.to_f64().unwrap(),
                   }
                 })

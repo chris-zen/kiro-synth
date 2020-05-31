@@ -1,5 +1,5 @@
 use crate::float::Float;
-use crate::program::ParamRef;
+use crate::program::{ParamRef, SourceRef};
 
 #[derive(Debug, Clone)]
 pub enum Message<F: Float> {
@@ -18,6 +18,11 @@ pub enum Message<F: Float> {
   ParamChange {
     param_ref: ParamRef,
     change: F,
+  },
+  ModulationAmount {
+    param_ref: ParamRef,
+    source_ref: SourceRef,
+    amount: F,
   },
 }
 

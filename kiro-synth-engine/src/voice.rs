@@ -99,7 +99,7 @@ impl<F: Float> Voice<F> {
       signals[voice.trigger].set(F::zero())
     }
 
-//    println!("{:?}", self.signals.iter_mut().skip(3).take(2).map(|s| (s.get(), s.state())).collect::<Vec<(F, SignalState), MaxSignals>>());
+   // println!("{:?}", self.signals.iter_mut().skip(3)/*.take(2)*/.map(|s| (s.get(), s.state())).collect::<Vec<(F, SignalState), MaxSignals>>());
   }
 
   pub fn output(&self, program: &Program<F>) -> (F, F) {

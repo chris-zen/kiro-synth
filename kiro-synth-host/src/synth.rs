@@ -2,7 +2,7 @@ use ringbuf::Producer;
 
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::event::{Event, Message};
-use kiro_synth_engine::program::ParamRef;
+use kiro_synth_engine::program::{ParamRef, SourceRef};
 use kiro_synth_engine::globals::SynthGlobals;
 use kiro_synth_engine::waveforms::{OscWaveforms, LfoWaveforms};
 use std::fmt::Formatter;
@@ -56,6 +56,11 @@ impl<F: Float> SynthClient<F> {
   #[allow(dead_code)]
   pub fn send_param_change(&mut self, param_ref: ParamRef, change: F) {
     let message = Message::ParamChange { param_ref, change };
+    self.send_event(Event::new(0u64, message));
+  }
+
+  pub fn send_modulation_amount(&mut self, param_ref: ParamRef, source_ref: SourceRef, amount: F) {
+    let message = Message::ModulationAmount { param_ref, source_ref, amount };
     self.send_event(Event::new(0u64, message));
   }
 }

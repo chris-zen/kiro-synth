@@ -56,8 +56,10 @@ impl<F: Float> Processor<F> {
         if let Some((_, param)) = program.get_param(*param_ref) {
           let mut value = param.signal.get();
           for modulator in param.modulators.iter() {
-            let source_signal = signals[modulator.source].get();
-            value = value + source_signal * modulator.amount;
+            if let Some(source) = program.get_source(modulator.source) {
+              let source_signal = signals[source.signal].get();
+              value = value + source_signal * modulator.amount;
+            }
           }
           value = value.max(param.values.min).min(param.values.max);
           signals[*signal_ref].set(value)

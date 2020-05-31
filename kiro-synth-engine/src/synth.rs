@@ -69,6 +69,17 @@ impl<'a, F: Float> Synth<'a, F> {
             param.signal.set(value);
           }
         },
+        Message::ModulationAmount { param_ref, source_ref, amount } => {
+          if let Some(source) = self.program.get_source(source_ref) {
+            let source_id = source.id;
+            if let Some((_, param)) = self.program.get_param_mut(param_ref) {
+              println!("{} -> {} {:?}", source_id, param.id, amount);
+              param.modulators.iter_mut()
+                  .find(|m| m.source == source_ref) // TODO use a HashMap ?
+                  .map(|m| m.amount = amount);
+            }
+          }
+        }
       }
     }
   }
