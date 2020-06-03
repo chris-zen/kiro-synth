@@ -12,6 +12,8 @@ num-traits = { version = "0.2" }
 thiserror = "1.0.9"
 anyhow = "1.0.26"
 
+derivative = "2.1.1"
+
 ringbuf = "0.2.1"
 heapless = "0.5.2"
 

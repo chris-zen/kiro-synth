@@ -61,20 +61,26 @@ pub fn build<F: Float + 'static>(synth_model: &SynthModel,
   Flex::row()
     .with_child(devices.fix_width(330.0))
     .with_flex_child(modulators, 1.0)
+    .cross_axis_alignment(CrossAxisAlignment::Start)
     // .debug_widget_id()
     // .debug_paint_layout()
 }
 
-pub fn build_tabs(n: usize, title: impl Fn(usize) -> String + 'static) -> impl Widget<usize> {
-  let mut tabs = Flex::row();
-  tabs.add_spacer(2.0);
-  for tab_index in 0..n {
-    let label = Label::<usize>::new((title)(tab_index))
-        .padding((6.0, 4.0, 4.0, 2.0));
+pub fn build_static_tabs<T, W, F>(tabs_data: Vec<T>,
+                                  child_builder: F) -> impl Widget<T>
+  where T: Data, W: Widget<T> + 'static, F: Fn(usize, &T) -> W {
 
-    let on_click = move |index: &mut usize, _env: &Env| *index = tab_index;
-    let is_selected = move |index: &usize| *index == tab_index;
-    let tab = Tab::new(label, on_click, is_selected)
+  let mut tabs_row = Flex::row();
+  tabs_row.add_spacer(2.0);
+  for (index, tab_data) in tabs_data.iter().enumerate() {
+    let moved_tab_data = tab_data.clone();
+    let on_click = move |data: &mut T, _: &Env| *data = moved_tab_data.clone();
+    let moved_tab_data = tab_data.clone();
+    let is_selected = move |data: &T| data.same(&moved_tab_data);
+
+    let child = child_builder(index, tab_data);
+
+    let tab = Tab::new(child, on_click, is_selected)
         .border_width(2.0)
         .selected_border_color(GREY_83)
         .unselected_border_color(GREY_65)
@@ -84,10 +90,18 @@ pub fn build_tabs(n: usize, title: impl Fn(usize) -> String + 'static) -> impl W
         .hover_background(GREY_74)
         .corner_radius(2.0);
 
-    tabs.add_child(tab);
-    tabs.add_spacer(4.0);
+    tabs_row.add_child(tab);
+    tabs_row.add_spacer(4.0);
   }
-  tabs
+  tabs_row
+}
+
+pub fn build_tabs(n: usize, title: impl Fn(usize) -> String + 'static) -> impl Widget<usize> {
+  let tabs_data = (0..n).collect::<Vec<usize>>();
+  build_static_tabs(tabs_data, move |_index: usize, data: &usize| {
+    Label::<usize>::new(title(*data))
+        .padding((6.0, 4.0, 4.0, 2.0))
+  })
 }
 
 pub fn build_switcher<T, U, W>(tabs: W,

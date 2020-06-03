@@ -19,7 +19,7 @@ pub type MaxModulators = consts::U4;
 pub type MaxParams = consts::U128;
 pub type MaxBlocks = consts::U128;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash32, Copy)]
 pub struct SignalRef(pub(crate) usize);
 
 #[derive(Debug, Clone)]
@@ -28,8 +28,14 @@ pub struct Source<'a> {
   pub signal: SignalRef,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash32, Copy)]
 pub struct SourceRef(pub(crate) usize);
+
+impl Into<usize> for SourceRef {
+  fn into(self) -> usize {
+    self.0
+  }
+}
 
 #[derive(Debug, Clone)]
 pub struct Modulator<F: Float> {
@@ -37,6 +43,32 @@ pub struct Modulator<F: Float> {
   pub amount: F,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash32, Copy)]
+pub struct ParamRef(pub(crate) usize);
+
+impl ParamRef {
+  pub fn new(reference: usize) -> Self {
+    ParamRef(reference)
+  }
+}
+
+impl From<ParamBlock> for ParamRef {
+  fn from(block: ParamBlock) -> Self {
+    block.reference
+  }
+}
+
+impl From<&ParamBlock> for ParamRef {
+  fn from(block: &ParamBlock) -> Self {
+    block.reference
+  }
+}
+
+impl Into<usize> for ParamRef {
+  fn into(self) -> usize {
+    self.0
+  }
+}
 
 #[derive(Debug, Clone)]
 pub struct ParamValues<F: Float> {
@@ -70,21 +102,6 @@ pub struct Param<'a, F: Float> {
 pub struct ParamBlock {
   pub reference: ParamRef,
   pub signal: SignalRef,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash32, Copy)]
-pub struct ParamRef(pub usize);
-
-impl From<ParamBlock> for ParamRef {
-  fn from(block: ParamBlock) -> Self {
-    block.reference
-  }
-}
-
-impl From<&ParamBlock> for ParamRef {
-  fn from(block: &ParamBlock) -> Self {
-    block.reference
-  }
 }
 
 #[derive(Debug, Clone)]

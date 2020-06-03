@@ -2,13 +2,17 @@ use std::sync::{Arc, Mutex};
 
 use druid::{Widget, lens::{self, LensExt}, UnitPoint};
 use druid::widget::{List, Flex, Label, Scroll, Container, WidgetExt, CrossAxisAlignment};
+use druid::im::Vector;
 
 use kiro_synth_core::float::Float;
 
 use crate::synth::SynthClient;
-use crate::ui::model::{SynthModel, ParamModulation, Modulator, Param};
 use crate::ui::GREY_83;
+use crate::ui::model::SynthModel;
 use crate::ui::widgets::knob::{Knob, KnobData};
+use crate::ui::model::modulations::{Group, Modulation};
+use crate::ui::view::{build_static_tabs, build_switcher};
+
 
 pub struct ModulationsView;
 
@@ -17,8 +21,8 @@ impl ModulationsView {
 
     let list = List::new(|| {
       Flex::column()
-          .with_child(Self::param_modulation())
-          .with_child(Self::modulators())
+          .with_child(Self::group())
+          .with_child(Self::modulations())
     });
 
     let scroll = Scroll::new(list).vertical();
@@ -27,13 +31,14 @@ impl ModulationsView {
         .rounded(2.0)
         .border(GREY_83, 2.0)
         .padding(4.0)
-        .lens(SynthModel::param_modulations)
+        .expand_height()
+        .lens(SynthModel::modulations)
   }
 
-  fn param_modulation() -> impl Widget<ParamModulation> {
+  fn group() -> impl Widget<Group> {
     Flex::row()
         .with_flex_child(
-          Label::new(|item: &ParamModulation, _env: &_| item.name.clone())
+          Label::new(|data: &Group, _env: &_| data.name.clone())
               .padding((0.0, 3.0))
               .expand_width()
               .height(20.0),
@@ -41,27 +46,28 @@ impl ModulationsView {
         )
         .with_child(
           Label::new("+")
-                .padding((0.0, 3.0))
-                .fix_height(20.0)
+              .padding((0.0, 3.0))
+              .fix_height(20.0)
         )
   }
 
-  fn modulators() -> impl Widget<ParamModulation> {
+  fn modulations() -> impl Widget<Group> {
     List::new(|| {
-      Self::modulator()
+      Self::modulation()
     })
     .lens(lens::Id.map(
-      |data: &ParamModulation| (data.param.clone(), data.modulators.clone()),
-      |_data: &mut ParamModulation, _list_data: (Param, Arc<Vec<Modulator>>)| _data.modulators = _list_data.1,
+      |data: &Group| data.modulations.clone(),
+      |data: &mut Group, list_data: Vector<Modulation>| data.modulations = list_data,
     ))
   }
 
-  fn modulator() -> impl Widget<(Param, Modulator)> {
-    let name = Label::new(|item: &(Param, Modulator), _env: &_| item.1.name.clone())
+  fn modulation() -> impl Widget<Modulation> {
+    let name = Label::new(|data: &Modulation, _env: &_| data.name.clone())
         .align_vertical(UnitPoint::new(0.0, 0.5))
         .fix_height(19.0);
 
-    let value = Label::new(|item: &(Param, Modulator), _env: &_| format!("{:.3}", item.1.amount))
+    // TODO formatting according to `step`
+    let value = Label::new(|data: &Modulation, _env: &_| format!("{:.3}", data.amount))
         .align_vertical(UnitPoint::new(0.0, 0.5))
         .fix_height(19.0);
 
@@ -69,29 +75,24 @@ impl ModulationsView {
         .cross_axis_alignment(CrossAxisAlignment::Start)
         .with_child(name)
         .with_child(value)
-        // .padding(Insets::new(4.0, 0.0, 0.0, 0.0))
         .expand_width();
 
-    let callback = move |data: &(Param, Modulator), knob_data: &KnobData| {
-      let (param, modulator) = data;
-      param.send_modulation_amount(modulator.source, knob_data.value).unwrap();
-      // param.send_value(data.value).unwrap();
+    let callback = move |data: &Modulation, knob_data: &KnobData| {
+      data.send_modulation_amount(knob_data.value).unwrap();
     };
 
     let knob = Knob::new(callback)
         .center()
         .fix_size(38.0, 38.0)
         .lens(lens::Id.map(
-          |data: &(Param, Modulator)| {
-            let (param, modulator) = data;
+          |data: &Modulation| {
             (
               data.clone(),
-              KnobData::new(param.origin, param.min, param.max, param.step, modulator.amount, 0.0)
+              KnobData::new(data.origin, data.min, data.max, data.step, data.amount, 0.0)
             )
           },
-          |data: &mut (Param, Modulator), knob_data: ((Param, Modulator), KnobData)| {
-            let (_param, modulator) = data;
-            modulator.amount = knob_data.1.value
+          |data: &mut Modulation, knob_data: (Modulation, KnobData)| {
+            data.amount = knob_data.1.value
           }
         ));
 
@@ -100,4 +101,3 @@ impl ModulationsView {
         .with_flex_child(name_and_value, 1.0)
   }
 }
-

@@ -42,6 +42,7 @@ impl<T: Data> Tab<T> {
   pub fn new(widget: impl Widget<T> + 'static,
              on_click: impl Fn(&mut T, &Env) + 'static,
              is_selected: impl Fn(&T) -> bool + 'static) -> Self {
+
     Tab {
       corner_radius: None,
       border_width: None,
@@ -51,7 +52,7 @@ impl<T: Data> Tab<T> {
       selected_background: None,
       unselected_background: None,
       hover_background: None,
-      inner: WidgetPod::new(Box::new(widget)),
+      inner: WidgetPod::new(widget).boxed(),
       on_click: Box::new(on_click),
       is_selected: Box::new(is_selected),
       selected: false,

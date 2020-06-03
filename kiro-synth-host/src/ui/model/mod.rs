@@ -1,15 +1,18 @@
+pub mod modulations;
+
 use std::sync::{Arc, Mutex, PoisonError, MutexGuard};
 
 use druid::{Data, Lens};
 use druid::im::{vector, Vector};
 
 use kiro_synth_core::float::Float;
-use kiro_synth_engine::program::{ParamRef, Program, Param as ProgParam, SourceRef};
+use kiro_synth_engine::program::{ParamRef, Program, Param as ProgParam};
 
 use crate::ui::widgets::knob::KnobData;
 use crate::program::kiro::KiroModule;
 use crate::program::params::{OscParams, EnvGenParams, FilterParams, DcaParams, LfoParams};
 use crate::synth::SynthClient;
+use crate::ui::model::modulations::Modulations;
 
 pub struct OscFromSynth;
 
@@ -136,11 +139,6 @@ impl Param {
     self.synth_client.lock()
         .map(|mut client| client.send_param_value(self.param_ref, value as f32))
   }
-
-  pub fn send_modulation_amount(&self, source_ref: SourceRef, amount: f64) -> Result<(), PoisonError<MutexGuard<'_, SynthClient<f32>>>> {
-    self.synth_client.lock()
-        .map(|mut client| client.send_modulation_amount(self.param_ref, source_ref, amount as f32))
-  }
 }
 
 #[derive(Debug, Clone, Data, Lens)]
@@ -261,21 +259,6 @@ impl Dca {
 }
 
 #[derive(Debug, Clone, Data, Lens)]
-pub struct ParamModulation {
-  pub name: String,
-  pub param: Param,
-  pub modulators: Arc<Vec<Modulator>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Data, Lens)]
-pub struct Modulator {
-  pub name: String,
-  #[data(same_fn="PartialEq::eq")]
-  pub source: SourceRef,
-  pub amount: f64,
-}
-
-#[derive(Debug, Clone, Data, Lens)]
 pub struct SynthModel {
 
   pub osc: Vector<Osc>,
@@ -292,7 +275,7 @@ pub struct SynthModel {
 
   pub dca: Dca,
 
-  pub param_modulations: Arc<Vec<ParamModulation>>
+  pub modulations: Modulations,
 }
 
 impl SynthModel {
@@ -329,37 +312,7 @@ impl SynthModel {
 
       dca: Dca::new(program, &params.dca, synth_client.clone()),
 
-      param_modulations: Self::build_param_modulators(program, module, synth_client.clone()),
+      modulations: Modulations::new(program, module, synth_client.clone()),
     }
-  }
-
-  fn build_param_modulators<'a, F: Float + 'static>(program: &Program<'a, F>,
-                                                    _module: &KiroModule,
-                                                    synth_client: Arc<Mutex<SynthClient<f32>>>) -> Arc<Vec<ParamModulation>> {
-
-    let mut param_modulators = Vec::new();
-    for (index, param) in program.get_params().iter().enumerate() {
-      let param_ref = ParamRef(index);
-      let modulators = param.modulators.iter()
-          .filter_map(|modulator| {
-            program
-                .get_source(modulator.source)
-                .map(|source| {
-                  Modulator {
-                    name: source.id.to_string(),
-                    source: modulator.source,
-                    amount: modulator.amount.to_f64().unwrap(),
-                  }
-                })
-          })
-          .collect();
-
-      param_modulators.push(ParamModulation {
-        name: param.id.to_string(),
-        param: Param::from(param_ref, param, synth_client.clone()),
-        modulators: Arc::new(modulators),
-      });
-    }
-    Arc::new(param_modulators)
   }
 }

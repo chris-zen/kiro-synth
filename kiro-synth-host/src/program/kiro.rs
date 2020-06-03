@@ -206,8 +206,11 @@ impl KiroModule {
       output: signals.lfo2,
     };
 
-    program.modulation(&params.filter1.freq, sources.lfo1, F::val(1000));
+    program.modulation(&params.filter1.freq, sources.lfo1, F::val(800));
+    program.modulation(&params.filter1.freq, sources.eg1_normal, F::val(700));
+    program.modulation(&params.filter1.q, sources.lfo2, F::val(0.5));
     program.modulation(&params.osc1.amplitude, sources.lfo2, F::val(0.1));
+    program.modulation(&params.dca.pan, sources.lfo1, F::val(0.1));
 
     // let osc_pitch_mod = program.expr(|expr| {
     //   let lfo1 = expr.mul_signal_param(lfo1.output, params.lfo1.modulation.osc_pitch.reference);
