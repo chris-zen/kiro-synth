@@ -94,7 +94,7 @@ impl InternalModulation {
   }
 }
 
-#[derive(Debug, Clone, Data)]
+#[derive(Debug, Clone, Data, Lens)]
 pub struct Modulations {
   group_by: GroupBy,
   modulations: Vector<InternalModulation>,

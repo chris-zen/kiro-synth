@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use druid::{Widget, Env};
-use druid::widget::{Flex, WidgetExt};
+use druid::widget::{Flex, WidgetExt, SizedBox};
 
 use kiro_synth_core::float::Float;
 
@@ -95,23 +95,9 @@ fn build_lfo_view<F: Float + 'static>(synth_client: Arc<Mutex<SynthClient<F>>>) 
       )
       .with_flex_spacer(1.0);
 
-  let row2 = Flex::row()
-      .with_child(
-        build_knob_value("Osc Pitch", "").lens(Lfo::osc_pitch_mod)
-      )
-      .with_child(
-        build_knob_value("F. Cutoff", "").lens(Lfo::filter_cutoff_mod)
-      )
-      .with_child(
-        build_knob_value("DCA Amp", "").lens(Lfo::dca_amp_mod)
-      )
-      .with_child(
-        build_knob_value("DCA Pan", "").lens(Lfo::dca_pan_mod)
-      )
-      .with_flex_spacer(1.0);
+  let row2 = SizedBox::<Lfo>::empty().height(86.0);
 
   Flex::column()
       .with_child(row1)
-      .with_spacer(10.0)
       .with_child(row2)
 }

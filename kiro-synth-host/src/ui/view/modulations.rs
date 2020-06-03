@@ -10,7 +10,7 @@ use crate::synth::SynthClient;
 use crate::ui::GREY_83;
 use crate::ui::model::SynthModel;
 use crate::ui::widgets::knob::{Knob, KnobData};
-use crate::ui::model::modulations::{Group, Modulation};
+use crate::ui::model::modulations::{Group, Modulation, GroupBy, Modulations};
 use crate::ui::view::{build_static_tabs, build_switcher};
 
 
@@ -27,11 +27,24 @@ impl ModulationsView {
 
     let scroll = Scroll::new(list).vertical();
 
-    Container::new(scroll)
+    let tabs = build_static_tabs(vec![GroupBy::Source, GroupBy::Param],
+                                          |_index: usize, data: &GroupBy| {
+      Label::new(match data {
+        GroupBy::Source => "By Source".to_string(),
+        GroupBy::Param => "By Param".to_string(),
+      }).padding((6.0, 4.0, 4.0, 2.0))
+    }).lens(Modulations::group_by);
+
+    let body = Container::new(scroll)
         .rounded(2.0)
         .border(GREY_83, 2.0)
-        .padding(4.0)
-        .expand_height()
+        .padding((4.0, 0.0, 4.0, 4.0))
+        .expand_height();
+
+    Flex::column()
+        .with_child(tabs.padding((4.0, 4.0, 0.0, 0.0)))
+        .with_flex_child(body, 1.0)
+        .cross_axis_alignment(CrossAxisAlignment::Start)
         .lens(SynthModel::modulations)
   }
 
