@@ -1,5 +1,7 @@
 [workspace]
 members = [
+  "druid-icon",
+  "druid-icon-generator",
   "kiro-synth-core",
   "kiro-synth-engine",
   "kiro-synth-midi",

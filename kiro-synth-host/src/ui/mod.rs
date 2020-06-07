@@ -1,6 +1,7 @@
 pub mod widgets;
 mod model;
 mod view;
+mod icons;
 
 use std::sync::{Arc, Mutex};
 

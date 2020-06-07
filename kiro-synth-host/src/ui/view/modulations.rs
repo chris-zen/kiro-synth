@@ -1,8 +1,10 @@
 use std::sync::{Arc, Mutex};
 
-use druid::{Widget, lens::{self, LensExt}, UnitPoint};
-use druid::widget::{List, Flex, Label, Scroll, Container, WidgetExt, CrossAxisAlignment};
+use druid::{Widget, lens::{self, LensExt}, UnitPoint, Color};
+use druid::widget::{List, Flex, Label, Scroll, Container, WidgetExt, CrossAxisAlignment, SizedBox};
 use druid::im::Vector;
+
+use druid_icon::Icon;
 
 use kiro_synth_core::float::Float;
 
@@ -12,6 +14,7 @@ use crate::ui::model::SynthModel;
 use crate::ui::widgets::knob::{Knob, KnobData};
 use crate::ui::model::modulations::{Group, Modulation, GroupBy, Modulations};
 use crate::ui::view::{build_static_tabs, build_switcher};
+use crate::ui::icons;
 
 
 pub struct ModulationsView;
@@ -29,10 +32,21 @@ impl ModulationsView {
 
     let tabs = build_static_tabs(vec![GroupBy::Source, GroupBy::Param],
                                           |_index: usize, data: &GroupBy| {
-      Label::new(match data {
-        GroupBy::Source => "By Source".to_string(),
-        GroupBy::Param => "By Param".to_string(),
-      }).padding((6.0, 4.0, 4.0, 2.0))
+
+      let icon = match data {
+        GroupBy::Source => &icons::MODULATION_SOURCE,
+        GroupBy::Param => &icons::MODULATION_PARAM,
+      };
+      Icon::<GroupBy>::new(icon)
+          .color(Color::WHITE)
+          .fix_height(12.0)
+          .center()
+          .padding((6.0, 4.0, 4.0, 2.0))
+                                            
+      // Label::new(match data {
+      //   GroupBy::Source => "By Source".to_string(),
+      //   GroupBy::Param => "By Param".to_string(),
+      // }).padding((6.0, 4.0, 4.0, 2.0))
     }).lens(Modulations::group_by);
 
     let body = Container::new(scroll)

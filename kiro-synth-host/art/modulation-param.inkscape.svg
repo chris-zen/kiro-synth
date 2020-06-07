@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.0 (4035a4f, 2020-05-01)"
+   sodipodi:docname="modulation-param.inkscape.svg"
+   id="svg20"
+   viewBox="0 0 23 11"
+   version="1.1"
+   height="11"
+   width="23">
+  <metadata
+     id="metadata26">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs24" />
+  <sodipodi:namedview
+     inkscape:current-layer="g18"
+     inkscape:window-maximized="1"
+     inkscape:window-y="23"
+     inkscape:window-x="0"
+     inkscape:cy="5.5"
+     inkscape:cx="11.5"
+     inkscape:zoom="32.173913"
+     showgrid="true"
+     id="namedview22"
+     inkscape:window-height="755"
+     inkscape:window-width="1280"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     bordercolor="#666666"
+     pagecolor="#ffffff"
+     inkscape:document-rotation="0">
+    <inkscape:grid
+       empspacing="10"
+       id="grid174"
+       type="xygrid" />
+  </sodipodi:namedview>
+  <g
+     id="g18"
+     stroke="#000000">
+    <path
+       id="path12"
+       stroke-width="2"
+       fill="none"
+       d="M 0,5.57287 H 5.1"
+       style="stroke-width:2;stroke-miterlimit:4;stroke-dasharray:none" />
+    <path
+       sodipodi:nodetypes="cccc"
+       id="path14"
+       stroke-width="1"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       d="M 5.5,9 V 2 l 6.908851,3.4999454 z"
+       style="opacity:1;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none" />
+    <path
+       sodipodi:nodetypes="cssscc"
+       d="M 16.487018,9.7379589 C 14.420751,9.0001913 13.187731,6.8798373 13.56847,4.719097 13.949209,2.5583566 15.832708,0.98715637 18.026698,1.000078 20.220688,1.013 22.08555,2.6062763 22.440811,4.7713514 22.796072,6.9364266 21.538163,9.04211 19.463349,9.7554882 19.157902,8.8671155 18.852455,7.9787428 18.547008,7.09037"
+       style="fill:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none"
+       id="circle16" />
+  </g>
+</svg>
