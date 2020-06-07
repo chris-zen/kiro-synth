@@ -42,7 +42,7 @@ impl ModulationsView {
           .fix_height(12.0)
           .center()
           .padding((6.0, 4.0, 4.0, 2.0))
-                                            
+
       // Label::new(match data {
       //   GroupBy::Source => "By Source".to_string(),
       //   GroupBy::Param => "By Param".to_string(),

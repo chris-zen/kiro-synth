@@ -5,7 +5,7 @@ pub const MODULATION_SOURCE: IconStaticData = IconStaticData {
   size: Size::new(23.0, 11.0),
   paths: &[
     IconStaticPath {
-      transform: Affine::scale(1.0),
+      transform: Affine::new([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
       fill: None,
       stroke: Some(IconPathStroke { opacity: 1.0, width: 1.0 }),
       elements: &[
@@ -15,7 +15,7 @@ pub const MODULATION_SOURCE: IconStaticData = IconStaticData {
       ],
     },
     IconStaticPath {
-      transform: Affine::scale(1.0),
+      transform: Affine::new([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
       fill: None,
       stroke: Some(IconPathStroke { opacity: 1.0, width: 2.0 }),
       elements: &[
@@ -24,7 +24,7 @@ pub const MODULATION_SOURCE: IconStaticData = IconStaticData {
       ],
     },
     IconStaticPath {
-      transform: Affine::scale(1.0),
+      transform: Affine::new([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
       fill: Some(IconPathFill { opacity: 1.0 }),
       stroke: Some(IconPathStroke { opacity: 1.0, width: 1.0 }),
       elements: &[
@@ -35,7 +35,7 @@ pub const MODULATION_SOURCE: IconStaticData = IconStaticData {
       ],
     },
     IconStaticPath {
-      transform: Affine::scale(1.0),
+      transform: Affine::new([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
       fill: None,
       stroke: Some(IconPathStroke { opacity: 1.0, width: 1.0 }),
       elements: &[
@@ -54,7 +54,7 @@ pub const MODULATION_PARAM: IconStaticData = IconStaticData {
   size: Size::new(23.0, 11.0),
   paths: &[
     IconStaticPath {
-      transform: Affine::scale(1.0),
+      transform: Affine::new([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
       fill: None,
       stroke: Some(IconPathStroke { opacity: 1.0, width: 2.0 }),
       elements: &[
@@ -63,7 +63,7 @@ pub const MODULATION_PARAM: IconStaticData = IconStaticData {
       ],
     },
     IconStaticPath {
-      transform: Affine::scale(1.0),
+      transform: Affine::new([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
       fill: Some(IconPathFill { opacity: 1.0 }),
       stroke: Some(IconPathStroke { opacity: 1.0, width: 1.0 }),
       elements: &[
@@ -74,7 +74,7 @@ pub const MODULATION_PARAM: IconStaticData = IconStaticData {
       ],
     },
     IconStaticPath {
-      transform: Affine::scale(1.0),
+      transform: Affine::new([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
       fill: None,
       stroke: Some(IconPathStroke { opacity: 1.0, width: 1.0 }),
       elements: &[

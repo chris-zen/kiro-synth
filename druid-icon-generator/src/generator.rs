@@ -82,7 +82,7 @@ impl Generate for (IconFile, IconData) {
 impl Generate for IconPath {
   fn generate(&self, out: &mut impl Write, ident: usize) -> Result<(), Box<dyn Error>> {
     wlni!(out, ident, "IconStaticPath {{");
-    wlni!(out, ident, "  transform: Affine::scale(1.0),");
+    wi!(out, ident, "  transform: "); self.transform.generate(out, ident)?; writeln!(out, ",")?;
     wi!(out, ident, "  fill: "); self.fill.generate(out, ident)?; writeln!(out, ",")?;
     wi!(out, ident, "  stroke: "); self.stroke.generate(out, ident)?; writeln!(out, ",")?;
     wlni!(out, ident, "  elements: &[");
@@ -91,6 +91,17 @@ impl Generate for IconPath {
     }
     wlni!(out, ident, "  ],");
     wlni!(out, ident, "}},");
+    Ok(())
+  }
+}
+
+impl Generate for Affine {
+  fn generate(&self, out: &mut impl Write, _ident: usize) -> Result<(), Box<dyn Error>> {
+    write!(out, "Affine::new([")?;
+    let coeffs = self.as_coeffs();
+    coeffs.iter().take(1).try_for_each(|coeff| write!(out, "{:?}", coeff))?;
+    coeffs.iter().skip(1).try_for_each(|coeff| write!(out, ", {:?}", coeff))?;
+    write!(out, "])")?;
     Ok(())
   }
 }
