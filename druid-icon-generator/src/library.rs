@@ -7,6 +7,7 @@ use log::info;
 
 use crate::file::IconFile;
 use std::path::Path;
+use walkdir::{WalkDir, DirEntry};
 
 
 pub struct IconLibrary {
@@ -23,21 +24,22 @@ impl IconLibrary {
   pub fn iter(&self) -> impl Iterator<Item=IconFile> {
     info!("Traversing icons at {} ...", self.base_path.display());
     let base_path = self.base_path.clone();
-    fs::read_dir(base_path.clone()).unwrap()
-        .filter_map(move |result_entry| {
-          let base_path = base_path.clone();
-          result_entry.ok().and_then(move |entry| {
-            let path = entry.path();
-            path.clone().strip_prefix(base_path).ok().and_then(move |module| {
-              entry.file_name().into_string().ok().map(|name| {
-                IconFile {
-                  path,
-                  module: module.to_path_buf(),
-                  name,
-                }
-              })
+    WalkDir::new(base_path.clone()).into_iter()
+      .filter_map(Result::ok)
+      .filter_map(move |entry: DirEntry| {
+        let base_path = base_path.clone();
+        let path = entry.path().to_path_buf();
+        path.clone().strip_prefix(base_path).ok()
+          .and_then(Path::parent)
+          .and_then(move |module| {
+            entry.file_name().to_os_string().into_string().ok().map(|name| {
+              IconFile {
+                path,
+                module: module.to_path_buf(),
+                name,
+              }
             })
-          })
         })
+      })
   }
 }

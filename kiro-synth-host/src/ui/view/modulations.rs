@@ -43,10 +43,6 @@ impl ModulationsView {
           .center()
           .padding((6.0, 4.0, 4.0, 2.0))
 
-      // Label::new(match data {
-      //   GroupBy::Source => "By Source".to_string(),
-      //   GroupBy::Param => "By Param".to_string(),
-      // }).padding((6.0, 4.0, 4.0, 2.0))
     }).lens(Modulations::group_by);
 
     let body = Container::new(scroll)

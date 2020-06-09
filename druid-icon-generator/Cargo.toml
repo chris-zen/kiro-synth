@@ -10,6 +10,7 @@ edition = "2018"
 log = "0.4.8"
 usvg = "0.9.1"
 heck = "0.3.1"
+walkdir = "2.3.1"
 druid = "^0.6"
 
 druid-icon = { path = "../druid-icon" }

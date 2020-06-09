@@ -9,6 +9,7 @@ use druid_icon::{IconData, IconPath, IconPathFill, IconPathStroke};
 use druid::kurbo::{BezPath, Size};
 use druid::Affine;
 use log::{info, error};
+use std::path::Path;
 
 
 #[derive(Debug)]
@@ -19,6 +20,17 @@ pub struct IconFile {
 }
 
 impl IconFile {
+
+  pub fn with_module<P: AsRef<Path>>(mut self, module: P) -> Self {
+    self.module = module.as_ref().to_path_buf();
+    self
+  }
+
+  pub fn with_name<S: Into<String>>(mut self, name: S) -> Self {
+    self.name = name.into();
+    self
+  }
+
   pub fn load(&self) -> Result<IconData, Box<dyn Error>> {
     info!("Loading icon {} ...", self.path.display());
 
@@ -98,13 +110,13 @@ impl IconFile {
 
     IconData {
       paths,
-      size: Self::get_size(tree),
+      size: Self::get_size_from_svg(tree),
     }
   }
 
   /// Measure the SVG's size
   #[allow(clippy::needless_return)]
-  fn get_size(tree: usvg::Tree) -> Size {
+  fn get_size_from_svg(tree: usvg::Tree) -> Size {
     return match *tree.root().borrow() {
       usvg::NodeKind::Svg(svg) => {
         // Borrow checker gets confused without an explicit return
