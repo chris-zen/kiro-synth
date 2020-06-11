@@ -88,3 +88,27 @@ pub const MODULATION_PARAM: IconStaticData = IconStaticData {
     },
   ],
 };
+
+pub const MODULATION_NEW: IconStaticData = IconStaticData {
+  size: Size::new(11.0, 11.0),
+  paths: &[
+    IconStaticPath {
+      transform: Affine::new([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
+      fill: None,
+      stroke: Some(IconPathStroke { opacity: 1.0, width: 2.0 }),
+      elements: &[
+        PathEl::MoveTo(Point::new(0.5, 5.5)),
+        PathEl::LineTo(Point::new(10.5, 5.5)),
+      ],
+    },
+    IconStaticPath {
+      transform: Affine::new([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
+      fill: None,
+      stroke: Some(IconPathStroke { opacity: 1.0, width: 2.0 }),
+      elements: &[
+        PathEl::MoveTo(Point::new(5.5, 0.5)),
+        PathEl::LineTo(Point::new(5.5, 10.5)),
+      ],
+    },
+  ],
+};

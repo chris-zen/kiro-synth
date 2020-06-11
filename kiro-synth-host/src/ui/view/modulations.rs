@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
-use druid::{Widget, lens::{self, LensExt}, UnitPoint, Color};
-use druid::widget::{List, Flex, Label, Scroll, Container, WidgetExt, CrossAxisAlignment, SizedBox};
+use druid::{Widget, lens::{self, LensExt}, UnitPoint, Env};
+use druid::widget::{List, Flex, Label, Scroll, Container, WidgetExt, CrossAxisAlignment, SizedBox, ViewSwitcher, Button};
 use druid::im::Vector;
 
 use druid_icon::Icon;
@@ -9,12 +9,13 @@ use druid_icon::Icon;
 use kiro_synth_core::float::Float;
 
 use crate::synth::SynthClient;
-use crate::ui::GREY_83;
+use crate::ui::{GREY_83, GREY_46};
 use crate::ui::model::SynthModel;
 use crate::ui::widgets::knob::{Knob, KnobData};
-use crate::ui::model::modulations::{Group, Modulation, GroupBy, Modulations};
+use crate::ui::model::modulations::{Group, Modulation, View, Modulations};
 use crate::ui::view::{build_static_tabs, build_switcher};
 use crate::ui::icons;
+use druid::theme::WINDOW_BACKGROUND_COLOR;
 
 
 pub struct ModulationsView;
@@ -22,30 +23,25 @@ pub struct ModulationsView;
 impl ModulationsView {
   pub fn new<F: Float + 'static>(_synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<SynthModel> {
 
-    let list = List::new(|| {
-      Flex::column()
-          .with_child(Self::group())
-          .with_child(Self::modulations())
-    });
+    let views = vec![
+      View::GroupBySource,
+      View::GroupByParam,
+      View::AddModulation,
+    ];
+    let tabs = build_static_tabs(views, Self::build_tab)
+        .lens(Modulations::view);
 
-    let scroll = Scroll::new(list).vertical();
+    let body = ViewSwitcher::new(
+      |data: &Modulations, _: &Env| data.view,
+      |view: &View, data: &Modulations, _: &Env| {
+        match view {
+          View::GroupBySource | View::GroupByParam => Box::new(Self::build_modulations_list()),
+          View::AddModulation => Box::new(Self::build_add_modulation()),
+        }
+      }
+    );
 
-    let tabs = build_static_tabs(vec![GroupBy::Source, GroupBy::Param],
-                                          |_index: usize, data: &GroupBy| {
-
-      let icon = match data {
-        GroupBy::Source => &icons::MODULATION_SOURCE,
-        GroupBy::Param => &icons::MODULATION_PARAM,
-      };
-      Icon::<GroupBy>::new(icon)
-          .color(Color::WHITE)
-          .fix_height(12.0)
-          .center()
-          .padding((6.0, 4.0, 4.0, 2.0))
-
-    }).lens(Modulations::group_by);
-
-    let body = Container::new(scroll)
+    let body = Container::new(body)
         .rounded(2.0)
         .border(GREY_83, 2.0)
         .padding((4.0, 0.0, 4.0, 4.0))
@@ -58,7 +54,30 @@ impl ModulationsView {
         .lens(SynthModel::modulations)
   }
 
-  fn group() -> impl Widget<Group> {
+  fn build_tab(_index: usize, data: &View) -> impl Widget<View> {
+    let icon = match data {
+      View::GroupBySource => &icons::MODULATION_SOURCE,
+      View::GroupByParam => &icons::MODULATION_PARAM,
+      View::AddModulation => &icons::MODULATION_NEW,
+    };
+
+    Icon::new(icon)
+        .fix_height(12.0)
+        .center()
+        .padding((6.0, 4.0, 4.0, 2.0))
+  }
+
+  fn build_modulations_list() -> impl Widget<Modulations> {
+    let list = List::new(|| {
+      Flex::column()
+          .with_child(Self::build_group())
+          .with_child(Self::build_modulation_knobs())
+    });
+
+    Scroll::new(list).vertical()
+  }
+
+  fn build_group() -> impl Widget<Group> {
     Flex::row()
         .with_flex_child(
           Label::new(|data: &Group, _env: &_| data.name.clone())
@@ -74,9 +93,9 @@ impl ModulationsView {
         )
   }
 
-  fn modulations() -> impl Widget<Group> {
+  fn build_modulation_knobs() -> impl Widget<Group> {
     List::new(|| {
-      Self::modulation()
+      Self::build_modulation_knob()
     })
     .lens(lens::Id.map(
       |data: &Group| data.modulations.clone(),
@@ -84,7 +103,7 @@ impl ModulationsView {
     ))
   }
 
-  fn modulation() -> impl Widget<Modulation> {
+  fn build_modulation_knob() -> impl Widget<Modulation> {
     let name = Label::new(|data: &Modulation, _env: &_| data.name.clone())
         .align_vertical(UnitPoint::new(0.0, 0.5))
         .fix_height(19.0);
@@ -122,5 +141,39 @@ impl ModulationsView {
     Flex::row()
         .with_child(knob)
         .with_flex_child(name_and_value, 1.0)
+  }
+
+  fn build_add_modulation() -> impl Widget<Modulations> {
+    let sources = Container::new(SizedBox::empty().expand())
+        .rounded(2.0)
+        .background(WINDOW_BACKGROUND_COLOR);
+
+    let sources = Flex::column()
+        .with_child(Label::new("Sources").padding(2.0))
+        .with_flex_child(sources, 1.0);
+
+    let sources = Container::new(sources)
+        .background(GREY_83);
+
+    let params = Container::new(SizedBox::empty().expand())
+        .rounded(2.0)
+        .background(WINDOW_BACKGROUND_COLOR);
+        // .padding((0.0, 0.0, 0.0, 2.0));
+
+    let params = Flex::column()
+        .with_child(Label::new("Parameters").padding(2.0))
+        .with_flex_child(params, 1.0);
+
+    let params = Container::new(params)
+        .background(GREY_83);
+
+    let add_button = Button::new("Add")
+        .expand_width()
+        .padding(2.0);
+
+    Flex::column()
+        .with_child(add_button)
+        .with_flex_child(sources, 1.0)
+        .with_flex_child(params, 1.0)
   }
 }

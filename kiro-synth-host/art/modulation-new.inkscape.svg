@@ -8,12 +8,12 @@
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    inkscape:version="1.0 (4035a4f, 2020-05-01)"
-   sodipodi:docname="modulation-param.inkscape.svg"
+   sodipodi:docname="modulation-new.inkscape.svg"
    id="svg20"
-   viewBox="0 0 23 11"
+   viewBox="0 0 11 11"
    version="1.1"
    height="11"
-   width="23">
+   width="11">
   <metadata
      id="metadata26">
     <rdf:RDF>
@@ -58,23 +58,16 @@
      id="g18"
      stroke="#000000">
     <path
+       sodipodi:nodetypes="cc"
        id="path12"
        stroke-width="2"
        fill="none"
-       d="M 0,5.57287 H 5.1"
+       d="m 0.5,5.5 h 10"
        style="stroke-width:2;stroke-miterlimit:4;stroke-dasharray:none" />
     <path
-       sodipodi:nodetypes="cccc"
-       id="path14"
-       stroke-width="1"
-       stroke-linejoin="round"
-       stroke-linecap="round"
-       d="M 5.5,9 V 2 l 6.908851,3.4999454 z"
-       style="opacity:1;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none" />
-    <path
-       sodipodi:nodetypes="cssscc"
-       d="M 16.487018,9.7379589 C 14.420751,9.0001913 13.187731,6.8798373 13.56847,4.719097 13.949209,2.5583566 15.832708,0.98715637 18.026698,1.000078 20.220688,1.013 22.08555,2.6062763 22.440811,4.7713514 22.796072,6.9364266 21.538163,9.04211 19.463349,9.7554882 L 18,5.567397"
-       style="fill:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none"
-       id="circle16" />
+       sodipodi:nodetypes="cc"
+       id="path1416"
+       d="m 5.5,0.5 v 10"
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
   </g>
 </svg>

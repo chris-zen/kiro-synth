@@ -5,7 +5,7 @@ use std::iter::FromIterator;
 use derivative::Derivative;
 
 use druid::{Data, Lens};
-use druid::im::Vector;
+use druid::im::{vector, Vector};
 use druid::widget::ListIter;
 
 use kiro_synth_core::float::Float;
@@ -15,10 +15,11 @@ use crate::program::kiro::KiroModule;
 use crate::synth::SynthClient;
 
 
-#[derive(Debug, Clone, PartialEq, Data)]
-pub enum GroupBy {
-  Param,
-  Source,
+#[derive(Debug, Clone, Copy, PartialEq, Data)]
+pub enum View {
+  GroupBySource,
+  GroupByParam,
+  AddModulation,
 }
 
 #[derive(Debug, Clone, Data, Lens)]
@@ -96,7 +97,7 @@ impl InternalModulation {
 
 #[derive(Debug, Clone, Data, Lens)]
 pub struct Modulations {
-  group_by: GroupBy,
+  pub view: View,
   modulations: Vector<InternalModulation>,
 
   #[data(ignore)]
@@ -130,7 +131,7 @@ impl Modulations {
       }
     }
     Modulations {
-      group_by: GroupBy::Source,
+      view: View::GroupBySource,
       modulations,
       synth_client: synth_client.clone(),
     }
@@ -181,41 +182,43 @@ impl Modulations {
 
 impl ListIter<Group> for Modulations {
   fn for_each(&self, mut cb: impl FnMut(&Group, usize)) {
-    let groups = match self.group_by {
-      GroupBy::Param => {
+    let groups = match self.view {
+      View::GroupByParam => {
         self.groups(
           |m| m.param_ref,
           |m| m.param_name.clone(),
           |m| m.source_name.clone(),
         )
       },
-      GroupBy::Source => {
+      View::GroupBySource => {
         self.groups(
           |m| m.source_ref,
           |m| m.source_name.clone(),
           |m| m.param_name.clone(),
         )
       },
+      View::AddModulation => vector![],
     };
     groups.iter().enumerate().for_each(|(i, group)| cb(group, i));
   }
 
   fn for_each_mut(&mut self, mut cb: impl FnMut(&mut Group, usize)) {
-    let mut groups = match self.group_by {
-      GroupBy::Param => {
+    let mut groups = match self.view {
+      View::GroupByParam => {
         self.groups(
           |m| m.param_ref,
           |m| m.param_name.clone(),
           |m| m.source_name.clone(),
         )
       },
-      GroupBy::Source => {
+      View::GroupBySource => {
         self.groups(
           |m| m.source_ref,
           |m| m.source_name.clone(),
           |m| m.param_name.clone(),
         )
       },
+      View::AddModulation => vector![],
     };
     groups.iter_mut().enumerate().for_each(|(i, group)| {
       cb(group, i);
@@ -226,9 +229,10 @@ impl ListIter<Group> for Modulations {
   }
 
   fn data_len(&self) -> usize {
-    match self.group_by {
-      GroupBy::Param => self.count(|m| m.param_ref),
-      GroupBy::Source => self.count(|m| m.source_ref),
+    match self.view {
+      View::GroupByParam => self.count(|m| m.param_ref),
+      View::GroupBySource => self.count(|m| m.source_ref),
+      View::AddModulation => 0,
     }
   }
 }
