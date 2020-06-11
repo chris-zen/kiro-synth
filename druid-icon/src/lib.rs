@@ -1,10 +1,7 @@
 use std::marker::PhantomData;
-use druid::{
-  kurbo::{Affine, BezPath, PathEl, Rect, Size},
-  widget::prelude::*,
-  Color, Data,
-};
+use druid::{kurbo::{Affine, BezPath, PathEl, Rect, Size}, widget::prelude::*, Color, Data, KeyOrValue};
 use druid::widget::FillStrat;
+use druid::theme::LABEL_COLOR;
 
 pub mod prelude {
   pub use druid::kurbo::{Affine, PathEl, Point, Size};
@@ -77,7 +74,7 @@ impl From<&IconStaticData> for IconData {
 pub struct Icon<T: Data> {
   data: IconData,
   fill_strategy: FillStrat,
-  color: Color,
+  color: KeyOrValue<Color>,
   _phantom: PhantomData<T>,
 }
 
@@ -86,13 +83,13 @@ impl<T: Data> Icon<T> {
     Self {
       data: data.into(),
       fill_strategy: FillStrat::None,
-      color: Color::BLACK,
+      color: KeyOrValue::Key(LABEL_COLOR),
       _phantom: PhantomData
     }
   }
 
-  pub fn color(mut self, color: Color) -> Icon<T> {
-    self.color = color;
+  pub fn color(mut self, color: impl Into<KeyOrValue<Color>>) -> Icon<T> {
+    self.color = color.into();
     self
   }
 
@@ -125,23 +122,24 @@ impl<T: Data> Widget<T> for Icon<T> {
     }
   }
 
-  fn paint(&mut self, ctx: &mut PaintCtx, _data: &T, _env: &Env) {
+  fn paint(&mut self, ctx: &mut PaintCtx, _data: &T, env: &Env) {
     let offset_matrix = self.fill_strategy.affine_to_fill(ctx.size(), self.data.size);
 
     let clip_rect = Rect::ZERO.with_size(ctx.size());
-
     ctx.clip(clip_rect);
+
+    let color = self.color.resolve(env);
 
     for path in self.data.paths.iter() {
       let bezier_path = path.transform * &path.bezier_path;
       let bezier_path = offset_matrix * bezier_path;
       if let Some(fill) = path.fill.as_ref() {
-        let color = self.color.clone().with_alpha(fill.opacity);
-        ctx.fill(&bezier_path, &color);
+        let fill_color = color.clone().with_alpha(fill.opacity);
+        ctx.fill(&bezier_path, &fill_color);
       }
       if let Some(stroke) = path.stroke.as_ref() {
-        let color = self.color.clone().with_alpha(stroke.opacity);
-        ctx.stroke(&bezier_path, &color, stroke.width);
+        let stroke_color = color.clone().with_alpha(stroke.opacity);
+        ctx.stroke(&bezier_path, &stroke_color, stroke.width);
       }
     }
   }

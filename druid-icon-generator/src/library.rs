@@ -1,13 +1,9 @@
-use std::{
-  fs,
-  path::PathBuf,
-};
+use std::path::{Path, PathBuf};
 
 use log::info;
+use walkdir::{WalkDir, DirEntry};
 
 use crate::file::IconFile;
-use std::path::Path;
-use walkdir::{WalkDir, DirEntry};
 
 
 pub struct IconLibrary {
