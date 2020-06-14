@@ -1,5 +1,5 @@
 use std::sync::{Arc, Mutex};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
 use derivative::Derivative;
@@ -19,14 +19,52 @@ use crate::synth::SynthClient;
 pub enum View {
   GroupBySource,
   GroupByParam,
-  AddModulation,
+}
+
+#[derive(Debug, Clone, Copy, Data)]
+pub enum Reference {
+  Source(
+    #[data(same_fn="PartialEq::eq")]
+    SourceRef
+  ),
+  Param(
+    #[data(same_fn="PartialEq::eq")]
+    ParamRef
+  ),
+}
+
+impl Reference {
+  pub fn matches(&self, source: Option<SourceRef>) -> bool {
+    match self {
+      Reference::Source(source_ref) => source.filter(|s| *s == *source_ref).is_some(),
+      Reference::Param(_) => false,
+    }
+  }
+}
+
+impl Into<usize> for Reference {
+  fn into(self) -> usize {
+    match self {
+      Self::Source(reference) => reference.into(),
+      Self::Param(reference) => reference.into(),
+    }
+  }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Data)]
+pub enum ConfigMode {
+  Ready,
+  Ongoing,
+  Disabled,
 }
 
 #[derive(Debug, Clone, Data, Lens)]
 pub struct Group {
   index: usize,
+  pub reference: Reference,
   pub name: String,
-  pub modulations: Vector<Modulation>
+  pub modulations: Vector<Modulation>,
+  pub config_mode: ConfigMode,
 }
 
 #[derive(Debug, Clone, Data, Lens, Derivative)]
@@ -95,10 +133,23 @@ impl InternalModulation {
   }
 }
 
+#[derive(Debug, Clone, Data)]
+pub struct Source {
+  pub name: String,
+  #[data(same_fn = "PartialEq::eq")]
+  pub reference: SourceRef,
+}
+
 #[derive(Debug, Clone, Data, Lens)]
 pub struct Modulations {
   pub view: View,
+
   modulations: Vector<InternalModulation>,
+
+  #[data(same_fn = "PartialEq::eq")]
+  config_source: Option<SourceRef>,
+
+  sources: Vector<Source>,
 
   #[data(ignore)]
   pub synth_client: Arc<Mutex<SynthClient<f32>>>,
@@ -111,8 +162,20 @@ impl Modulations {
 
     let mut modulations = Vector::<InternalModulation>::new();
 
+    let mut params = Vector::<String>::new();
+
+    let sources = program.get_sources().iter().enumerate()
+        .map(|(index, source)| {
+          Source {
+            name: source.id.to_string(),
+            reference: SourceRef::new(index),
+          }
+        })
+        .collect();
+
     for (index, param) in program.get_params().iter().enumerate() {
       let param_ref = ParamRef::new(index); // TODO param_ref should come from the program.get_params() call
+      params.push_back(param.id.to_string());
       for modulator in param.modulators.iter() {
         if let Some(source) = program.get_source(modulator.source) {
           let modulation = InternalModulation {
@@ -130,27 +193,54 @@ impl Modulations {
         }
       }
     }
+
     Modulations {
       view: View::GroupBySource,
       modulations,
+      config_source: None,
+      sources,
       synth_client: synth_client.clone(),
     }
   }
 
-  fn groups<K>(&self,
-               get_key: impl Fn(&InternalModulation) -> K,
-               get_group_name: impl Fn(&InternalModulation) -> String,
-               get_modulation_name: impl Fn(&InternalModulation) -> String) -> Vector<Group>
-    where K: Into<usize> {
+  pub fn begin(&mut self, source_ref: SourceRef) {
+    self.config_source = Some(source_ref);
+  }
+
+  pub fn done(&mut self, source_ref: SourceRef) {
+    self.config_source = self.config_source
+        .filter(|v| *v != source_ref);
+  }
+
+  fn groups(&self,
+            get_key: impl Fn(&InternalModulation) -> Reference,
+            get_group_name: impl Fn(&InternalModulation) -> String,
+            get_modulation_name: impl Fn(&InternalModulation) -> String,
+            allow_empty: bool) -> Vector<Group> {
 
     let mut v = HashMap::<usize, Group>::new();
+    // let mut empty_sources = HashSet::<usize>::from_iter();
+    // self.sources.iter().map(|s| s.reference.into())
+
     for (index, internal_modulation) in self.modulations.iter().enumerate() {
-      let key = get_key(&internal_modulation).into();
+      let reference = get_key(&internal_modulation);
+      let key = reference.into();
+      let config_mode = if reference.matches(self.config_source) {
+        ConfigMode::Ongoing
+      }
+      else {
+        self.config_source
+            .map(|_| ConfigMode::Disabled)
+            .unwrap_or(ConfigMode::Ready)
+      };
+
       let group = v.entry(key).or_insert_with(|| {
         Group {
           index: key,
+          reference,
           name: get_group_name(&internal_modulation),
           modulations: Vector::new(),
+          config_mode,
         }
       });
       let modulation_name = get_modulation_name(&internal_modulation);
@@ -158,14 +248,15 @@ impl Modulations {
       group.modulations.push_back(modulation);
     }
     let mut result = Vector::from_iter(v.into_iter().filter_map(|(_, group)| {
-      if group.modulations.is_empty() { None } else { Some(group) }
+      Some(group).filter(|g| allow_empty || !g.modulations.is_empty())
     }));
     result.sort_by(|g1, g2| g1.index.cmp(&g2.index));
     result
   }
 
   fn count<K>(&self,
-              get_key: impl Fn(&InternalModulation) -> K) -> usize
+              get_key: impl Fn(&InternalModulation) -> K,
+              allow_empty: bool) -> usize
     where K: Into<usize> {
 
     let mut v = HashMap::<usize, usize>::new();
@@ -175,7 +266,7 @@ impl Modulations {
       *m += 1usize;
     }
     v.values().filter_map(|count| {
-      if *count == 0 { None } else { Some(1) }
+      Some(1).filter(|c| allow_empty || *c > 0)
     }).sum::<usize>()
   }
 }
@@ -183,42 +274,44 @@ impl Modulations {
 impl ListIter<Group> for Modulations {
   fn for_each(&self, mut cb: impl FnMut(&Group, usize)) {
     let groups = match self.view {
-      View::GroupByParam => {
-        self.groups(
-          |m| m.param_ref,
-          |m| m.param_name.clone(),
-          |m| m.source_name.clone(),
-        )
-      },
       View::GroupBySource => {
         self.groups(
-          |m| m.source_ref,
+          |m| Reference::Source(m.source_ref),
           |m| m.source_name.clone(),
           |m| m.param_name.clone(),
+          true,
         )
-      },
-      View::AddModulation => vector![],
+      }
+      View::GroupByParam => {
+        self.groups(
+          |m| Reference::Param(m.param_ref),
+          |m| m.param_name.clone(),
+          |m| m.source_name.clone(),
+          false,
+        )
+      }
     };
     groups.iter().enumerate().for_each(|(i, group)| cb(group, i));
   }
 
   fn for_each_mut(&mut self, mut cb: impl FnMut(&mut Group, usize)) {
     let mut groups = match self.view {
-      View::GroupByParam => {
-        self.groups(
-          |m| m.param_ref,
-          |m| m.param_name.clone(),
-          |m| m.source_name.clone(),
-        )
-      },
       View::GroupBySource => {
         self.groups(
-          |m| m.source_ref,
+          |m| Reference::Source(m.source_ref),
           |m| m.source_name.clone(),
           |m| m.param_name.clone(),
+          true,
         )
-      },
-      View::AddModulation => vector![],
+      }
+      View::GroupByParam => {
+        self.groups(
+          |m| Reference::Param(m.param_ref),
+          |m| m.param_name.clone(),
+          |m| m.source_name.clone(),
+          false,
+        )
+      }
     };
     groups.iter_mut().enumerate().for_each(|(i, group)| {
       cb(group, i);
@@ -230,9 +323,14 @@ impl ListIter<Group> for Modulations {
 
   fn data_len(&self) -> usize {
     match self.view {
-      View::GroupByParam => self.count(|m| m.param_ref),
-      View::GroupBySource => self.count(|m| m.source_ref),
-      View::AddModulation => 0,
+      View::GroupBySource => self.count(
+        |m| Reference::Source(m.source_ref),
+        true
+      ),
+      View::GroupByParam => self.count(
+        |m| Reference::Param(m.param_ref),
+        false
+      ),
     }
   }
 }

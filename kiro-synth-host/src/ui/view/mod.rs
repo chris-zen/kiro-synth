@@ -22,6 +22,7 @@ use filters::FiltersView;
 use dca::DcaView;
 use modulators::ModulatorsView;
 use modulations::ModulationsView;
+use crate::ui::view::modulations::ModulationController;
 
 
 pub fn build<F: Float + 'static>(synth_model: &SynthModel,
@@ -56,7 +57,8 @@ pub fn build<F: Float + 'static>(synth_model: &SynthModel,
     )
     .cross_axis_alignment(CrossAxisAlignment::Start);
 
-  let modulators = ModulationsView::new(synth_client.clone());
+  let modulators = ModulationsView::new(synth_client.clone())
+      .controller(ModulationController::new());
 
   Flex::row()
     .with_child(devices.fix_width(330.0))
@@ -159,4 +161,5 @@ pub fn build_knob(title: &'static str,
       |param: &Param| (param.clone(), KnobData::new(param.origin, param.min, param.max, param.step, param.value, param.modulation)),
       |param: &mut Param, data: (Param, KnobData)| param.value = data.1.value
     ))
+    .controller(ModulationController::new())
 }

@@ -31,6 +31,12 @@ pub struct Source<'a> {
 #[derive(Debug, Clone, PartialEq, Eq, Hash32, Copy)]
 pub struct SourceRef(pub(crate) usize);
 
+impl SourceRef {
+  pub fn new(reference: usize) -> Self {
+    SourceRef(reference)
+  }
+}
+
 impl Into<usize> for SourceRef {
   fn into(self) -> usize {
     self.0
@@ -247,6 +253,10 @@ impl<'a, F: Float> Program<'a, F> {
     for param in self.params.iter_mut() {
       param.signal.update_state();
     }
+  }
+
+  pub fn get_sources(&self) -> &[Source<'a>] {
+    self.sources.deref()
   }
 
   pub fn get_source(&self, source: SourceRef) -> Option<&Source<'a>> {
