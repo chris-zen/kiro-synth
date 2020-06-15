@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="23" height="11" version="1.1" viewBox="0 0 23 11" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<svg width="11" height="11" version="1.1" viewBox="0 0 11 11" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
  <metadata>
   <rdf:RDF>
    <cc:Work rdf:about="">
@@ -10,8 +10,6 @@
   </rdf:RDF>
  </metadata>
  <g stroke="#000">
-  <path d="m0 5.5729h5.1" fill="none" stroke-width="2"/>
-  <path d="m5.5 9v-7l6.9089 3.4999z" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="m16.487 9.738c-2.0663-0.73777-3.2993-2.8581-2.9185-5.0189 0.38074-2.1607 2.2642-3.7319 4.4582-3.719 2.194 0.012922 4.0589 1.6062 4.4141 3.7713 0.35526 2.1651-0.90265 4.2708-2.9775 4.9841l-1.4633-4.1881" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m3.9868 9.8602c-2.0663-0.73777-3.2993-2.8581-2.9185-5.0189 0.38074-2.1607 2.2642-3.7319 4.4582-3.719 2.194 0.012922 4.0589 1.6062 4.4141 3.7713 0.35526 2.1651-0.90265 4.2708-2.9775 4.9841l-1.4633-4.1881" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
  </g>
 </svg>

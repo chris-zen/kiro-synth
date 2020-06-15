@@ -34,9 +34,10 @@ pub fn start<F: Float + 'static>(synth_model: SynthModel,
 }
 
 pub const ORANGE: Color = Color::rgb8(236, 138, 56);
+pub const ORANGE_2: Color = Color::rgb8(204, 76, 0);
 // pub const GREY_23: Color = Color::grey8(23);
 pub const GREY_46: Color = Color::grey8(46);
-// pub const GREY_54: Color = Color::grey8(54);
+pub const GREY_54: Color = Color::grey8(54);
 pub const GREY_65: Color = Color::grey8(65);
 pub const GREY_74: Color = Color::grey8(74);
 pub const GREY_83: Color = Color::grey8(83);
@@ -50,4 +51,6 @@ fn setup_theme<T: Data>(env: &mut Env, _data: &T) {
   env.set(theme::LABEL_COLOR, GREY_214);
   env.set(widgets::knob::theme::KNOB_VALUE_FG, ORANGE);
   env.set(widgets::knob::theme::KNOB_VALUE_BG, GREY_83);
+  env.set(widgets::knob::theme::KNOB_MODULATION_FG, ORANGE_2);
+  env.set(widgets::knob::theme::KNOB_MODULATION_BG, GREY_54);
 }

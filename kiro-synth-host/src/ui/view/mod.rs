@@ -127,9 +127,9 @@ pub fn build_switcher<T, U, W>(tabs: W,
 pub fn build_knob_value(title: &'static str,
                         unit: &'static str) -> impl Widget<Param> {
 
-  let value_fn = move |data: &KnobData| {
+  let value_fn = move |data: &KnobData<Param>| {
     let step = data.step.max(0.001);
-    let precision = (-step.log10().floor()).max(0.0).min(3.0) as usize;
+    let precision = (-step.log10().ceil()).max(0.0).min(3.0) as usize;
     let value = (data.value / step).round() * step;
     format!("{:.*}{}", precision, value, unit)
   };
@@ -140,26 +140,34 @@ pub fn build_knob_value(title: &'static str,
 pub fn build_knob_enum(title: &'static str,
                        value_fn: impl Fn(usize) -> String + 'static) -> impl Widget<Param> {
 
-  build_knob(title, move |data: &KnobData| value_fn(data.value as usize))
+  build_knob(title, move |data: &KnobData<Param>| value_fn(data.value as usize))
 }
 
 pub fn build_knob(title: &'static str,
-                  value_fn: impl Fn(&KnobData) -> String + 'static) -> impl Widget<Param> {
+                  value_fn: impl Fn(&KnobData<Param>) -> String + 'static) -> impl Widget<Param> {
 
-  let callback = move |param: &Param, data: &KnobData| {
-    param.send_value(data.value).unwrap();
+  let callback = move |data: &KnobData<Param>| {
+    data.context.send_value(data.value).unwrap();
   };
+
+  let knob = Knob::new(callback)
+      .modulation_width(4.0)
+      .padding(2.0)
+      .center()
+      .fix_size(48.0, 48.0);
 
   Flex::column()
     .with_child(Label::new(title).center().fix_width(48.0))
-    .with_child(Knob::new(callback).center().fix_size(48.0, 48.0))
-    .with_child(Label::new(move |data: &(Param, KnobData), _env: &Env| value_fn(&data.1))
+    .with_child(knob)
+    .with_child(Label::new(move |data: &KnobData<Param>, _env: &Env| value_fn(data))
         .center()
         .fix_width(48.0)
     )
     .lens(lens::Id.map(
-      |param: &Param| (param.clone(), KnobData::new(param.origin, param.min, param.max, param.step, param.value, param.modulation)),
-      |param: &mut Param, data: (Param, KnobData)| param.value = data.1.value
+      |param: &Param| {
+        KnobData::new(param.origin, param.min, param.max, param.step, param.value, param.clone())
+            .with_modulation_value(param.modulation)
+      },
+      |param: &mut Param, data: KnobData<Param>| param.value = data.value
     ))
-    .controller(ModulationController::new())
 }

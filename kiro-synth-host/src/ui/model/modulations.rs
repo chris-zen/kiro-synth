@@ -133,11 +133,36 @@ impl InternalModulation {
   }
 }
 
+trait NamedReference {
+  fn name(&self) -> String;
+  fn reference(&self) -> Reference;
+}
+
+impl NamedReference for () {
+  fn name(&self) -> String {
+    unreachable!()
+  }
+
+  fn reference(&self) -> Reference {
+    unreachable!()
+  }
+}
+
 #[derive(Debug, Clone, Data)]
 pub struct Source {
   pub name: String,
   #[data(same_fn = "PartialEq::eq")]
   pub reference: SourceRef,
+}
+
+impl NamedReference for Source {
+  fn name(&self) -> String {
+    self.name.clone()
+  }
+
+  fn reference(&self) -> Reference {
+    Reference::Source(self.reference)
+  }
 }
 
 #[derive(Debug, Clone, Data, Lens)]
@@ -203,71 +228,94 @@ impl Modulations {
     }
   }
 
-  pub fn begin(&mut self, source_ref: SourceRef) {
+  pub fn start_config(&mut self, source_ref: SourceRef) {
+    println!("start-config {:?}", source_ref);
     self.config_source = Some(source_ref);
   }
 
-  pub fn done(&mut self, source_ref: SourceRef) {
+  pub fn stop_config(&mut self, source_ref: SourceRef) {
+    println!("stop-config {:?}", source_ref);
     self.config_source = self.config_source
         .filter(|v| *v != source_ref);
   }
 
-  fn groups(&self,
-            get_key: impl Fn(&InternalModulation) -> Reference,
-            get_group_name: impl Fn(&InternalModulation) -> String,
-            get_modulation_name: impl Fn(&InternalModulation) -> String,
-            allow_empty: bool) -> Vector<Group> {
+  fn source_groups(&self) -> impl Iterator<Item=Group> {
+    self.sources.iter().map(|source| Group {
+      index: source.reference.into(),
+      name: source.name.clone(),
+      reference: Reference::Source(source.reference),
+      config_mode: ConfigMode::Ready,
+      modulations: Vector::new(),
+    }).collect::<Vector<Group>>().into_iter()
+  }
 
-    let mut v = HashMap::<usize, Group>::new();
-    // let mut empty_sources = HashSet::<usize>::from_iter();
-    // self.sources.iter().map(|s| s.reference.into())
+  fn groups<NR>(&self,
+                get_key: impl Fn(&InternalModulation) -> Reference,
+                get_group_name: impl Fn(&InternalModulation) -> String,
+                get_modulation_name: impl Fn(&InternalModulation) -> String,
+                base_groups: &Vector<NR>) -> Vector<Group> where NR: NamedReference + Clone {
 
-    for (index, internal_modulation) in self.modulations.iter().enumerate() {
-      let reference = get_key(&internal_modulation);
-      let key = reference.into();
-      let config_mode = if reference.matches(self.config_source) {
+    let config_mode = |reference: Reference| {
+      if reference.matches(self.config_source) {
         ConfigMode::Ongoing
       }
       else {
         self.config_source
             .map(|_| ConfigMode::Disabled)
             .unwrap_or(ConfigMode::Ready)
-      };
+      }
+    };
 
-      let group = v.entry(key).or_insert_with(|| {
+    let mut groups = HashMap::<usize, Group>::from_iter(
+      base_groups.iter().map(|nr| {
+        let key = nr.reference().into();
+        (key, Group {
+          index: key,
+          name: nr.name(),
+          reference: nr.reference(),
+          modulations: Vector::new(),
+          config_mode: config_mode(nr.reference()),
+        })
+      })
+    );
+
+    for (index, internal_modulation) in self.modulations.iter().enumerate() {
+      let reference = get_key(&internal_modulation);
+      let key = reference.into();
+
+      let group = groups.entry(key).or_insert_with(|| {
         Group {
           index: key,
           reference,
           name: get_group_name(&internal_modulation),
           modulations: Vector::new(),
-          config_mode,
+          config_mode: config_mode(reference),
         }
       });
       let modulation_name = get_modulation_name(&internal_modulation);
       let modulation = internal_modulation.as_modulation(index, modulation_name, self.synth_client.clone());
       group.modulations.push_back(modulation);
     }
-    let mut result = Vector::from_iter(v.into_iter().filter_map(|(_, group)| {
-      Some(group).filter(|g| allow_empty || !g.modulations.is_empty())
-    }));
+    let mut result = Vector::from_iter(groups.into_iter().map(|(k, v)| v));
     result.sort_by(|g1, g2| g1.index.cmp(&g2.index));
     result
   }
 
-  fn count<K>(&self,
-              get_key: impl Fn(&InternalModulation) -> K,
-              allow_empty: bool) -> usize
-    where K: Into<usize> {
+  fn count<NR>(&self,
+               get_key: impl Fn(&InternalModulation) -> Reference,
+               base_groups: &Vector<NR>) -> usize where NR: NamedReference + Clone {
 
-    let mut v = HashMap::<usize, usize>::new();
+    let mut groups = HashMap::<usize, usize>::from_iter(
+      base_groups.iter().map(|nr| (nr.reference().into(), 1))
+    );
+
     for modulation in self.modulations.iter() {
       let key = get_key(&modulation).into();
-      let m = v.entry(key).or_insert(0usize);
+      let m = groups.entry(key).or_insert(0usize);
       *m += 1usize;
     }
-    v.values().filter_map(|count| {
-      Some(1).filter(|c| allow_empty || *c > 0)
-    }).sum::<usize>()
+
+    groups.values().sum::<usize>()
   }
 }
 
@@ -279,7 +327,7 @@ impl ListIter<Group> for Modulations {
           |m| Reference::Source(m.source_ref),
           |m| m.source_name.clone(),
           |m| m.param_name.clone(),
-          true,
+          &self.sources,
         )
       }
       View::GroupByParam => {
@@ -287,7 +335,7 @@ impl ListIter<Group> for Modulations {
           |m| Reference::Param(m.param_ref),
           |m| m.param_name.clone(),
           |m| m.source_name.clone(),
-          false,
+          &Vector::<()>::new(),
         )
       }
     };
@@ -301,7 +349,7 @@ impl ListIter<Group> for Modulations {
           |m| Reference::Source(m.source_ref),
           |m| m.source_name.clone(),
           |m| m.param_name.clone(),
-          true,
+          &self.sources,
         )
       }
       View::GroupByParam => {
@@ -309,7 +357,7 @@ impl ListIter<Group> for Modulations {
           |m| Reference::Param(m.param_ref),
           |m| m.param_name.clone(),
           |m| m.source_name.clone(),
-          false,
+          &Vector::<()>::new(),
         )
       }
     };
@@ -325,11 +373,11 @@ impl ListIter<Group> for Modulations {
     match self.view {
       View::GroupBySource => self.count(
         |m| Reference::Source(m.source_ref),
-        true
+        &self.sources,
       ),
       View::GroupByParam => self.count(
         |m| Reference::Param(m.param_ref),
-        false
+        &Vector::<()>::new(),
       ),
     }
   }

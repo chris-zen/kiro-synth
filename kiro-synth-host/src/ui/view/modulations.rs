@@ -1,8 +1,8 @@
 use std::sync::{Arc, Mutex};
 use std::marker::PhantomData;
 
-use druid::{Widget, lens::{self, LensExt}, UnitPoint, Env, EventCtx, Command, Selector, Data, Event, LifeCycleCtx, LifeCycle};
-use druid::widget::{List, Flex, Label, Scroll, Container, WidgetExt, CrossAxisAlignment, SizedBox, ViewSwitcher, Button, FillStrat, Click, Either, Controller};
+use druid::{Widget, WidgetExt, lens::{self, LensExt}, UnitPoint, Env, EventCtx, Command, Selector, Data, Event, LifeCycleCtx, LifeCycle};
+use druid::widget::{List, Flex, Label, Scroll, Container, CrossAxisAlignment, SizedBox, ViewSwitcher, Button, FillStrat, Click, Either, Controller};
 use druid::theme::WINDOW_BACKGROUND_COLOR;
 use druid::im::Vector;
 
@@ -12,7 +12,7 @@ use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::SourceRef;
 
 use crate::synth::SynthClient;
-use crate::ui::{GREY_83, GREY_46};
+use crate::ui::{GREY_83, GREY_46, ORANGE_2, GREY_74};
 use crate::ui::model::{SynthModel, Param};
 use crate::ui::widgets::knob::{Knob, KnobData};
 use crate::ui::model::modulations::{Group, Modulation, View, Modulations, Source, ConfigMode, Reference};
@@ -20,8 +20,8 @@ use crate::ui::view::{build_static_tabs, build_switcher};
 use crate::ui::icons;
 
 
-pub const MODULATION_BEGIN: Selector<SourceRef> = Selector::new("synth.modulation.begin");
-pub const MODULATION_DONE: Selector<SourceRef> = Selector::new("synth.modulation.done");
+pub const START_MODULATIONS_CONFIG: Selector<SourceRef> = Selector::new("synth.modulation.start-config");
+pub const STOP_MODULATIONS_CONFIG: Selector<SourceRef> = Selector::new("synth.modulation.stop-config");
 
 
 pub struct ModulationController<T: Data> {
@@ -36,33 +36,19 @@ impl<T: Data> ModulationController<T> {
   }
 }
 
-impl<W: Widget<Param>> Controller<Param, W> for ModulationController<Param> {
-  fn event(&mut self, child: &mut W, ctx: &mut EventCtx, event: &Event, data: &mut Param, env: &Env) {
-    match event {
-      Event::Command(command) => {
-        data.value = data.value + 0.1;
-        // println!("{:#?}", command);
-      }
-      _ => {}
-    }
-
-    child.event(ctx, event, data, env);
-  }
-}
-
 impl<W: Widget<SynthModel>> Controller<SynthModel, W> for ModulationController<SynthModel> {
   fn event(&mut self, child: &mut W, ctx: &mut EventCtx, event: &Event, data: &mut SynthModel, env: &Env) {
     match event {
-      Event::Command(command) if command.is(MODULATION_BEGIN) => {
-        if let Some(source_ref) = command.get::<SourceRef>(MODULATION_BEGIN) {
-          println!("{:#?} {:?}", command, source_ref);
-          data.modulations.begin(*source_ref);
+      Event::Command(command) if command.is(START_MODULATIONS_CONFIG) => {
+        if let Some(source_ref) = command.get::<SourceRef>(START_MODULATIONS_CONFIG) {
+          println!("{:?} {:?}", command, source_ref);
+          data.start_modulations_config(*source_ref);
         }
       }
-      Event::Command(command) if command.is(MODULATION_DONE) => {
-        if let Some(source_ref) = command.get::<SourceRef>(MODULATION_DONE) {
-          println!("{:#?} {:?}", command, source_ref);
-          data.modulations.done(*source_ref);
+      Event::Command(command) if command.is(STOP_MODULATIONS_CONFIG) => {
+        if let Some(source_ref) = command.get::<SourceRef>(STOP_MODULATIONS_CONFIG) {
+          println!("{:?} {:?}", command, source_ref);
+          data.stop_modulations_config(*source_ref);
         }
       }
       _ => {}
@@ -109,8 +95,8 @@ impl ModulationsView {
 
   fn build_tab(_index: usize, data: &View) -> impl Widget<View> {
     let icon = match data {
-      View::GroupBySource => &icons::MODULATION_SOURCE,
-      View::GroupByParam => &icons::MODULATION_PARAM,
+      View::GroupBySource => &icons::MODULATION_SOURCES,
+      View::GroupByParam => &icons::MODULATION_PARAMS,
     };
 
     Icon::new(icon)
@@ -131,8 +117,21 @@ impl ModulationsView {
 
   fn build_group() -> impl Widget<Group> {
 
+    let group_icon = Either::new(
+      |data: &Group, env| match data.reference {
+        Reference::Source(_) => true,
+        Reference::Param(_) => false,
+      },
+      Icon::new(&icons::MODULATION_SOURCE)
+          .fill_strategy(FillStrat::ScaleDown)
+          .fix_height(9.0),
+      Icon::new(&icons::MODULATION_PARAM)
+          .fill_strategy(FillStrat::ScaleDown)
+          .fix_height(9.0),
+    );
+
     let name = Label::new(|data: &Group, _env: &_| data.name.clone())
-        .padding((0.0, 3.0))
+        .padding((3.0, 3.0))
         .expand_width()
         .height(20.0);
 
@@ -143,37 +142,43 @@ impl ModulationsView {
         if let Reference::Source(source_ref) = data.reference {
           match config_mode {
             ConfigMode::Ready => {
-              Icon::new(&icons::MODULATION_NEW)
+              Icon::new(&icons::MODULATION_ARROW)
                   .fill_strategy(FillStrat::ScaleDown)
-                  .fix_height(8.0)
+                  .fix_height(10.0)
                   .on_click(move |ctx: &mut EventCtx, data: &mut Group, env| {
-                    let command = Command::new(MODULATION_BEGIN, source_ref);
+                    let command = Command::new(START_MODULATIONS_CONFIG, source_ref);
                     ctx.submit_command(command, None);
                   })
                   .boxed()
             }
             ConfigMode::Ongoing => {
-              Icon::new(&icons::MODULATION_NEW)
+              Icon::new(&icons::MODULATION_ARROW)
+                  .color(ORANGE_2)
                   .fill_strategy(FillStrat::ScaleDown)
-                  .fix_height(8.0)
+                  .fix_height(10.0)
                   .on_click(move |ctx: &mut EventCtx, data: &mut Group, env| {
-                    let command = Command::new(MODULATION_DONE, source_ref);
+                    let command = Command::new(STOP_MODULATIONS_CONFIG, source_ref);
                     ctx.submit_command(command, None);
                   })
                   .boxed()
             }
             ConfigMode::Disabled => {
-              SizedBox::empty().fix_height(8.0).boxed()
+              Icon::new(&icons::MODULATION_ARROW)
+                  .color(GREY_74)
+                  .fill_strategy(FillStrat::ScaleDown)
+                  .fix_height(10.0)
+                  .boxed()
             }
           }
         }
         else {
-          SizedBox::empty().fix_height(8.0).boxed()
+          SizedBox::empty().fix_height(10.0).boxed()
         }
       },
-    );
+    ).padding((0.0, 0.0, 2.0, 0.0));
 
     Flex::row()
+        .with_child(group_icon)
         .with_flex_child(name, 1.0)
         .with_child(config_mode)
   }
@@ -191,8 +196,14 @@ impl ModulationsView {
         .align_vertical(UnitPoint::new(0.0, 0.5))
         .fix_height(19.0);
 
-    // TODO formatting according to `step`
-    let value = Label::new(|data: &Modulation, _env: &_| format!("{:.3}", data.amount))
+    let value_fn = move |data: &Modulation, _env: &_| {
+      let step = data.step.max(0.001);
+      let precision = (-step.log10().ceil()).max(0.0).min(3.0) as usize;
+      let value = (data.amount / step).round() * step;
+      format!("{:.*}", precision, value)
+    };
+
+    let value = Label::new(value_fn)
         .align_vertical(UnitPoint::new(0.0, 0.5))
         .fix_height(19.0);
 
@@ -202,22 +213,20 @@ impl ModulationsView {
         .with_child(value)
         .expand_width();
 
-    let callback = move |data: &Modulation, knob_data: &KnobData| {
-      data.send_modulation_amount(knob_data.value).unwrap();
+    let callback = move |data: &KnobData<Modulation>| {
+      data.context.send_modulation_amount(data.value).unwrap();
     };
 
     let knob = Knob::new(callback)
+        .padding(4.0)
         .center()
         .fix_size(38.0, 38.0)
         .lens(lens::Id.map(
           |data: &Modulation| {
-            (
-              data.clone(),
-              KnobData::new(data.origin, data.min, data.max, data.step, data.amount, 0.0)
-            )
+            KnobData::new(data.origin, data.min, data.max, data.step, data.amount, data.clone())
           },
-          |data: &mut Modulation, knob_data: (Modulation, KnobData)| {
-            data.amount = knob_data.1.value
+          |data: &mut Modulation, knob_data: KnobData<Modulation>| {
+            data.amount = knob_data.value
           }
         ));
 

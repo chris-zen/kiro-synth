@@ -26,7 +26,7 @@ heapless = "0.5.2"
 cpal = { git = "https://github.com/RustAudio/cpal", branch = "master" }
 
 #druid = { git = "https://github.com/xi-editor/druid", branch = "master", features = ["im"] }
-#druid = { path = "../../druid/druid" }
+#druid = { path = "../../druid-orig/druid", features = ["im"] }
 druid = { version = "^0.6", features = ["im"] }
 
 kiro-synth-core = { path = "../kiro-synth-core" }
@@ -34,7 +34,6 @@ kiro-synth-midi = { path = "../kiro-synth-midi" }
 kiro-synth-engine = { path = "../kiro-synth-engine" }
 
 druid-icon = { path = "../druid-icon" }
-#druid-material-icons = { path = "../../druid-material-icons" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 coremidi = "0.3.1"

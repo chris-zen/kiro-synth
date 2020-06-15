@@ -8,12 +8,12 @@
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    inkscape:version="1.0 (4035a4f, 2020-05-01)"
-   sodipodi:docname="modulation-source.inkscape.svg"
+   sodipodi:docname="modulation-sources-short.inkscape.svg"
    id="svg20"
-   viewBox="0 0 11 11"
+   viewBox="0 0 23 11"
    version="1.1"
    height="11"
-   width="11">
+   width="23">
   <metadata
      id="metadata26">
     <rdf:RDF>
@@ -68,7 +68,13 @@
     <g
        id="g2237"
        style="opacity:1"
-       transform="translate(-2)" />
+       transform="translate(-2)">
+      <path
+         style="color:#000000;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:medium;line-height:normal;font-family:sans-serif;font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-variant-east-asian:normal;font-feature-settings:normal;font-variation-settings:normal;text-indent:0;text-align:start;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;letter-spacing:normal;word-spacing:normal;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:start;white-space:normal;shape-padding:0;shape-margin:0;inline-size:0;clip-rule:nonzero;display:inline;overflow:visible;visibility:visible;isolation:auto;mix-blend-mode:normal;color-interpolation:sRGB;color-interpolation-filters:linearRGB;solid-color:#000000;solid-opacity:1;vector-effect:none;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1.13421;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;color-rendering:auto;image-rendering:auto;shape-rendering:auto;text-rendering:auto;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
+         d="m 15.5,1.2624899 v 8.4750202 c 4.2e-4,0.4195429 0.450637,0.6910259 0.83081,0.5009799 L 23.730166,6.001 c 0.415573,-0.2088575 0.415573,-0.7931425 0,-1.002 L 16.33081,0.76151015 C 16.017317,0.58197764 15.5,0.84063315 15.5,1.2624899 Z"
+         id="path2241"
+         sodipodi:nodetypes="sccccss" />
+    </g>
     <circle
        r="4.5"
        style="stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none"
