@@ -1,11 +1,11 @@
 use std::sync::{Arc, Mutex};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::iter::FromIterator;
 
 use derivative::Derivative;
 
 use druid::{Data, Lens};
-use druid::im::{vector, Vector};
+use druid::im::Vector;
 use druid::widget::ListIter;
 
 use kiro_synth_core::float::Float;
@@ -239,16 +239,6 @@ impl Modulations {
         .filter(|v| *v != source_ref);
   }
 
-  fn source_groups(&self) -> impl Iterator<Item=Group> {
-    self.sources.iter().map(|source| Group {
-      index: source.reference.into(),
-      name: source.name.clone(),
-      reference: Reference::Source(source.reference),
-      config_mode: ConfigMode::Ready,
-      modulations: Vector::new(),
-    }).collect::<Vector<Group>>().into_iter()
-  }
-
   fn groups<NR>(&self,
                 get_key: impl Fn(&InternalModulation) -> Reference,
                 get_group_name: impl Fn(&InternalModulation) -> String,
@@ -296,7 +286,7 @@ impl Modulations {
       let modulation = internal_modulation.as_modulation(index, modulation_name, self.synth_client.clone());
       group.modulations.push_back(modulation);
     }
-    let mut result = Vector::from_iter(groups.into_iter().map(|(k, v)| v));
+    let mut result = Vector::from_iter(groups.into_iter().map(|(_, v)| v));
     result.sort_by(|g1, g2| g1.index.cmp(&g2.index));
     result
   }

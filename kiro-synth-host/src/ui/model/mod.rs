@@ -6,18 +6,16 @@ mod filter;
 mod dca;
 pub mod modulations;
 
-use std::sync::{Arc, Mutex, PoisonError, MutexGuard};
+use std::sync::{Arc, Mutex};
 
 use druid::{Data, Lens};
 use druid::im::{vector, Vector};
 
 use kiro_synth_core::float::Float;
-use kiro_synth_engine::program::{ParamRef, Program, Param as ProgParam, SourceRef};
+use kiro_synth_engine::program::{Program, SourceRef};
 
 use crate::program::kiro::KiroModule;
-use crate::program::params::{OscParams, EnvGenParams, FilterParams, DcaParams, LfoParams};
 use crate::synth::SynthClient;
-use crate::ui::widgets::knob::KnobData;
 
 pub use param::{KnobDataFromParam, Param};
 pub use eg::{EgFromSynth, EnvGen};

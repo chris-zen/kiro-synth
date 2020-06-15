@@ -1,16 +1,13 @@
-use std::sync::{Arc, Mutex, PoisonError, MutexGuard};
+use std::sync::{Arc, Mutex};
 
 use druid::{Data, Lens};
-use druid::im::{vector, Vector};
 
 use kiro_synth_core::float::Float;
-use kiro_synth_engine::program::{ParamRef, Program, Param as ProgParam};
+use kiro_synth_engine::program::Program;
 
-use crate::program::kiro::KiroModule;
-use crate::program::params::{OscParams, EnvGenParams, FilterParams, DcaParams, LfoParams};
+use crate::program::params::OscParams;
 use crate::synth::SynthClient;
-use crate::ui::widgets::knob::KnobData;
-use crate::ui::model::{SynthModel, Param, Modulations};
+use crate::ui::model::{SynthModel, Param};
 
 pub struct OscFromSynth;
 

@@ -294,7 +294,7 @@ impl<Context, Callback> Widget<KnobData<Context>> for Knob<Context, Callback>
                     value_fg_color, value_width, true);
 
     if let Some(weight) = data.modulation.weight {
-
+      // TODO paint weight arc
     }
 
     if self.modulation_width > 0.0 {

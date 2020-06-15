@@ -1,9 +1,8 @@
 use std::sync::{Arc, Mutex};
 use std::marker::PhantomData;
 
-use druid::{Widget, WidgetExt, lens::{self, LensExt}, UnitPoint, Env, EventCtx, Command, Selector, Data, Event, LifeCycleCtx, LifeCycle};
-use druid::widget::{List, Flex, Label, Scroll, Container, CrossAxisAlignment, SizedBox, ViewSwitcher, Button, FillStrat, Click, Either, Controller};
-use druid::theme::WINDOW_BACKGROUND_COLOR;
+use druid::{Widget, WidgetExt, lens::{self, LensExt}, UnitPoint, Env, EventCtx, Command, Selector, Data, Event};
+use druid::widget::{List, Flex, Label, Scroll, Container, CrossAxisAlignment, SizedBox, ViewSwitcher, FillStrat, Either, Controller};
 use druid::im::Vector;
 
 use druid_icon::Icon;
@@ -12,11 +11,11 @@ use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::SourceRef;
 
 use crate::synth::SynthClient;
-use crate::ui::{GREY_83, GREY_46, ORANGE_2, GREY_74};
-use crate::ui::model::{SynthModel, Param};
+use crate::ui::{GREY_83, ORANGE_2, GREY_74};
+use crate::ui::model::SynthModel;
 use crate::ui::widgets::knob::{Knob, KnobData};
-use crate::ui::model::modulations::{Group, Modulation, View, Modulations, Source, ConfigMode, Reference};
-use crate::ui::view::{build_static_tabs, build_switcher};
+use crate::ui::model::modulations::{Group, Modulation, View, Modulations, ConfigMode, Reference};
+use crate::ui::view::build_static_tabs;
 use crate::ui::icons;
 
 
@@ -41,13 +40,11 @@ impl<W: Widget<SynthModel>> Controller<SynthModel, W> for ModulationController<S
     match event {
       Event::Command(command) if command.is(START_MODULATIONS_CONFIG) => {
         if let Some(source_ref) = command.get::<SourceRef>(START_MODULATIONS_CONFIG) {
-          println!("{:?} {:?}", command, source_ref);
           data.start_modulations_config(*source_ref);
         }
       }
       Event::Command(command) if command.is(STOP_MODULATIONS_CONFIG) => {
         if let Some(source_ref) = command.get::<SourceRef>(STOP_MODULATIONS_CONFIG) {
-          println!("{:?} {:?}", command, source_ref);
           data.stop_modulations_config(*source_ref);
         }
       }
@@ -72,7 +69,7 @@ impl ModulationsView {
 
     let body = ViewSwitcher::new(
       |data: &Modulations, _: &Env| data.view,
-      |view: &View, data: &Modulations, _: &Env| {
+      |view: &View, _data: &Modulations, _: &Env| {
         match view {
           View::GroupBySource => Box::new(Self::build_modulations_list()),
           View::GroupByParam => Box::new(Self::build_modulations_list()),
@@ -118,7 +115,7 @@ impl ModulationsView {
   fn build_group() -> impl Widget<Group> {
 
     let group_icon = Either::new(
-      |data: &Group, env| match data.reference {
+      |data: &Group, _: &Env| match data.reference {
         Reference::Source(_) => true,
         Reference::Param(_) => false,
       },
@@ -138,14 +135,13 @@ impl ModulationsView {
     let config_mode = ViewSwitcher::new(
       |data: &Group, _: &Env| data.config_mode,
       |config_mode: &ConfigMode, data: &Group, _: &Env| {
-        println!("{:?} {:?}", data.name, data.config_mode);
         if let Reference::Source(source_ref) = data.reference {
           match config_mode {
             ConfigMode::Ready => {
               Icon::new(&icons::MODULATION_ARROW)
                   .fill_strategy(FillStrat::ScaleDown)
                   .fix_height(10.0)
-                  .on_click(move |ctx: &mut EventCtx, data: &mut Group, env| {
+                  .on_click(move |ctx: &mut EventCtx, _data: &mut Group, _: &Env| {
                     let command = Command::new(START_MODULATIONS_CONFIG, source_ref);
                     ctx.submit_command(command, None);
                   })
@@ -156,7 +152,7 @@ impl ModulationsView {
                   .color(ORANGE_2)
                   .fill_strategy(FillStrat::ScaleDown)
                   .fix_height(10.0)
-                  .on_click(move |ctx: &mut EventCtx, data: &mut Group, env| {
+                  .on_click(move |ctx: &mut EventCtx, _data: &mut Group, _: &Env| {
                     let command = Command::new(STOP_MODULATIONS_CONFIG, source_ref);
                     ctx.submit_command(command, None);
                   })
@@ -233,45 +229,5 @@ impl ModulationsView {
     Flex::row()
         .with_child(knob)
         .with_flex_child(name_and_value, 1.0)
-  }
-
-  fn build_add_modulation() -> impl Widget<Modulations> {
-    let list = Scroll::new(List::new(|| {
-        Label::new(|source: &Source, _: &Env| source.name.clone())
-      }).expand_width()
-    ).vertical().lens(Modulations::sources);
-
-    let sources = Container::new(list)
-        .rounded(2.0)
-        .background(WINDOW_BACKGROUND_COLOR)
-        .expand_height();
-
-    let sources = Flex::column()
-        .with_child(Label::new("Sources").padding(2.0))
-        .with_flex_child(sources, 1.0);
-
-    let sources = Container::new(sources)
-        .background(GREY_83);
-
-    let params = Container::new(SizedBox::empty().expand())
-        .rounded(2.0)
-        .background(WINDOW_BACKGROUND_COLOR);
-        // .padding((0.0, 0.0, 0.0, 2.0));
-
-    let params = Flex::column()
-        .with_child(Label::new("Parameters").padding(2.0))
-        .with_flex_child(params, 1.0);
-
-    let params = Container::new(params)
-        .background(GREY_83);
-
-    let add_button = Button::new("Add")
-        .expand_width()
-        .padding(2.0);
-
-    Flex::column()
-        .with_child(add_button)
-        .with_flex_child(sources, 1.0)
-        .with_flex_child(params, 1.0)
   }
 }
