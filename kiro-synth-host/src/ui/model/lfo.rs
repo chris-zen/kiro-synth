@@ -1,12 +1,10 @@
-use std::sync::{Arc, Mutex};
-
 use druid::{Data, Lens};
 
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::Program;
 
 use crate::program::params::LfoParams;
-use crate::synth::SynthClient;
+use crate::synth::SynthClientMutex;
 use crate::ui::model::{SynthModel, Param};
 
 
@@ -28,25 +26,23 @@ pub struct Lfo {
   pub rate: Param,
   pub phase: Param,
   pub depth: Param,
-  pub osc_pitch_mod: Param,
-  pub filter_cutoff_mod: Param,
-  pub dca_amp_mod: Param,
-  pub dca_pan_mod: Param,
 }
 
 impl Lfo {
   pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
                                      params: &LfoParams,
-                                     synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
+                                     synth_client: SynthClientMutex<f32>) -> Self {
     Lfo {
       shape: Param::new(program, &params.shape, synth_client.clone()),
       rate: Param::new(program, &params.rate, synth_client.clone()),
       phase: Param::new(program, &params.phase, synth_client.clone()),
       depth: Param::new(program, &params.depth, synth_client.clone()),
-      osc_pitch_mod: Param::new(program, &params.modulation.osc_pitch, synth_client.clone()).with_origin(0.0),
-      filter_cutoff_mod: Param::new(program, &params.modulation.filter_cutoff, synth_client.clone()).with_origin(0.0),
-      dca_amp_mod: Param::new(program, &params.modulation.dca_amp, synth_client.clone()),
-      dca_pan_mod: Param::new(program, &params.modulation.dca_pan, synth_client.clone()),
     }
+  }
+
+  pub fn for_each_modulated_param(&mut self, apply: &impl Fn(&mut Param)) {
+    apply(&mut self.rate);
+    apply(&mut self.phase);
+    apply(&mut self.depth);
   }
 }

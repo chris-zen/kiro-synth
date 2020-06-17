@@ -33,9 +33,11 @@ pub fn start<F: Float + 'static>(synth_model: SynthModel,
       .expect("UI launch failed");
 }
 
-pub const ORANGE: Color = Color::rgb8(236, 138, 56);
-pub const ORANGE_2: Color = Color::rgb8(204, 76, 0);
-// pub const GREY_23: Color = Color::grey8(23);
+pub const KNOB_VALUE: Color = Color::rgb8(236, 138, 56);
+pub const KNOB_MODULATION: Color = Color::rgb8(204, 76, 0);
+pub const KNOB_WEIGHT: Color = Color::rgb8(255, 223, 35);
+
+pub const GREY_23: Color = Color::grey8(23);
 pub const GREY_46: Color = Color::grey8(46);
 pub const GREY_54: Color = Color::grey8(54);
 pub const GREY_65: Color = Color::grey8(65);
@@ -49,8 +51,9 @@ fn setup_theme<T: Data>(env: &mut Env, _data: &T) {
   env.set(theme::WINDOW_BACKGROUND_COLOR, GREY_46);
   env.set(theme::TEXT_SIZE_NORMAL, 11.0);
   env.set(theme::LABEL_COLOR, GREY_214);
-  env.set(widgets::knob::theme::KNOB_VALUE_FG, ORANGE);
-  env.set(widgets::knob::theme::KNOB_VALUE_BG, GREY_83);
-  env.set(widgets::knob::theme::KNOB_MODULATION_FG, ORANGE_2);
-  env.set(widgets::knob::theme::KNOB_MODULATION_BG, GREY_54);
+  env.set(widgets::knob::theme::KNOB_VALUE_FG_COLOR, KNOB_VALUE);
+  env.set(widgets::knob::theme::KNOB_VALUE_BG_COLOR, GREY_83);
+  env.set(widgets::knob::theme::KNOB_MODULATION_VALUE_FG_COLOR, KNOB_MODULATION);
+  env.set(widgets::knob::theme::KNOB_MODULATION_VALUE_BG_COLOR, GREY_54);
+  env.set(widgets::knob::theme::KNOB_MODULATION_TOTAL_AMOUNT_COLOR, KNOB_WEIGHT);
 }

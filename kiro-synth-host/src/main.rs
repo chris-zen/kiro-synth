@@ -21,7 +21,7 @@ use crate::midi::drivers::{MidiDriver, MidiHandler};
 use crate::program::kiro::KiroModule;
 use crate::midi::mapper::MidiMapper;
 use crate::ui::SynthModel;
-use crate::synth::SynthClient;
+use crate::synth::{SynthClient, SynthClientMutex};
 
 const SAMPLE_RATE: u32 = 44100;
 
@@ -49,7 +49,7 @@ fn main() -> Result<()> {
 
   // UI MODEL
 
-  let synth_model = SynthModel::new(&program, &module, synth_client.clone());
+  let synth_model = SynthModel::new(&program, &module, SynthClientMutex::new(synth_client.clone()));
 
   // MIDI
 

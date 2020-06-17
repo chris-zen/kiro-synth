@@ -6,16 +6,14 @@ mod filter;
 mod dca;
 pub mod modulations;
 
-use std::sync::{Arc, Mutex};
-
 use druid::{Data, Lens};
 use druid::im::{vector, Vector};
 
 use kiro_synth_core::float::Float;
-use kiro_synth_engine::program::{Program, SourceRef};
+use kiro_synth_engine::program::{Program, SourceRef, ParamRef};
 
 use crate::program::kiro::KiroModule;
-use crate::synth::SynthClient;
+use crate::synth::SynthClientMutex;
 
 pub use param::{KnobDataFromParam, Param};
 pub use eg::{EgFromSynth, EnvGen};
@@ -61,7 +59,7 @@ pub struct SynthModel {
 impl SynthModel {
   pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
                                      module: &KiroModule,
-                                     synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
+                                     synth_client: SynthClientMutex<f32>) -> Self {
 
     let params = &module.params;
 
@@ -93,17 +91,75 @@ impl SynthModel {
       dca: Dca::new(program, &params.dca, synth_client.clone()),
 
       modulations: Modulations::new(program, module, synth_client.clone()),
-    }
+    }.with_init_modulations_config()
   }
 }
 
-impl SynthModel {
+impl<'a> SynthModel {
+  pub fn with_init_modulations_config(mut self) -> Self {
+    let total_amounts = self.modulations.get_total_amounts_by_param();
+
+    self.for_each_modulated_param(move |param| {
+      param.modulation.total_amount = total_amounts
+          .get(&param.param_ref.into())
+          .cloned()
+          .unwrap_or(0.0);
+    });
+
+    self
+  }
+
   pub fn start_modulations_config(&mut self, source_ref: SourceRef) {
     self.modulations.start_config(source_ref);
+    let config_amounts = self.modulations.get_config_amounts_by_param(source_ref);
+    let total_amounts = self.modulations.get_total_amounts_by_param();
+    println!("{:#?}\n{:#?}", config_amounts, total_amounts);
+    let config_source = self.modulations.config_source;
+    self.for_each_modulated_param(move |param| {
+      let key: usize = param.param_ref.into();
+      param.modulation.config_source = config_source;
+      param.modulation.config_amount = config_amounts.get(&key).cloned().unwrap_or(0.0);
+      param.modulation.total_amount = total_amounts.get(&key).cloned().unwrap_or(0.0);
+      println!(">> {:?}", param);
+    });
+  }
 
+  pub fn change_modulations_config(&mut self, source_ref: SourceRef, param_ref: ParamRef, config_amount: f64) {
+    let same_source = self.modulations.config_source
+        .filter(|source| *source == source_ref)
+        .is_some();
+
+    let total_amounts = self.modulations.get_total_amounts_by_param();
+
+    self.for_each_modulated_param(move |param| {
+      if same_source && param.param_ref == param_ref {
+        param.modulation.config_amount = config_amount;
+      }
+      param.modulation.total_amount = total_amounts.get(&param.param_ref.into()).cloned().unwrap_or(0.0);
+    });
   }
 
   pub fn stop_modulations_config(&mut self, source_ref: SourceRef) {
     self.modulations.stop_config(source_ref);
+    self.for_each_modulated_param(move |param| {
+      param.modulation.config_source = None;
+      param.modulation.config_amount = 0.0;
+    });
+  }
+
+  fn for_each_modulated_param(&mut self, apply: impl Fn(&mut Param)) {
+    for osc in self.osc.iter_mut() {
+      osc.for_each_modulated_param(&apply);
+    }
+    for eg in self.eg.iter_mut() {
+      eg.for_each_modulated_param(&apply);
+    }
+    for lfo in self.lfo.iter_mut() {
+      lfo.for_each_modulated_param(&apply);
+    }
+    for filter in self.filter.iter_mut() {
+      filter.for_each_modulated_param(&apply);
+    }
+    self.dca.for_each_modulated_param(&apply);
   }
 }

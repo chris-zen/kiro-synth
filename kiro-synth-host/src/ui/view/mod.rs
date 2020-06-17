@@ -6,13 +6,13 @@ mod modulations;
 
 use std::sync::{Arc, Mutex};
 
-use druid::{Widget, Data, Env, lens::{self, LensExt}};
+use druid::{Widget, Data, Env, UpdateCtx};
 use druid::widget::{Flex, WidgetExt, Label, Container, ViewSwitcher, CrossAxisAlignment};
 
 use kiro_synth_core::float::Float;
 
 use crate::synth::SynthClient;
-use crate::ui::model::{SynthModel, Param};
+use crate::ui::model::{SynthModel, Param, KnobDataFromParam};
 use crate::ui::widgets::knob::{KnobData, Knob};
 use crate::ui::{GREY_83, GREY_65, GREY_74};
 use crate::ui::widgets::tab::Tab;
@@ -146,8 +146,20 @@ pub fn build_knob_enum(title: &'static str,
 pub fn build_knob(title: &'static str,
                   value_fn: impl Fn(&KnobData<Param>) -> String + 'static) -> impl Widget<Param> {
 
-  let callback = move |data: &KnobData<Param>| {
-    data.context.send_value(data.value).unwrap();
+  let callback = move |_ctx: &mut UpdateCtx, data: &KnobData<Param>| {
+    match data.context.modulation.config_source {
+      Some(source_ref) => {
+        if let Some(config_amount) = data.modulation.config_amount {
+          let param_ref = data.context.param_ref;
+          data.context.synth_client
+              .send_modulation_amount(source_ref, param_ref, config_amount as f32).unwrap();
+        }
+      }
+      None => {
+        data.context.synth_client
+            .send_param_value(data.context.param_ref, data.value as f32).unwrap()
+      },
+    }
   };
 
   let knob = Knob::new(callback)
@@ -163,11 +175,5 @@ pub fn build_knob(title: &'static str,
         .center()
         .fix_width(48.0)
     )
-    .lens(lens::Id.map(
-      |param: &Param| {
-        KnobData::new(param.origin, param.min, param.max, param.step, param.value, param.clone())
-            .with_modulation_value(param.modulation)
-      },
-      |param: &mut Param, data: KnobData<Param>| param.value = data.value
-    ))
+    .lens(KnobDataFromParam)
 }

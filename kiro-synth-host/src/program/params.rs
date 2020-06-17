@@ -37,19 +37,9 @@ pub struct LfoParams {
   pub rate: ParamBlock,
   pub phase: ParamBlock,
   pub depth: ParamBlock,
-  pub modulation: LfoModParams,
 }
 
-param_blocks!(LfoParams, shape, rate, phase, depth, [modulation]);
-
-pub struct LfoModParams {
-  pub osc_pitch: ParamBlock,
-  pub filter_cutoff: ParamBlock,
-  pub dca_amp: ParamBlock,
-  pub dca_pan: ParamBlock,
-}
-
-param_blocks!(LfoModParams, osc_pitch, filter_cutoff, dca_amp, dca_pan);
+param_blocks!(LfoParams, shape, rate, phase, depth);
 
 pub struct OscParams {
   pub shape: ParamBlock,

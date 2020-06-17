@@ -1,17 +1,17 @@
 use std::sync::{Arc, Mutex};
 use std::marker::PhantomData;
 
-use druid::{Widget, WidgetExt, lens::{self, LensExt}, UnitPoint, Env, EventCtx, Command, Selector, Data, Event};
+use druid::{Widget, WidgetExt, lens::{self, LensExt}, UnitPoint, Env, EventCtx, Command, Selector, Data, Event, UpdateCtx};
 use druid::widget::{List, Flex, Label, Scroll, Container, CrossAxisAlignment, SizedBox, ViewSwitcher, FillStrat, Either, Controller};
 use druid::im::Vector;
 
 use druid_icon::Icon;
 
 use kiro_synth_core::float::Float;
-use kiro_synth_engine::program::SourceRef;
+use kiro_synth_engine::program::{SourceRef, ParamRef};
 
 use crate::synth::SynthClient;
-use crate::ui::{GREY_83, ORANGE_2, GREY_74};
+use crate::ui::{GREY_83, KNOB_MODULATION, GREY_74, KNOB_VALUE, KNOB_WEIGHT};
 use crate::ui::model::SynthModel;
 use crate::ui::widgets::knob::{Knob, KnobData};
 use crate::ui::model::modulations::{Group, Modulation, View, Modulations, ConfigMode, Reference};
@@ -20,6 +20,7 @@ use crate::ui::icons;
 
 
 pub const START_MODULATIONS_CONFIG: Selector<SourceRef> = Selector::new("synth.modulation.start-config");
+pub const CHANGE_MODULATIONS_CONFIG: Selector<(SourceRef, ParamRef, f64)> = Selector::new("synth.modulation.change-config");
 pub const STOP_MODULATIONS_CONFIG: Selector<SourceRef> = Selector::new("synth.modulation.stop-config");
 
 
@@ -41,6 +42,11 @@ impl<W: Widget<SynthModel>> Controller<SynthModel, W> for ModulationController<S
       Event::Command(command) if command.is(START_MODULATIONS_CONFIG) => {
         if let Some(source_ref) = command.get::<SourceRef>(START_MODULATIONS_CONFIG) {
           data.start_modulations_config(*source_ref);
+        }
+      }
+      Event::Command(command) if command.is(CHANGE_MODULATIONS_CONFIG) => {
+        if let Some((source_ref, param_ref, weight)) = command.get::<(SourceRef, ParamRef, f64)>(CHANGE_MODULATIONS_CONFIG) {
+          data.change_modulations_config(*source_ref, *param_ref, *weight);
         }
       }
       Event::Command(command) if command.is(STOP_MODULATIONS_CONFIG) => {
@@ -149,7 +155,7 @@ impl ModulationsView {
             }
             ConfigMode::Ongoing => {
               Icon::new(&icons::MODULATION_ARROW)
-                  .color(ORANGE_2)
+                  .color(KNOB_WEIGHT)
                   .fill_strategy(FillStrat::ScaleDown)
                   .fix_height(10.0)
                   .on_click(move |ctx: &mut EventCtx, _data: &mut Group, _: &Env| {
@@ -209,8 +215,14 @@ impl ModulationsView {
         .with_child(value)
         .expand_width();
 
-    let callback = move |data: &KnobData<Modulation>| {
-      data.context.send_modulation_amount(data.value).unwrap();
+    let callback = move |ctx: &mut UpdateCtx, data: &KnobData<Modulation>| {
+      let source_ref = data.context.source_ref;
+      let param_ref = data.context.param_ref;
+      data.context.synth_client
+          .send_modulation_amount(source_ref, param_ref, data.value as f32).unwrap();
+      let payload = (source_ref, param_ref, data.value);
+      let command = Command::new(CHANGE_MODULATIONS_CONFIG, payload);
+      ctx.submit_command(command, None)
     };
 
     let knob = Knob::new(callback)

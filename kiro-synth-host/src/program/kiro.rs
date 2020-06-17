@@ -2,7 +2,7 @@ use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::{Program, Block, ProgramBuilder, ParamBlock, SignalRef, lfo, SourceRef};
 use kiro_synth_engine::program::{dca, envgen, filter, osc};
 
-use crate::program::params::{EnvGenParams, OscParams, FilterParams, DcaParams, LfoParams, LfoModParams};
+use crate::program::params::{EnvGenParams, OscParams, FilterParams, DcaParams, LfoParams};
 use crate::program::values;
 
 pub struct KiroParams {
@@ -85,12 +85,6 @@ impl KiroModule {
         rate: program.param("lfo1-rate", values::lfo_rate()),
         phase: program.param("lfo1-phase", values::lfo_phase()),
         depth: program.param("lfo1-depth", values::amplitude()),
-        modulation: LfoModParams {
-          osc_pitch: program.param("lfo1-osc-pitch-mod", values::lfo_osc_pitch_mod()),
-          filter_cutoff: program.param("lfo1-filt-cutoff-mod", values::lfo_filt_cutoff_mod()),
-          dca_amp: program.param("lfo1-dca-amp-mod", values::lfo_dca_amp_mod()),
-          dca_pan: program.param("lfo1-dca-pan-mod", values::lfo_dca_pan_mod()),
-        }
       },
 
       lfo2: LfoParams {
@@ -98,12 +92,6 @@ impl KiroModule {
         rate: program.param("lfo2-rate", values::lfo_rate()),
         phase: program.param("lfo2-phase", values::lfo_phase()),
         depth: program.param("lfo2-depth", values::amplitude()),
-        modulation: LfoModParams {
-          osc_pitch: program.param("lfo2-osc-pitch-mod", values::lfo_osc_pitch_mod()),
-          filter_cutoff: program.param("lfo2-filt-cutoff-mod", values::lfo_filt_cutoff_mod()),
-          dca_amp: program.param("lfo2-dca-amp-mod", values::lfo_dca_amp_mod()),
-          dca_pan: program.param("lfo2-dca-pan-mod", values::lfo_dca_pan_mod()),
-        }
       },
 
       eg1: EnvGenParams {
@@ -211,30 +199,6 @@ impl KiroModule {
     program.modulation(&params.filter1.q, sources.lfo2, F::val(0.5));
     program.modulation(&params.osc1.amplitude, sources.lfo2, F::val(0.1));
     program.modulation(&params.dca.pan, sources.lfo1, F::val(0.1));
-
-    // let osc_pitch_mod = program.expr(|expr| {
-    //   let lfo1 = expr.mul_signal_param(lfo1.output, params.lfo1.modulation.osc_pitch.reference);
-    //   let lfo2 = expr.mul_signal_param(lfo2.output, params.lfo2.modulation.osc_pitch.reference);
-    //   expr.add(lfo1, lfo2)
-    // });
-    //
-    // let filter_cutoff_mod = program.expr(|expr| {
-    //   let lfo1 = expr.mul_signal_param(lfo1.output, params.lfo1.modulation.filter_cutoff.reference);
-    //   let lfo2 = expr.mul_signal_param(lfo2.output, params.lfo2.modulation.filter_cutoff.reference);
-    //   expr.add(lfo1, lfo2)
-    // });
-    //
-    // let dca_amp_mod = program.expr(|expr| {
-    //   let lfo1 = expr.mul_signal_param(lfo1.output, params.lfo1.modulation.dca_amp.reference);
-    //   let lfo2 = expr.mul_signal_param(lfo2.output, params.lfo2.modulation.dca_amp.reference);
-    //   expr.add(lfo1, lfo2)
-    // });
-    //
-    // let dca_pan_mod = program.expr(|expr| {
-    //   let lfo1 = expr.mul_signal_param(lfo1.output, params.lfo1.modulation.dca_pan.reference);
-    //   let lfo2 = expr.mul_signal_param(lfo2.output, params.lfo2.modulation.dca_pan.reference);
-    //   expr.add(lfo1, lfo2)
-    // });
 
     let eg1 = envgen::Block {
       inputs: envgen::Inputs {

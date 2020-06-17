@@ -1,12 +1,10 @@
-use std::sync::{Arc, Mutex};
-
 use druid::{Data, Lens};
 
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::Program;
 
 use crate::program::params::OscParams;
-use crate::synth::SynthClient;
+use crate::synth::SynthClientMutex;
 use crate::ui::model::{SynthModel, Param};
 
 pub struct OscFromSynth;
@@ -33,7 +31,7 @@ pub struct Osc {
 impl Osc {
   pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
                                      params: &OscParams,
-                                     synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
+                                     synth_client: SynthClientMutex<f32>) -> Self {
     Osc {
       shape: Param::new(program, &params.shape, synth_client.clone()),
       octaves: Param::new(program, &params.octaves, synth_client.clone()).with_origin(0.0),
@@ -41,5 +39,13 @@ impl Osc {
       cents: Param::new(program, &params.cents, synth_client.clone()).with_origin(0.0),
       amplitude: Param::new(program, &params.amplitude, synth_client.clone()),
     }
+  }
+
+  pub fn for_each_modulated_param(&mut self, apply: &impl Fn(&mut Param)) {
+    apply(&mut self.shape);
+    apply(&mut self.octaves);
+    apply(&mut self.semitones);
+    apply(&mut self.cents);
+    apply(&mut self.amplitude);
   }
 }

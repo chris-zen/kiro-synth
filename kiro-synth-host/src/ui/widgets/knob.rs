@@ -3,22 +3,26 @@ use core::f64::consts::{PI, FRAC_PI_2};
 use druid::kurbo::{Arc, Shape};
 use druid::{Widget, BoxConstraints, Color, Env, Event, Data, Size, Point, Vec2, LifeCycle, EventCtx, LayoutCtx, LifeCycleCtx, PaintCtx, RenderContext, UpdateCtx, KeyOrValue};
 use std::marker::PhantomData;
-use crate::ui::widgets::knob::theme::{KNOB_VALUE_FG, KNOB_VALUE_BG, KNOB_MODULATION_FG, KNOB_MODULATION_BG};
+use crate::ui::widgets::knob::theme::{KNOB_VALUE_FG_COLOR, KNOB_VALUE_BG_COLOR, KNOB_MODULATION_VALUE_FG_COLOR, KNOB_MODULATION_VALUE_BG_COLOR, KNOB_MODULATION_TOTAL_AMOUNT_COLOR, KNOB_MODULATION_CONFIG_AMOUNT_COLOR};
 
 pub mod theme {
   use druid::{Key, Color, Env};
   pub use druid::theme::*;
 
-  pub const KNOB_VALUE_FG: Key<Color> = Key::new("knob-value-fg");
-  pub const KNOB_VALUE_BG: Key<Color> = Key::new("knob-value-bg");
-  pub const KNOB_MODULATION_FG: Key<Color> = Key::new("knob-modulation-fg");
-  pub const KNOB_MODULATION_BG: Key<Color> = Key::new("knob-modulation-bg");
+  pub const KNOB_VALUE_FG_COLOR: Key<Color> = Key::new("knob.value-fg");
+  pub const KNOB_VALUE_BG_COLOR: Key<Color> = Key::new("knob.value-bg");
+  pub const KNOB_MODULATION_VALUE_FG_COLOR: Key<Color> = Key::new("knob.modulation-value-fg");
+  pub const KNOB_MODULATION_VALUE_BG_COLOR: Key<Color> = Key::new("knob.modulation-value-bg");
+  pub const KNOB_MODULATION_TOTAL_AMOUNT_COLOR: Key<Color> = Key::new("knob.modulation-total-amount-color");
+  pub const KNOB_MODULATION_CONFIG_AMOUNT_COLOR: Key<Color> = Key::new("knob.modulation-config-amount-color");
 
   pub fn init(env: &mut Env) {
-    env.set(KNOB_VALUE_FG, Color::WHITE);
-    env.set(KNOB_VALUE_BG, Color::BLACK);
-    env.set(KNOB_MODULATION_FG, Color::rgb(0.8, 0.3, 0.0));
-    env.set(KNOB_MODULATION_BG, Color::rgb(0.1, 0.03, 0.0));
+    env.set(KNOB_VALUE_FG_COLOR, Color::WHITE);
+    env.set(KNOB_VALUE_BG_COLOR, Color::BLACK);
+    env.set(KNOB_MODULATION_VALUE_FG_COLOR, Color::rgb(0.8, 0.3, 0.0));
+    env.set(KNOB_MODULATION_VALUE_BG_COLOR, Color::rgb(0.2, 0.1, 0.1));
+    env.set(KNOB_MODULATION_TOTAL_AMOUNT_COLOR, Color::rgb(1.0, 0.87, 0.14));
+    env.set(KNOB_MODULATION_CONFIG_AMOUNT_COLOR, Color::rgb(1.0, 0.87, 0.14));
   }
 }
 
@@ -27,19 +31,22 @@ const ARC_TOLERANCE: f64 = 0.1;
 
 #[derive(Debug, Clone, Data)]
 pub struct KnobModulationData {
-  pub min: f64,
-  pub max: f64,
+  /// The value of the modulation applied to the parameter coming from the audio thread in real time
   pub value: f64,
-  pub weight: Option<f64>,
+
+  /// Amount of modulation from the selected source while in configuration mode
+  pub config_amount: Option<f64>,
+
+  /// Total amount of modulation applied to the parameter from all the connected sources
+  pub total_amount: f64,
 }
 
-impl KnobModulationData {
-  pub fn new(min: f64, max: f64, value: f64) -> Self {
+impl Default for KnobModulationData {
+  fn default() -> Self {
     KnobModulationData {
-      min,
-      max,
-      value,
-      weight: None
+      value: 0.0,
+      config_amount: None,
+      total_amount: 0.0,
     }
   }
 }
@@ -65,7 +72,7 @@ impl<T: Data> KnobData<T> {
       max,
       step,
       value,
-      modulation: KnobModulationData::new(min, max, 0.0),
+      modulation: KnobModulationData::default(),
       context,
     }
   }
@@ -75,8 +82,13 @@ impl<T: Data> KnobData<T> {
     self
   }
 
-  pub fn with_modulation_weight(mut self, weight: Option<f64>) -> Self {
-    self.modulation.weight = weight;
+  pub fn with_modulation_config_amount(mut self, config_amount: Option<f64>) -> Self {
+    self.modulation.config_amount = config_amount;
+    self
+  }
+
+  pub fn with_modulation_total_amount(mut self, total_amount: f64) -> Self {
+    self.modulation.total_amount = total_amount;
     self
   }
 }
@@ -89,7 +101,7 @@ struct MouseMove {
 pub struct Knob<Context, Callback>
   where
       Context: Data,
-      Callback: Fn(&KnobData<Context>) -> () {
+      Callback: Fn(&mut UpdateCtx, &KnobData<Context>) -> () {
 
   callback: Callback,
 
@@ -98,8 +110,10 @@ pub struct Knob<Context, Callback>
   value_bg_color: KeyOrValue<Color>,
 
   modulation_width: f64,
-  modulation_fg_color: KeyOrValue<Color>,
-  modulation_bg_color: KeyOrValue<Color>,
+  modulation_value_fg_color: KeyOrValue<Color>,
+  modulation_value_bg_color: KeyOrValue<Color>,
+  modulation_total_amount_color: KeyOrValue<Color>,
+  modulation_config_amount_color: KeyOrValue<Color>,
 
   sensitivity: f64,
   mouse_move: MouseMove,
@@ -110,7 +124,7 @@ pub struct Knob<Context, Callback>
 impl<Context, Callback> Knob<Context, Callback>
   where
       Context: Data,
-      Callback: Fn(&KnobData<Context>) -> () {
+      Callback: Fn(&mut UpdateCtx, &KnobData<Context>) -> () {
   
   const START_ANGLE: f64 = 2.0 * PI * (20.0 / 360.0);
   const END_ANGLE: f64 = 2.0 * PI * (340.0 / 360.0);
@@ -119,11 +133,13 @@ impl<Context, Callback> Knob<Context, Callback>
     Knob {
       callback,
       value_width: 2.0,
-      value_fg_color: KeyOrValue::Key(KNOB_VALUE_FG),
-      value_bg_color: KeyOrValue::Key(KNOB_VALUE_BG),
+      value_fg_color: KeyOrValue::Key(KNOB_VALUE_FG_COLOR),
+      value_bg_color: KeyOrValue::Key(KNOB_VALUE_BG_COLOR),
       modulation_width: 0.0,
-      modulation_fg_color: KeyOrValue::Key(KNOB_MODULATION_FG),
-      modulation_bg_color: KeyOrValue::Key(KNOB_MODULATION_BG),
+      modulation_value_fg_color: KeyOrValue::Key(KNOB_MODULATION_VALUE_FG_COLOR),
+      modulation_value_bg_color: KeyOrValue::Key(KNOB_MODULATION_VALUE_BG_COLOR),
+      modulation_total_amount_color: KeyOrValue::Key(KNOB_MODULATION_TOTAL_AMOUNT_COLOR),
+      modulation_config_amount_color: KeyOrValue::Key(KNOB_MODULATION_CONFIG_AMOUNT_COLOR),
       sensitivity: 0.6,
       mouse_move: MouseMove { orig_pos: 0.0, orig_value: 0.0 },
       _phantom: PhantomData,
@@ -183,12 +199,78 @@ impl<Context, Callback> Knob<Context, Callback>
 
     paint_ctx.stroke(arc_curve, &color, width);
   }
+
+  fn paint_value_background(&mut self, ctx: &mut PaintCtx, env: &Env, center: Point, radius: f64) {
+    let color = self.value_bg_color.resolve(env);
+    Self::paint_arc(ctx,
+                    center, radius,
+                    Self::START_ANGLE, Self::END_ANGLE,
+                    color, self.value_width, false);
+  }
+
+  fn paint_value(&mut self, ctx: &mut PaintCtx, data: &KnobData<Context>, env: &Env, center: Point, radius: f64) {
+    let start_angle = self.value_to_angle(data.origin, data.min, data.max);
+    let end_angle = self.value_to_angle(data.value, data.min, data.max);
+    let color = self.value_fg_color.resolve(env);
+    Self::paint_arc(ctx,
+                    center, radius,
+                    start_angle, end_angle,
+                    color, self.value_width, true);
+  }
+
+  fn paint_modulation_background(&mut self, ctx: &mut PaintCtx, env: &Env, center: Point, radius: f64) {
+    let color = self.modulation_value_bg_color.resolve(env);
+    Self::paint_arc(ctx,
+                    center, radius,
+                    Self::START_ANGLE, Self::END_ANGLE,
+                    color, self.modulation_width, false);
+  }
+
+  fn paint_modulation_value(&mut self, ctx: &mut PaintCtx, data: &KnobData<Context>, env: &Env, center: Point, radius: f64) {
+    let value = (data.value + data.modulation.value).max(data.min).min(data.max);
+    let start_angle = self.value_to_angle(data.value, data.min, data.max);
+    let end_angle = self.value_to_angle(value, data.min, data.max);
+    let color = self.modulation_value_fg_color.resolve(env);
+    Self::paint_arc(ctx,
+                    center, radius,
+                    start_angle, end_angle,
+                    color, self.modulation_width, false);
+  }
+
+  fn paint_modulation_total_amount(&mut self, ctx: &mut PaintCtx, data: &KnobData<Context>, env: &Env, center: Point, value_radius: f64) {
+    let width = (self.modulation_width / 2.0).floor();
+    let radius = value_radius + self.modulation_width + 0.9;
+    let start_value = (data.value - data.modulation.total_amount).max(data.min).min(data.max);
+    let start_angle = self.value_to_angle(start_value, data.min, data.max);
+    let end_value = (data.value + data.modulation.total_amount).max(data.min).min(data.max);
+    let end_angle = self.value_to_angle(end_value, data.min, data.max);
+    let color = self.modulation_total_amount_color.resolve(env);
+    Self::paint_arc(ctx,
+                    center, radius,
+                    start_angle, end_angle,
+                    color, width, false);
+  }
+
+  fn paint_modulation_config_amount(&mut self, ctx: &mut PaintCtx, data: &KnobData<Context>, env: &Env, center: Point, value_radius: f64, config_amount: f64) {
+    // let weight_width = self.modulation_width / 2.0;
+    // let weight_radius = value_radius + weight_width + 0.9;
+    let width = self.value_width;
+    let radius = value_radius;
+    let value = data.value + config_amount;
+    let start_angle = self.value_to_angle(data.value, data.min, data.max);
+    let end_angle = self.value_to_angle(value, data.min, data.max);
+    let color = self.modulation_config_amount_color.resolve(env);
+    Self::paint_arc(ctx,
+                    center, radius,
+                    start_angle, end_angle,
+                    color, width, true);
+  }
 }
 
 impl<Context, Callback> Widget<KnobData<Context>> for Knob<Context, Callback>
   where
       Context: Data,
-      Callback: Fn(&KnobData<Context>) -> () {
+      Callback: Fn(&mut UpdateCtx, &KnobData<Context>) -> () {
   
   fn event(&mut self,
            ctx: &mut EventCtx,
@@ -201,9 +283,13 @@ impl<Context, Callback> Widget<KnobData<Context>> for Knob<Context, Callback>
     match event {
       Event::MouseDown(mouse) => {
         ctx.set_active(true);
+        let value = match data.modulation.config_amount {
+          Some(config_amount) => config_amount,
+          None => data.value,
+        };
         self.mouse_move = MouseMove {
           orig_pos: mouse.pos.y,
-          orig_value: data.value,
+          orig_value: value,
         };
         ctx.request_paint();
       }
@@ -219,7 +305,10 @@ impl<Context, Callback> Widget<KnobData<Context>> for Knob<Context, Callback>
           let offset = self.mouse_move.orig_pos - mouse.pos.y;
           let value_inc = (data.max - data.min) * (self.sensitivity * offset / height);
           let value = (self.mouse_move.orig_value + value_inc).max(data.min).min(data.max);
-          data.value = (value / data.step).round() * data.step;
+          match &mut data.modulation.config_amount {
+            Some(config_amount) => *config_amount = (value / data.step).round() * data.step,
+            None => data.value = (value / data.step).round() * data.step,
+          };
           ctx.request_paint();
         }
       }
@@ -238,12 +327,12 @@ impl<Context, Callback> Widget<KnobData<Context>> for Knob<Context, Callback>
   }
 
   fn update(&mut self,
-            _ctx: &mut UpdateCtx,
+            ctx: &mut UpdateCtx,
             _old_data: &KnobData<Context>,
             data: &KnobData<Context>,
             _env: &Env) {
-    // println!("update {:?}: {} -> {}", self.id(), _old_data.1.value, data.1.value);
-    (self.callback)(&data);
+    // println!("update {:?}: {} -> {}", self.id(), _old_data.value, data.value);
+    (self.callback)(ctx, &data);
   }
 
   fn layout(
@@ -268,52 +357,27 @@ impl<Context, Callback> Widget<KnobData<Context>> for Knob<Context, Callback>
   // It goes event -> update -> layout -> paint, and each method can influence the next.
   // Basically, anything that changes the appearance of a widget causes a paint.
   fn paint(&mut self,
-           paint_ctx: &mut PaintCtx,
+           ctx: &mut PaintCtx,
            data: &KnobData<Context>,
            env: &Env) {
 
-    let size = paint_ctx.size();
+    let size = ctx.size();
     let half_size = size * 0.5;
     let center = Point::new(half_size.width, half_size.height);
     let value_radius = half_size.width.min(half_size.height) - self.modulation_width - 2.0;
 
-    let value_width = 2.0;
-
-    let value_bg_color = self.value_bg_color.resolve(env);
-    Self::paint_arc(paint_ctx,
-                    center, value_radius,
-                    Self::START_ANGLE, Self::END_ANGLE,
-                    value_bg_color, value_width, false);
-
-    let start_angle = self.value_to_angle(data.origin, data.min, data.max);
-    let end_angle = self.value_to_angle(data.value, data.min, data.max);
-    let value_fg_color = self.value_fg_color.resolve(env);
-    Self::paint_arc(paint_ctx,
-                    center, value_radius,
-                    start_angle, end_angle,
-                    value_fg_color, value_width, true);
-
-    if let Some(weight) = data.modulation.weight {
-      // TODO paint weight arc
-    }
+    self.paint_value_background(ctx, env, center, value_radius);
+    self.paint_value(ctx, data, env, center, value_radius);
 
     if self.modulation_width > 0.0 {
       let modulation_radius = value_radius + self.modulation_width;
-      let modulation_bg_color = self.modulation_bg_color.resolve(env);
-      Self::paint_arc(paint_ctx,
-                      center, modulation_radius,
-                      Self::START_ANGLE, Self::END_ANGLE,
-                      modulation_bg_color, self.modulation_width, false);
+      self.paint_modulation_background(ctx, env, center, modulation_radius);
+      self.paint_modulation_value(ctx, data, env, center, modulation_radius);
+      self.paint_modulation_total_amount(ctx, data, env, center, value_radius);
+    }
 
-      let modulated_value = (data.value + data.modulation.value).max(data.min).min(data.max);
-      let start_angle = self.value_to_angle(data.value, data.min, data.max);
-      // TODO this might need to be added to data.value
-      let end_angle = self.value_to_angle(modulated_value, data.min, data.max);
-      let modulation_fg_color = self.modulation_fg_color.resolve(env);
-      Self::paint_arc(paint_ctx,
-                      center, modulation_radius,
-                      start_angle, end_angle,
-                      modulation_fg_color, self.modulation_width, false);
+    if let Some(config_amount) = data.modulation.config_amount {
+      self.paint_modulation_config_amount(ctx, data, env, center, value_radius, config_amount);
     }
   }
 }

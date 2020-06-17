@@ -1,4 +1,3 @@
-use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
@@ -12,7 +11,7 @@ use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::{SourceRef, Program, ParamRef};
 
 use crate::program::kiro::KiroModule;
-use crate::synth::SynthClient;
+use crate::synth::SynthClientMutex;
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Data)]
@@ -88,15 +87,7 @@ pub struct Modulation {
 
   #[data(ignore)]
   #[derivative(PartialEq="ignore")]
-  pub synth_client: Arc<Mutex<SynthClient<f32>>>,
-}
-
-impl Modulation {
-  pub fn send_modulation_amount(&self, amount: f64) -> Result<(), ()> {
-    self.synth_client.lock()
-        .map_err(|_| ())
-        .map(|mut client| client.send_modulation_amount(self.param_ref, self.source_ref, amount as f32))
-  }
+  pub synth_client: SynthClientMutex<f32>,
 }
 
 #[derive(Debug, Clone, Data)]
@@ -117,7 +108,7 @@ pub struct InternalModulation {
 }
 
 impl InternalModulation {
-  pub fn as_modulation(&self, index: usize, name: String, synth_client: Arc<Mutex<SynthClient<f32>>>) -> Modulation {
+  pub fn as_modulation(&self, index: usize, name: String, synth_client: SynthClientMutex<f32>) -> Modulation {
     Modulation {
       index,
       name,
@@ -169,21 +160,21 @@ impl NamedReference for Source {
 pub struct Modulations {
   pub view: View,
 
-  modulations: Vector<InternalModulation>,
+  pub modulations: Vector<InternalModulation>,
 
   #[data(same_fn = "PartialEq::eq")]
-  config_source: Option<SourceRef>,
+  pub config_source: Option<SourceRef>,
 
   sources: Vector<Source>,
 
   #[data(ignore)]
-  pub synth_client: Arc<Mutex<SynthClient<f32>>>,
+  pub synth_client: SynthClientMutex<f32>,
 }
 
 impl Modulations {
   pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
                                      _module: &KiroModule,
-                                     synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
+                                     synth_client: SynthClientMutex<f32>) -> Self {
 
     let mut modulations = Vector::<InternalModulation>::new();
 
@@ -229,14 +220,34 @@ impl Modulations {
   }
 
   pub fn start_config(&mut self, source_ref: SourceRef) {
-    println!("start-config {:?}", source_ref);
+    println!("modulations start-config {:?}", source_ref);
     self.config_source = Some(source_ref);
   }
 
   pub fn stop_config(&mut self, source_ref: SourceRef) {
-    println!("stop-config {:?}", source_ref);
+    println!("modulations stop-config {:?}", source_ref);
     self.config_source = self.config_source
         .filter(|v| *v != source_ref);
+  }
+
+  pub fn get_config_amounts_by_param(&self, source_ref: SourceRef) -> HashMap<usize, f64> {
+    self.modulations.iter()
+        .filter(|&modulation| modulation.source_ref == source_ref)
+        .map(|modulation| (modulation.param_ref.into(), modulation.amount))
+        .collect()
+  }
+
+  pub fn get_total_amounts_by_param(&self) -> HashMap<usize, f64> {
+    self.modulations.iter()
+        .map(|modulation| {
+          let key: usize = modulation.param_ref.into();
+          (key, modulation.amount)
+        })
+        .fold(HashMap::new(), |mut acc, (key, amount): (usize, f64)| {
+          let total_amount = acc.entry(key).or_insert(0.0);
+          *total_amount += amount;
+          acc
+        })
   }
 
   fn groups<NR>(&self,
@@ -251,7 +262,8 @@ impl Modulations {
       }
       else {
         self.config_source
-            .map(|_| ConfigMode::Disabled)
+            // .map(|_| ConfigMode::Disabled)
+            .map(|_| ConfigMode::Ready)
             .unwrap_or(ConfigMode::Ready)
       }
     };

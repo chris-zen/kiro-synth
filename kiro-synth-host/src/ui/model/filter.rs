@@ -1,12 +1,10 @@
-use std::sync::{Arc, Mutex};
-
 use druid::{Data, Lens};
 
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::Program;
 
 use crate::program::params::FilterParams;
-use crate::synth::SynthClient;
+use crate::synth::SynthClientMutex;
 use crate::ui::model::{SynthModel, Param};
 
 
@@ -32,11 +30,16 @@ pub struct Filter {
 impl Filter {
   pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
                                      params: &FilterParams,
-                                     synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
+                                     synth_client: SynthClientMutex<f32>) -> Self {
     Filter {
       mode: Param::new(program, &params.mode, synth_client.clone()),
       freq: Param::new(program, &params.freq, synth_client.clone()),
       q: Param::new(program, &params.q, synth_client.clone()),
     }
+  }
+
+  pub fn for_each_modulated_param(&mut self, apply: &impl Fn(&mut Param)) {
+    apply(&mut self.freq);
+    apply(&mut self.q);
   }
 }

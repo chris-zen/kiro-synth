@@ -20,8 +20,8 @@ pub enum Message<F: Float> {
     change: F,
   },
   ModulationAmount {
-    param_ref: ParamRef,
     source_ref: SourceRef,
+    param_ref: ParamRef,
     amount: F,
   },
 }
