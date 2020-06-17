@@ -67,6 +67,7 @@ impl Generate for (IconFile, IconData) {
   fn generate(&self, out: &mut impl Write, ident: usize) -> Result<(), Box<dyn Error>> {
     let const_name = self.0.name.to_snake_case().to_uppercase();
     wlni!(out, ident, "");
+    wlni!(out, ident, "#[allow(unused)]");
     wlni!(out, ident, "pub const {}: IconStaticData = IconStaticData {{", const_name);
     wlni!(out, ident, "  size: Size::new({:?}, {:?}),", self.1.size.width, self.1.size.height);
     wlni!(out, ident, "  paths: &[");

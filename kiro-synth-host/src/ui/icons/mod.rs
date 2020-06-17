@@ -1,6 +1,7 @@
 use druid_icon::prelude::*;
 
 
+#[allow(unused)]
 pub const MODULATION_SOURCE: IconStaticData = IconStaticData {
   size: Size::new(11.0, 11.0),
   paths: &[
@@ -30,6 +31,7 @@ pub const MODULATION_SOURCE: IconStaticData = IconStaticData {
   ],
 };
 
+#[allow(unused)]
 pub const MODULATION_ARROW: IconStaticData = IconStaticData {
   size: Size::new(10.0, 11.0),
   paths: &[
@@ -51,6 +53,7 @@ pub const MODULATION_ARROW: IconStaticData = IconStaticData {
   ],
 };
 
+#[allow(unused)]
 pub const MODULATION_PARAM: IconStaticData = IconStaticData {
   size: Size::new(11.0, 11.0),
   paths: &[
@@ -70,6 +73,7 @@ pub const MODULATION_PARAM: IconStaticData = IconStaticData {
   ],
 };
 
+#[allow(unused)]
 pub const MODULATION_NEW: IconStaticData = IconStaticData {
   size: Size::new(11.0, 11.0),
   paths: &[
@@ -94,6 +98,7 @@ pub const MODULATION_NEW: IconStaticData = IconStaticData {
   ],
 };
 
+#[allow(unused)]
 pub const MODULATION_SOURCES: IconStaticData = IconStaticData {
   size: Size::new(23.0, 11.0),
   paths: &[
@@ -138,6 +143,7 @@ pub const MODULATION_SOURCES: IconStaticData = IconStaticData {
   ],
 };
 
+#[allow(unused)]
 pub const MODULATION_PARAMS: IconStaticData = IconStaticData {
   size: Size::new(23.0, 11.0),
   paths: &[
