@@ -6,7 +6,7 @@ mod modulations;
 
 use std::sync::{Arc, Mutex};
 
-use druid::{Widget, Data, Env, UpdateCtx};
+use druid::{Widget, Data, Env, UpdateCtx, Command};
 use druid::widget::{Flex, WidgetExt, Label, Container, ViewSwitcher, CrossAxisAlignment};
 
 use kiro_synth_core::float::Float;
@@ -22,7 +22,7 @@ use filters::FiltersView;
 use dca::DcaView;
 use modulators::ModulatorsView;
 use modulations::ModulationsView;
-use crate::ui::view::modulations::ModulationController;
+use crate::ui::view::modulations::{ModulationController, UPDATE_MODULATIONS_CONFIG};
 
 
 pub fn build<F: Float + 'static>(synth_model: &SynthModel,
@@ -146,14 +146,15 @@ pub fn build_knob_enum(title: &'static str,
 pub fn build_knob(title: &'static str,
                   value_fn: impl Fn(&KnobData<Param>) -> String + 'static) -> impl Widget<Param> {
 
-  let callback = move |_ctx: &mut UpdateCtx, data: &KnobData<Param>| {
+  let callback = move |ctx: &mut UpdateCtx, data: &KnobData<Param>| {
     match data.context.modulation.config_source {
       Some(source_ref) => {
-        if let Some(config_amount) = data.modulation.config_amount {
-          let param_ref = data.context.param_ref;
-          data.context.synth_client
-              .send_modulation_amount(source_ref, param_ref, config_amount as f32).unwrap();
-        }
+        let param_ref = data.context.param_ref;
+        let config_amount = data.modulation.config_amount;
+        // println!("parm: callback: {:?} {:?} {:?}", source_ref, param_ref, config_amount);
+        let payload = (source_ref, param_ref, config_amount);
+        let command = Command::new(UPDATE_MODULATIONS_CONFIG, payload);
+        ctx.submit_command(command, None)
       }
       None => {
         data.context.synth_client

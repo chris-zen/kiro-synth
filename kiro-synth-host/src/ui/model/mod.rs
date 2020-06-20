@@ -22,6 +22,7 @@ pub use oscillators::{OscFromSynth, Osc};
 pub use filter::{FilterFromSynth, Filter};
 pub use dca::Dca;
 pub use modulations::Modulations;
+use crate::ui::model::modulations::InternalModulation;
 
 
 pub struct ZeroIndex;
@@ -113,18 +114,18 @@ impl<'a> SynthModel {
     self.modulations.start_config(source_ref);
     let config_amounts = self.modulations.get_config_amounts_by_param(source_ref);
     let total_amounts = self.modulations.get_total_amounts_by_param();
-    println!("{:#?}\n{:#?}", config_amounts, total_amounts);
+    // println!("{:#?}\n{:#?}", config_amounts, total_amounts);
     let config_source = self.modulations.config_source;
     self.for_each_modulated_param(move |param| {
       let key: usize = param.param_ref.into();
       param.modulation.config_source = config_source;
       param.modulation.config_amount = config_amounts.get(&key).cloned().unwrap_or(0.0);
       param.modulation.total_amount = total_amounts.get(&key).cloned().unwrap_or(0.0);
-      println!(">> {:?}", param);
+      // println!(">> {:?}", param);
     });
   }
 
-  pub fn change_modulations_config(&mut self, source_ref: SourceRef, param_ref: ParamRef, config_amount: f64) {
+  pub fn update_modulations_config(&mut self, source_ref: SourceRef, param_ref: ParamRef, config_amount: f64) {
     let same_source = self.modulations.config_source
         .filter(|source| *source == source_ref)
         .is_some();
@@ -137,6 +138,37 @@ impl<'a> SynthModel {
       }
       param.modulation.total_amount = total_amounts.get(&param.param_ref.into()).cloned().unwrap_or(0.0);
     });
+
+    let same_source_and_param = |modulation: &&mut InternalModulation| {
+      modulation.source_ref == source_ref && modulation.param_ref == param_ref
+    };
+
+    match self.modulations.modulations.iter_mut().find(same_source_and_param) {
+      Some(modulation) => {
+        modulation.amount = config_amount;
+      }
+      None => {
+        let source_name = self.modulations.get_source(source_ref)
+            .map(|source| source.name.clone())
+            .unwrap();
+
+        let param = self.modulations.get_param(param_ref).unwrap();
+
+        let modulation = InternalModulation {
+          source_ref,
+          source_name,
+          param_ref,
+          param_name: param.name.to_string(),
+          amount: config_amount,
+          origin: param.origin,
+          min: param.min,
+          max: param.max,
+          step: param.step,
+        };
+
+        self.modulations.add_modulation(modulation);
+      }
+    }
   }
 
   pub fn stop_modulations_config(&mut self, source_ref: SourceRef) {

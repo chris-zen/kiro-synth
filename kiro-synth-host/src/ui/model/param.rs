@@ -3,20 +3,20 @@ use druid::{Data, Lens};
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::{ParamRef, Program, Param as ProgParam, SourceRef};
 
-use crate::ui::widgets::knob::KnobData;
+use crate::ui::widgets::knob::{KnobData, KnobModulationData};
 use crate::synth::SynthClientMutex;
+use std::sync::Arc;
 
 
 pub struct KnobDataFromParam;
 
 impl KnobDataFromParam {
   fn create_knob_data_from_param(data: &Param) -> KnobData<Param> {
-    let config_amount = data.modulation.config_source
-        .map(|_| data.modulation.config_amount);
+    let modulation = &data.modulation;
+    let config_source = modulation.config_source.map(|source_ref| source_ref.into());
+    let knob_modulation = KnobModulationData::new(modulation.value, config_source, modulation.config_amount, modulation.total_amount);
     KnobData::new(data.origin, data.min, data.max, data.step, data.value, data.clone())
-        .with_modulation_value(data.modulation.value)
-        .with_modulation_config_amount(config_amount)
-        .with_modulation_total_amount(data.modulation.total_amount)
+        .with_modulation(knob_modulation)
   }
 }
 
@@ -30,8 +30,7 @@ impl Lens<Param, KnobData<Param>> for KnobDataFromParam {
     let mut knob_data = Self::create_knob_data_from_param(data);
     let result = f(&mut knob_data);
     data.value = knob_data.value;
-    data.modulation.config_amount = knob_data.modulation.config_amount
-        .unwrap_or(data.modulation.config_amount);
+    data.modulation.config_amount = knob_data.modulation.config_amount;
     // we don't need to copy back the rest of attributes as they are read-only for the Knob
     result
   }
@@ -69,6 +68,8 @@ pub struct Param {
   #[data(same_fn = "PartialEq::eq")]
   pub param_ref: ParamRef,
 
+  pub name: Arc<String>,
+
   pub origin: f64,
   pub min: f64,
   pub max: f64,
@@ -95,6 +96,7 @@ impl Param {
                         synth_client: SynthClientMutex<f32>) -> Self {
     Param {
       param_ref,
+      name: Arc::new(param.id.to_string()),
       origin: param.values.origin.to_f64().unwrap(),
       min: param.values.min.to_f64().unwrap(),
       max: param.values.max.to_f64().unwrap(),

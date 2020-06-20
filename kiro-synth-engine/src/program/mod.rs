@@ -45,7 +45,7 @@ impl Into<usize> for SourceRef {
 
 #[derive(Debug, Clone)]
 pub struct Modulator<F: Float> {
-  pub source: SourceRef,
+  pub source_ref: SourceRef,
   pub amount: F,
 }
 
@@ -83,8 +83,6 @@ pub struct ParamValues<F: Float> {
   pub min: F,
   pub max: F,
   pub resolution: F,
-  // pub mod_min: F,
-  // pub mod_max: F,
 }
 
 impl<F: Float> ParamValues<F> {
@@ -274,6 +272,7 @@ pub struct ProgramBuilder<'a, F: Float> {
   sources: Vec<Source<'a>, MaxSources>,
   params: Vec<Param<'a, F>, MaxParams>,
   blocks: Vec<Block<F>, MaxBlocks>,
+  // TODO modulations: HashMap<ModKey, Modulator<F>>
 }
 
 impl<'a, F: Float> ProgramBuilder<'a, F> {
@@ -354,7 +353,7 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
   pub fn modulation<P: Into<ParamRef>>(&mut self, param: P, source: SourceRef, amount: F) {
     let param_index = param.into().0;
     let modulator = Modulator {
-      source,
+      source_ref: source,
       amount
     };
     self.params[param_index].modulators.push(modulator).unwrap();

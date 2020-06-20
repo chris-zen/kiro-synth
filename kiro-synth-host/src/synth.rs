@@ -44,7 +44,7 @@ impl<F: Float> SynthClient<F> {
   }
 
   pub fn send_param_value(&mut self, param_ref: ParamRef, value: F) {
-    let message = Message::Param { param_ref, value };
+    let message = Message::ParamValue { param_ref, value };
     self.send_event(Event::new(0u64, message));
   }
 

@@ -20,7 +20,7 @@ use crate::ui::icons;
 
 
 pub const START_MODULATIONS_CONFIG: Selector<SourceRef> = Selector::new("synth.modulation.start-config");
-pub const CHANGE_MODULATIONS_CONFIG: Selector<(SourceRef, ParamRef, f64)> = Selector::new("synth.modulation.change-config");
+pub const UPDATE_MODULATIONS_CONFIG: Selector<(SourceRef, ParamRef, f64)> = Selector::new("synth.modulation.update-config");
 pub const STOP_MODULATIONS_CONFIG: Selector<SourceRef> = Selector::new("synth.modulation.stop-config");
 
 
@@ -44,9 +44,9 @@ impl<W: Widget<SynthModel>> Controller<SynthModel, W> for ModulationController<S
           data.start_modulations_config(*source_ref);
         }
       }
-      Event::Command(command) if command.is(CHANGE_MODULATIONS_CONFIG) => {
-        if let Some((source_ref, param_ref, weight)) = command.get::<(SourceRef, ParamRef, f64)>(CHANGE_MODULATIONS_CONFIG) {
-          data.change_modulations_config(*source_ref, *param_ref, *weight);
+      Event::Command(command) if command.is(UPDATE_MODULATIONS_CONFIG) => {
+        if let Some((source_ref, param_ref, config_amount)) = command.get::<(SourceRef, ParamRef, f64)>(UPDATE_MODULATIONS_CONFIG) {
+          data.update_modulations_config(*source_ref, *param_ref, *config_amount);
         }
       }
       Event::Command(command) if command.is(STOP_MODULATIONS_CONFIG) => {
@@ -218,10 +218,11 @@ impl ModulationsView {
     let callback = move |ctx: &mut UpdateCtx, data: &KnobData<Modulation>| {
       let source_ref = data.context.source_ref;
       let param_ref = data.context.param_ref;
+      // println!("modulation: callback: {:?} {:?}", source_ref, param_ref);
       data.context.synth_client
           .send_modulation_amount(source_ref, param_ref, data.value as f32).unwrap();
       let payload = (source_ref, param_ref, data.value);
-      let command = Command::new(CHANGE_MODULATIONS_CONFIG, payload);
+      let command = Command::new(UPDATE_MODULATIONS_CONFIG, payload);
       ctx.submit_command(command, None)
     };
 

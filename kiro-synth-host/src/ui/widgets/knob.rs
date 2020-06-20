@@ -34,18 +34,33 @@ pub struct KnobModulationData {
   /// The value of the modulation applied to the parameter coming from the audio thread in real time
   pub value: f64,
 
+  /// While in configuration mode it contains an identifier of the source
+  pub config_source: Option<usize>,
+
   /// Amount of modulation from the selected source while in configuration mode
-  pub config_amount: Option<f64>,
+  pub config_amount: f64,
 
   /// Total amount of modulation applied to the parameter from all the connected sources
   pub total_amount: f64,
+}
+
+impl KnobModulationData {
+  pub fn new(value: f64, config_source: Option<usize>, config_amount: f64, total_amount: f64) -> Self {
+    KnobModulationData {
+      value,
+      config_source,
+      config_amount,
+      total_amount,
+    }
+  }
 }
 
 impl Default for KnobModulationData {
   fn default() -> Self {
     KnobModulationData {
       value: 0.0,
-      config_amount: None,
+      config_source: None,
+      config_amount: 0.0,
       total_amount: 0.0,
     }
   }
@@ -77,18 +92,8 @@ impl<T: Data> KnobData<T> {
     }
   }
 
-  pub fn with_modulation_value(mut self, value: f64) -> Self {
-    self.modulation.value = value;
-    self
-  }
-
-  pub fn with_modulation_config_amount(mut self, config_amount: Option<f64>) -> Self {
-    self.modulation.config_amount = config_amount;
-    self
-  }
-
-  pub fn with_modulation_total_amount(mut self, total_amount: f64) -> Self {
-    self.modulation.total_amount = total_amount;
+  pub fn with_modulation(mut self, modulation_data: KnobModulationData) -> Self {
+    self.modulation = modulation_data;
     self
   }
 }
@@ -283,8 +288,8 @@ impl<Context, Callback> Widget<KnobData<Context>> for Knob<Context, Callback>
     match event {
       Event::MouseDown(mouse) => {
         ctx.set_active(true);
-        let value = match data.modulation.config_amount {
-          Some(config_amount) => config_amount,
+        let value = match data.modulation.config_source {
+          Some(_) => data.modulation.config_amount,
           None => data.value,
         };
         self.mouse_move = MouseMove {
@@ -305,8 +310,8 @@ impl<Context, Callback> Widget<KnobData<Context>> for Knob<Context, Callback>
           let offset = self.mouse_move.orig_pos - mouse.pos.y;
           let value_inc = (data.max - data.min) * (self.sensitivity * offset / height);
           let value = (self.mouse_move.orig_value + value_inc).max(data.min).min(data.max);
-          match &mut data.modulation.config_amount {
-            Some(config_amount) => *config_amount = (value / data.step).round() * data.step,
+          match data.modulation.config_source.as_mut() {
+            Some(_) => data.modulation.config_amount = (value / data.step).round() * data.step,
             None => data.value = (value / data.step).round() * data.step,
           };
           ctx.request_paint();
@@ -328,11 +333,20 @@ impl<Context, Callback> Widget<KnobData<Context>> for Knob<Context, Callback>
 
   fn update(&mut self,
             ctx: &mut UpdateCtx,
-            _old_data: &KnobData<Context>,
+            old_data: &KnobData<Context>,
             data: &KnobData<Context>,
             _env: &Env) {
-    // println!("update {:?}: {} -> {}", self.id(), _old_data.value, data.value);
-    (self.callback)(ctx, &data);
+    // println!("update {:?}: {:?} -> {:?} | {:?} -> {:?} | {:?} -> {:?}",
+    //   self.id(), old_data.value, data.value,
+    //   old_data.modulation.config_source, data.modulation.config_source,
+    //   old_data.modulation.config_amount, data.modulation.config_amount
+    // );
+    if old_data.value != data.value ||
+        (old_data.modulation.config_source == data.modulation.config_source &&
+        old_data.modulation.config_amount != data.modulation.config_amount) {
+
+      (self.callback)(ctx, &data);
+    }
   }
 
   fn layout(
@@ -376,8 +390,8 @@ impl<Context, Callback> Widget<KnobData<Context>> for Knob<Context, Callback>
       self.paint_modulation_total_amount(ctx, data, env, center, value_radius);
     }
 
-    if let Some(config_amount) = data.modulation.config_amount {
-      self.paint_modulation_config_amount(ctx, data, env, center, value_radius, config_amount);
+    if data.modulation.config_source.is_some() {
+      self.paint_modulation_config_amount(ctx, data, env, center, value_radius, data.modulation.config_amount);
     }
   }
 }

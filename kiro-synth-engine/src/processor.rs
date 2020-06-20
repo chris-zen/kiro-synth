@@ -56,7 +56,7 @@ impl<F: Float> Processor<F> {
         if let Some((_, param)) = program.get_param(*param_ref) {
           let mut value = param.signal.get();
           for modulator in param.modulators.iter() {
-            if let Some(source) = program.get_source(modulator.source) {
+            if let Some(source) = program.get_source(modulator.source_ref) {
               let source_signal = signals[source.signal].get();
               value = value + source_signal * modulator.amount;
             }

@@ -12,6 +12,7 @@ use kiro_synth_engine::program::{SourceRef, Program, ParamRef};
 
 use crate::program::kiro::KiroModule;
 use crate::synth::SynthClientMutex;
+use crate::ui::model::Param;
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Data)]
@@ -165,7 +166,11 @@ pub struct Modulations {
   #[data(same_fn = "PartialEq::eq")]
   pub config_source: Option<SourceRef>,
 
-  sources: Vector<Source>,
+  #[data(ignore)]
+  pub sources: Vector<Source>,
+
+  #[data(ignore)]
+  pub params: Vector<Param>,
 
   #[data(ignore)]
   pub synth_client: SynthClientMutex<f32>,
@@ -178,7 +183,7 @@ impl Modulations {
 
     let mut modulations = Vector::<InternalModulation>::new();
 
-    let mut params = Vector::<String>::new();
+    let mut params = Vector::<Param>::new();
 
     let sources = program.get_sources().iter().enumerate()
         .map(|(index, source)| {
@@ -191,11 +196,11 @@ impl Modulations {
 
     for (index, param) in program.get_params().iter().enumerate() {
       let param_ref = ParamRef::new(index); // TODO param_ref should come from the program.get_params() call
-      params.push_back(param.id.to_string());
+      params.push_back(Param::new(program, param_ref, synth_client.clone()));
       for modulator in param.modulators.iter() {
-        if let Some(source) = program.get_source(modulator.source) {
+        if let Some(source) = program.get_source(modulator.source_ref) {
           let modulation = InternalModulation {
-            source_ref: modulator.source,
+            source_ref: modulator.source_ref,
             source_name: source.id.to_string(),
             param_ref,
             param_name: param.id.to_string(),
@@ -215,6 +220,7 @@ impl Modulations {
       modulations,
       config_source: None,
       sources,
+      params,
       synth_client: synth_client.clone(),
     }
   }
@@ -318,6 +324,22 @@ impl Modulations {
     }
 
     groups.values().sum::<usize>()
+  }
+
+  pub fn get_source(&self, source_ref: SourceRef) -> Option<&Source> {
+    self.sources.iter()
+        .find(|&source| source.reference == source_ref)
+  }
+
+  pub fn get_param(&self, param_ref: ParamRef) -> Option<&Param> {
+    self.params.iter()
+        .find(|&param| param.param_ref == param_ref)
+  }
+
+  pub fn add_modulation(&mut self, modulation: InternalModulation) {
+    // TODO check that it can be added according to the synth internal capacity
+    self.synth_client.send_modulation_amount(modulation.source_ref, modulation.param_ref, modulation.amount as f32);
+    self.modulations.push_back(modulation);
   }
 }
 

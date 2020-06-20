@@ -11,7 +11,7 @@ pub enum Message<F: Float> {
     key: u8,
     velocity: F
   },
-  Param {
+  ParamValue {
     param_ref: ParamRef,
     value: F,
   },
