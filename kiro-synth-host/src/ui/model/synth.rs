@@ -7,7 +7,6 @@ use kiro_synth_engine::program::{Program, SourceRef, ParamRef};
 use crate::program::kiro::KiroModule;
 use crate::synth::SynthClientMutex;
 
-use crate::ui::model::modulations::InternalModulation;
 use crate::ui::model::{Osc, EnvGen, Lfo, Filter, Dca, Modulations, Param};
 
 
@@ -100,49 +99,19 @@ impl<'a> Synth {
   }
 
   pub fn update_modulations_config(&mut self, source_ref: SourceRef, param_ref: ParamRef, config_amount: f64) {
+    self.modulations.update_modulation(source_ref, param_ref, config_amount);
+    let total_amount = self.modulations.get_total_amounts_for_param(param_ref);
     let same_source = self.modulations.config_source
         .filter(|source| *source == source_ref)
         .is_some();
-
-    let total_amounts = self.modulations.get_total_amounts_by_param();
-
     self.for_each_modulated_param(move |param| {
-      if same_source && param.param_ref == param_ref {
-        param.modulation.config_amount = config_amount;
+      if param.param_ref == param_ref {
+        if same_source {
+          param.modulation.config_amount = config_amount;
+        }
+        param.modulation.total_amount = total_amount;
       }
-      param.modulation.total_amount = total_amounts.get(&param.param_ref.into()).cloned().unwrap_or(0.0);
     });
-
-    let same_source_and_param = |modulation: &&mut InternalModulation| {
-      modulation.source_ref == source_ref && modulation.param_ref == param_ref
-    };
-
-    match self.modulations.modulations.iter_mut().find(same_source_and_param) {
-      Some(modulation) => {
-        modulation.amount = config_amount;
-      }
-      None => {
-        let source_name = self.modulations.get_source(source_ref)
-            .map(|source| source.name.clone())
-            .unwrap();
-
-        let param = self.modulations.get_param(param_ref).unwrap();
-
-        let modulation = InternalModulation {
-          source_ref,
-          source_name,
-          param_ref,
-          param_name: param.name.to_string(),
-          amount: config_amount,
-          origin: param.origin,
-          min: param.min,
-          max: param.max,
-          step: param.step,
-        };
-
-        self.modulations.add_modulation(modulation);
-      }
-    }
   }
 
   pub fn stop_modulations_config(&mut self, source_ref: SourceRef) {
@@ -150,6 +119,16 @@ impl<'a> Synth {
     self.for_each_modulated_param(move |param| {
       param.modulation.config_source = None;
       param.modulation.config_amount = 0.0;
+    });
+  }
+
+  pub fn delete_modulation(&mut self, source_ref: SourceRef, param_ref: ParamRef) {
+    self.modulations.delete_modulation(source_ref, param_ref);
+    let total_amount = self.modulations.get_total_amounts_for_param(param_ref);
+    self.for_each_modulated_param(move |param| {
+      if param.param_ref == param_ref {
+        param.modulation.total_amount = total_amount;
+      }
     });
   }
 

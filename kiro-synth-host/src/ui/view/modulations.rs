@@ -21,7 +21,7 @@ use crate::ui::view::build_static_tabs;
 pub const START_MODULATIONS_CONFIG: Selector<SourceRef> = Selector::new("synth.modulation.start-config");
 pub const UPDATE_MODULATIONS_CONFIG: Selector<(SourceRef, ParamRef, f64)> = Selector::new("synth.modulation.update-config");
 pub const STOP_MODULATIONS_CONFIG: Selector<SourceRef> = Selector::new("synth.modulation.stop-config");
-
+pub const DELETE_MODULATION: Selector<(SourceRef, ParamRef)> = Selector::new("synth.modulation.delete");
 pub const DELETE_MODULATION_IS_HOT: Selector<((SourceRef, ParamRef), Color)> = Selector::new("synth.modulation.delete-is-hot");
 
 
@@ -41,7 +41,7 @@ impl<W: Widget<Synth>> Controller<Synth, W> for ModulationController<Synth> {
   fn event(&mut self, child: &mut W, ctx: &mut EventCtx, event: &Event, data: &mut Synth, env: &Env) {
     match event {
       Event::Command(command) if command.is(START_MODULATIONS_CONFIG) => {
-        if let Some(source_ref) = command.get::<SourceRef>(START_MODULATIONS_CONFIG) {
+        if let Some(source_ref) = command.get(START_MODULATIONS_CONFIG) {
           data.start_modulations_config(*source_ref);
         }
       }
@@ -51,8 +51,13 @@ impl<W: Widget<Synth>> Controller<Synth, W> for ModulationController<Synth> {
         }
       }
       Event::Command(command) if command.is(STOP_MODULATIONS_CONFIG) => {
-        if let Some(source_ref) = command.get::<SourceRef>(STOP_MODULATIONS_CONFIG) {
+        if let Some(source_ref) = command.get(STOP_MODULATIONS_CONFIG) {
           data.stop_modulations_config(*source_ref);
+        }
+      }
+      Event::Command(command) if command.is(DELETE_MODULATION) => {
+        if let Some((source_ref, param_ref)) = command.get(DELETE_MODULATION) {
+          data.delete_modulation(*source_ref, *param_ref);
         }
       }
       _ => {}
@@ -256,11 +261,9 @@ impl ModulationsView {
         .fix_height(10.0)
         .padding((0.0, 0.0, 2.0, 0.0))
         .on_click(move |ctx: &mut EventCtx, data: &mut Modulation, _: &Env| {
-          println!("remove {:#?}", data);
-          // TODO remove the modulation from the list
-          // let command = Command::new(START_MODULATIONS_CONFIG, source_ref);
-          // ctx.submit_command(command, None);
-          data.synth_client.send_modulation_delete(data.source_ref, data.param_ref).unwrap();
+          let payload = (data.source_ref, data.param_ref);
+          let command = Command::new(DELETE_MODULATION, payload);
+          ctx.submit_command(command, None);
         });
 
     Flex::row()

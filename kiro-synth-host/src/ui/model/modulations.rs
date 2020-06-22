@@ -243,6 +243,14 @@ impl Modulations {
         .collect()
   }
 
+  pub fn get_total_amounts_for_param(&self, param_ref: ParamRef) -> f64 {
+    self.modulations.iter()
+        .filter_map(|modulation| {
+          Some(modulation.amount).filter(|_| modulation.param_ref == param_ref)
+        })
+        .fold(0.0, |acc, amount| acc + amount)
+  }
+
   pub fn get_total_amounts_by_param(&self) -> HashMap<usize, f64> {
     self.modulations.iter()
         .map(|modulation| {
@@ -340,6 +348,48 @@ impl Modulations {
     // TODO check that it can be added according to the synth internal capacity
     self.synth_client.send_modulation_update(modulation.source_ref, modulation.param_ref, modulation.amount as f32).unwrap();
     self.modulations.push_back(modulation);
+  }
+
+  pub fn update_modulation(&mut self, source_ref: SourceRef, param_ref: ParamRef, config_amount: f64) {
+    let same_source_and_param = |modulation: &&mut InternalModulation| {
+      modulation.source_ref == source_ref && modulation.param_ref == param_ref
+    };
+
+    match self.modulations.iter_mut().find(same_source_and_param) {
+      Some(modulation) => {
+        modulation.amount = config_amount;
+      }
+      None => {
+        let source_name = self.get_source(source_ref)
+            .map(|source| source.name.clone())
+            .unwrap();
+
+        let param = self.get_param(param_ref).unwrap();
+
+        let modulation = InternalModulation {
+          source_ref,
+          source_name,
+          param_ref,
+          param_name: param.name.to_string(),
+          amount: config_amount,
+          origin: param.origin,
+          min: param.min,
+          max: param.max,
+          step: param.step,
+        };
+
+        self.add_modulation(modulation);
+      }
+    }
+  }
+
+  pub fn delete_modulation(&mut self, source_ref: SourceRef, param_ref: ParamRef) {
+    self.modulations.iter()
+        .position(|m| m.source_ref == source_ref && m.param_ref == param_ref)
+        .iter()
+        .for_each(|index| { self.modulations.remove(*index); });
+
+    self.synth_client.send_modulation_delete(source_ref, param_ref).unwrap();
   }
 }
 
