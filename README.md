@@ -28,8 +28,8 @@ NOTE: You have to connect your MIDI keyboard before starting the synth. Also it 
 - [x] Basic voice management
 - [x] Parameters can be changed from MIDI events or a UI
 - [x] Controlling parameters from a Druid UI
-- [ ] Modulation of parameters through a modulation matrix (in progress, see the [modulations branch](https://github.com/chris-zen/kiro-synth/tree/modulations))
-- [ ] The modulation matrix can be tuned from the UI (in progress, see the [modulations branch](https://github.com/chris-zen/kiro-synth/tree/modulations))
+- [x] Modulation of parameters through a modulation matrix
+- [x] The modulation matrix can be tuned from the UI
 - [ ] UI feedback for the modulations
 - [ ] UI feedback for the CPU usage
 - [ ] UI feedback for the output levels
