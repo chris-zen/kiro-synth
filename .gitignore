@@ -85,3 +85,7 @@ target/
 .vscode/
 
 # End of https://www.gitignore.io/api/intellij+all
+
+kiro-synth-nrf52
+nrf52840*
+openocd.*
