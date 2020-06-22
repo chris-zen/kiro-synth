@@ -14,4 +14,26 @@ cd kiro-synth-host
 cargo run --release
 ```
 
-NOTE: You have to connect your MIDI keyboard before starting the synth.
+NOTE: You have to connect your MIDI keyboard before starting the synth. Also it only supports MacOS right now.
+
+## Roadmap
+
+- [x] Basic synth pieces: Oscillator, EG, LFO, Filter, DCA
+- [x] Rust DSL to build the synth graph as a program
+- [x] Basic voice management
+- [x] Parameters can be changed from MIDI events or a UI
+- [x] Controlling parameters from a Druid UI
+- [ ] Modulation of parameters through a modulation matrix (in progress, see the [modulations branch](https://github.com/chris-zen/kiro-synth/tree/modulations))
+- [ ] The modulation matrix can be tuned from the UI (in progress, see the [modulations branch](https://github.com/chris-zen/kiro-synth/tree/modulations))
+- [ ] UI feedback for the modulations
+- [ ] UI feedback for the CPU usage
+- [ ] UI feedback for the output levels
+- [ ] Improve the program with more blocks (add one more EG and LFO)
+- [ ] Improve the program graph to include global oscillators parameters
+- [ ] Improve the program graph to allow FM synthesis using the oscillators
+- [ ] Add a square waveshape
+- [ ] Add more filters
+- [ ] Patch management from configuration
+- [ ] Patch management from the UI
+- [ ] Improve the Knob widget to support logarithmic parameters
+- [ ] ...
