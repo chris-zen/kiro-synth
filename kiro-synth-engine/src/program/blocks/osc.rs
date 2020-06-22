@@ -3,7 +3,7 @@ use kiro_synth_core::oscillators::osc_waveform::OscWaveform;
 
 use crate::float::Float;
 use crate::program::{SignalRef, Program};
-use crate::synth::SynthGlobals;
+use crate::globals::SynthGlobals;
 use crate::signal::SignalBus;
 
 
@@ -44,7 +44,9 @@ impl<F: Float> Processor<F> {
     }
   }
 
-  pub fn reset(&mut self) {}
+  pub fn reset(&mut self) {
+    self.osc.reset()
+  }
 
   pub fn process<'a>(&mut self,
                      signals: &mut SignalBus<'a, F>,
@@ -53,15 +55,15 @@ impl<F: Float> Processor<F> {
 
     let Block { inputs, output } = self.block.clone();
     let Inputs { shape, amplitude, amp_mod,
-      octaves: octave, semitones, cents,
+                 octaves, semitones, cents,
                  note_pitch, pitch_bend, freq_mod } = inputs;
 
     signals[shape].if_updated(|value| {
-      self.osc.set_waveform(synth_globals.waveforms.waveform(value.to_usize().unwrap()).clone())
+      self.osc.set_waveform(synth_globals.osc_waveforms.waveform(value.to_usize().unwrap()).clone())
     });
     signals[amplitude].if_updated(|value| self.osc.set_amplitude(value));
     signals[amp_mod].if_updated(|value| self.osc.set_amplitude_modulation(value));
-    signals[octave].if_updated(|value| self.osc.set_octaves(value));
+    signals[octaves].if_updated(|value| self.osc.set_octaves(value));
     signals[semitones].if_updated(|value| self.osc.set_semitones(value));
     signals[cents].if_updated(|value| self.osc.set_cents(value));
     signals[note_pitch].if_updated(|value| self.osc.set_pitch_frequency(value));

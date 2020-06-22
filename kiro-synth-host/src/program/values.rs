@@ -6,6 +6,7 @@ use num_traits::ToPrimitive;
 pub fn pitch_bend<F: Float>() -> ParamValues<F> {
   ParamValues {
     initial_value: F::zero(),
+    origin: F::zero(),
     min: F::one().neg(),
     max: F::one(),
     resolution: F::epsilon(),
@@ -15,6 +16,7 @@ pub fn pitch_bend<F: Float>() -> ParamValues<F> {
 pub fn adsr<F: Float, T: ToPrimitive>(value: T) -> ParamValues<F> {
   ParamValues {
     initial_value: F::val(value),
+    origin: F::zero(),
     min: F::zero(),
     max: F::val(10.0),
     resolution: F::val(0.01),
@@ -24,6 +26,7 @@ pub fn adsr<F: Float, T: ToPrimitive>(value: T) -> ParamValues<F> {
 pub fn eg_mode<F: Float>() -> ParamValues<F> {
   ParamValues {
     initial_value: F::zero(),
+    origin: F::zero(),
     min: F::zero(),
     max: F::one(),
     resolution: F::one(),
@@ -33,6 +36,7 @@ pub fn eg_mode<F: Float>() -> ParamValues<F> {
 pub fn boolean<F: Float>(initial: bool) -> ParamValues<F> {
   ParamValues {
     initial_value: if initial { F::one() } else { F::zero() },
+    origin: F::zero(),
     min: F::zero(),
     max: F::one(),
     resolution: F::one(),
@@ -42,6 +46,7 @@ pub fn boolean<F: Float>(initial: bool) -> ParamValues<F> {
 pub fn enumeration<F: Float>(count: usize) -> ParamValues<F> {
   ParamValues {
     initial_value: F::val(0.0),
+    origin: F::zero(),
     min: F::zero(),
     max: F::val(count - 1),
     resolution: F::one(),
@@ -51,6 +56,7 @@ pub fn enumeration<F: Float>(count: usize) -> ParamValues<F> {
 pub fn amplitude<F: Float>() -> ParamValues<F> {
   ParamValues {
     initial_value: F::one(),
+    origin: F::zero(),
     min: F::zero(),
     max: F::one(),
     resolution: F::val(0.01),
@@ -61,6 +67,7 @@ pub fn amplitude<F: Float>() -> ParamValues<F> {
 pub fn amplitude_db<F: Float>() -> ParamValues<F> {
   ParamValues {
     initial_value: F::val(0.0),
+    origin: F::zero(),
     min: F::val(-96.0),
     max: F::val(24.0),
     resolution: F::val(0.1),
@@ -70,6 +77,7 @@ pub fn amplitude_db<F: Float>() -> ParamValues<F> {
 pub fn octave<F: Float>() -> ParamValues<F> {
   ParamValues {
     initial_value: F::zero(),
+    origin: F::zero(),
     min: F::val(-8.0),
     max: F::val(8.0),
     resolution: F::one(),
@@ -79,8 +87,9 @@ pub fn octave<F: Float>() -> ParamValues<F> {
 pub fn semitones<F: Float>() -> ParamValues<F> {
   ParamValues {
     initial_value: F::zero(),
-    min: F::from(-12.0).unwrap(),
-    max: F::from(12.0).unwrap(),
+    origin: F::zero(),
+    min: F::val(-12.0),
+    max: F::val(12.0),
     resolution: F::one(),
   }
 }
@@ -88,15 +97,37 @@ pub fn semitones<F: Float>() -> ParamValues<F> {
 pub fn cents<F: Float>() -> ParamValues<F> {
   ParamValues {
     initial_value: F::zero(),
+    origin: F::zero(),
     min: F::val(-100.0),
     max: F::val(100.0),
     resolution: F::one(),
   }
 }
 
+pub fn lfo_rate<F: Float>() -> ParamValues<F> {
+  ParamValues {
+    initial_value: F::one(),
+    origin: F::zero(),
+    min: F::zero(),
+    max: F::val(20.0),
+    resolution: F::val(0.01),
+  }
+}
+
+pub fn lfo_phase<F: Float>() -> ParamValues<F> {
+  ParamValues {
+    initial_value: F::zero(),
+    origin: F::zero(),
+    min: F::zero(),
+    max: F::one(),
+    resolution: F::val(1.0 / 8.0),
+  }
+}
+
 pub fn filt_freq<F: Float>() -> ParamValues<F> {
   ParamValues {
     initial_value: FreqControl::default_frequency(),
+    origin: FreqControl::min_frequency(),
     min: FreqControl::min_frequency(),
     max: FreqControl::max_frequency(),
     resolution: F::val(10.0),
@@ -106,6 +137,7 @@ pub fn filt_freq<F: Float>() -> ParamValues<F> {
 pub fn filt_q<F: Float>() -> ParamValues<F> {
   ParamValues {
     initial_value: F::val(0.5),
+    origin: F::zero(),
     min: F::zero(),
     max: F::one(),
     resolution: F::val(0.01),
@@ -115,15 +147,17 @@ pub fn filt_q<F: Float>() -> ParamValues<F> {
 pub fn pan<F: Float>() -> ParamValues<F> {
   ParamValues {
     initial_value: F::zero(),
+    origin: F::zero(),
     min: F::one().neg(),
     max: F::one(),
     resolution: F::val(0.01),
   }
 }
 
-pub fn intensity<F: Float>() -> ParamValues<F> {
+pub fn eg1_dca_amp_mod<F: Float>() -> ParamValues<F> {
   ParamValues {
     initial_value: F::one(),
+    origin: F::zero(),
     min: F::zero(),
     max: F::val(4.0),
     resolution: F::val(0.01),

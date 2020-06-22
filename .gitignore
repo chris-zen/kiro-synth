@@ -2,7 +2,7 @@
 .gdb_history
 [._]*.sw[a-p]
 **/*.rs.bk
-Cargo.lock
+#Cargo.lock
 
 # Created by https://www.gitignore.io/api/intellij+all
 
@@ -85,3 +85,7 @@ target/
 .vscode/
 
 # End of https://www.gitignore.io/api/intellij+all
+
+kiro-synth-nrf52
+nrf52840*
+openocd.*

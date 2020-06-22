@@ -16,6 +16,11 @@ cargo run --release
 
 NOTE: You have to connect your MIDI keyboard before starting the synth. Also it only supports MacOS right now.
 
+# Screenshots
+
+<img src="screenshot1.png" width="70%" height="70%" />
+<img src="screenshot2.png" width="70%" height="70%" />
+
 ## Roadmap
 
 - [x] Basic synth pieces: Oscillator, EG, LFO, Filter, DCA

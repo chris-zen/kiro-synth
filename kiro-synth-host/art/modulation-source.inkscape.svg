@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.0 (4035a4f, 2020-05-01)"
+   sodipodi:docname="modulation-source.inkscape.svg"
+   id="svg20"
+   viewBox="0 0 11 11"
+   version="1.1"
+   height="11"
+   width="11">
+  <metadata
+     id="metadata26">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs24" />
+  <sodipodi:namedview
+     inkscape:current-layer="g2237"
+     inkscape:window-maximized="1"
+     inkscape:window-y="23"
+     inkscape:window-x="0"
+     inkscape:cy="5.5"
+     inkscape:cx="11.5"
+     inkscape:zoom="32.173913"
+     showgrid="true"
+     id="namedview22"
+     inkscape:window-height="755"
+     inkscape:window-width="1280"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     bordercolor="#666666"
+     pagecolor="#ffffff"
+     inkscape:document-rotation="0"
+     inkscape:snap-nodes="false"
+     inkscape:snap-others="false">
+    <inkscape:grid
+       empspacing="10"
+       id="grid174"
+       type="xygrid" />
+  </sodipodi:namedview>
+  <g
+     id="g18"
+     stroke="#000000">
+    <path
+       id="path10"
+       stroke-linecap="round"
+       fill="none"
+       d="m 2.4999944,5.4999998 c 1.9999955,-3.9999999 2.9999933,0 2.9999933,0 0,0 0.9999977,3.9999999 2.9999933,0"
+       style="stroke-width:0.999999" />
+    <g
+       id="g2237"
+       style="opacity:1"
+       transform="translate(-2)" />
+    <circle
+       r="4.5"
+       style="stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none"
+       id="circle16"
+       stroke-width="2"
+       stroke-linejoin="round"
+       stroke-linecap="round"
+       fill="none"
+       cy="5.5"
+       cx="5.5" />
+  </g>
+</svg>

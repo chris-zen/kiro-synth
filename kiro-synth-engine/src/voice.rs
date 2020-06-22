@@ -5,7 +5,7 @@ use crate::float::Float;
 use crate::key_freqs::KEY_FREQ;
 use crate::program::{MaxSignals, MaxBlocks, Block, Program};
 use crate::processor::Processor;
-use crate::synth::SynthGlobals;
+use crate::globals::SynthGlobals;
 use crate::signal::{Signal, SignalBus};
 
 pub(crate) struct Voice<F: Float> {
@@ -99,7 +99,7 @@ impl<F: Float> Voice<F> {
       signals[voice.trigger].set(F::zero())
     }
 
-//    println!("{:?}", self.signals.iter_mut().skip(3).take(2).map(|s| (s.get(), s.state())).collect::<Vec<(F, SignalState), MaxSignals>>());
+   // println!("{:?}", self.signals.iter_mut().skip(3)/*.take(2)*/.map(|s| (s.get(), s.state())).collect::<Vec<(F, SignalState), MaxSignals>>());
   }
 
   pub fn output(&self, program: &Program<F>) -> (F, F) {

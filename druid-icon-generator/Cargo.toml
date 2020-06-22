@@ -1,0 +1,17 @@
+[package]
+name = "druid-icon-generator"
+version = "0.1.0"
+authors = ["Christian Perez-Llamas"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.8"
+usvg = "0.9.1"
+heck = "0.3.1"
+walkdir = "2.3.1"
+druid = "^0.6"
+
+druid-icon = { path = "../druid-icon" }
+

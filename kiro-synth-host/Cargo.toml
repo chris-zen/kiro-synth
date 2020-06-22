@@ -4,6 +4,12 @@ version = "0.1.0"
 authors = ["Christian Perez Llamas"]
 edition = "2018"
 
+[build-dependencies]
+regex = "1.3.9"
+kurbo = "0.6.0"
+
+druid-icon-generator = { path = "../druid-icon-generator" }
+
 [dependencies]
 #num-traits = { version = "0.2", default-features = false, features = ["libm"] }
 num-traits = { version = "0.2" }
@@ -12,16 +18,22 @@ num-traits = { version = "0.2" }
 thiserror = "1.0.9"
 anyhow = "1.0.26"
 
+derivative = "2.1.1"
+
 ringbuf = "0.2.1"
 heapless = "0.5.2"
 
 cpal = { git = "https://github.com/RustAudio/cpal", branch = "master" }
 
-druid = { git = "https://github.com/xi-editor/druid", branch = "master" }
+#druid = { git = "https://github.com/xi-editor/druid", branch = "master", features = ["im"] }
+#druid = { path = "../../druid-orig/druid", features = ["im"] }
+druid = { version = "^0.6", features = ["im"] }
 
 kiro-synth-core = { path = "../kiro-synth-core" }
 kiro-synth-midi = { path = "../kiro-synth-midi" }
 kiro-synth-engine = { path = "../kiro-synth-engine" }
+
+druid-icon = { path = "../druid-icon" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 coremidi = "0.3.1"

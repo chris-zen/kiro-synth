@@ -42,6 +42,7 @@ impl<T: Data> Tab<T> {
   pub fn new(widget: impl Widget<T> + 'static,
              on_click: impl Fn(&mut T, &Env) + 'static,
              is_selected: impl Fn(&T) -> bool + 'static) -> Self {
+
     Tab {
       corner_radius: None,
       border_width: None,
@@ -51,7 +52,7 @@ impl<T: Data> Tab<T> {
       selected_background: None,
       unselected_background: None,
       hover_background: None,
-      inner: WidgetPod::new(Box::new(widget)),
+      inner: WidgetPod::new(widget).boxed(),
       on_click: Box::new(on_click),
       is_selected: Box::new(is_selected),
       selected: false,
@@ -193,7 +194,7 @@ impl<T: Data> Widget<T> for Tab<T> {
     let inner_bc = bc.shrink((2.0 * border_width, 2.0 * border_width));
     let inner_size = self.inner.layout(ctx, &inner_bc, data, env);
     let origin = Point::new(border_width, border_width);
-    self.inner.set_layout_rect(Rect::from_origin_size(origin, inner_size));
+    self.inner.set_layout_rect(ctx, data, env, Rect::from_origin_size(origin, inner_size));
 
     let total_size = Size::new(
       inner_size.width + 2.0 * border_width,

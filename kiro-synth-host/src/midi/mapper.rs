@@ -85,7 +85,7 @@ impl<F: Float> MidiMapper<F> {
 
   pub fn map_midi_pitch_bend(&self, midi_value: U14) -> Option<Event<F>> {
     self.pitch_bend_mapping.as_ref().map(|mapping| {
-      let message = SynthMessage::Param {
+      let message = SynthMessage::ParamValue {
         param_ref: mapping.param_ref,
         value: mapping.transform.param_value_from(midi_value as usize)
       };
@@ -134,7 +134,7 @@ impl<F: Float> MidiMapper<F> {
             .filter(|_| value != F::zero())
       }
       else {
-        Some(SynthMessage::Param { param_ref: mapping.param_ref, value })
+        Some(SynthMessage::ParamValue { param_ref: mapping.param_ref, value })
       };
       maybe_message.map(|message| Event::new(0u64, message))
     })
