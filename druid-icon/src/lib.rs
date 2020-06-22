@@ -93,6 +93,10 @@ impl<T: Data> Icon<T> {
     self
   }
 
+  pub fn set_color(&mut self, color: impl Into<KeyOrValue<Color>>) {
+    self.color = color.into();
+  }
+
   pub fn fill_strategy(mut self, fill_strategy: FillStrat) -> Icon<T> {
     self.fill_strategy = fill_strategy;
     self

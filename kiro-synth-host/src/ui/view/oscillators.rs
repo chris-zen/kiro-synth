@@ -6,7 +6,7 @@ use druid::widget::{Flex, WidgetExt};
 use kiro_synth_core::float::Float;
 
 use crate::synth::SynthClient;
-use crate::ui::model::{SynthModel, Osc, OscFromSynth};
+use crate::ui::model::{Synth, Osc, OscFromSynth};
 use crate::ui::view::{build_tabs, build_switcher, build_knob_value, build_knob_enum};
 
 
@@ -14,16 +14,16 @@ pub struct OscillatorsView;
 
 impl OscillatorsView {
 
-  pub fn new<F: Float + 'static>(synth_model: &SynthModel,
-                                 synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<SynthModel> {
+  pub fn new<F: Float + 'static>(synth_model: &Synth,
+                                 synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<Synth> {
 
     let osc_len = synth_model.osc.len();
     let tabs = build_tabs(osc_len, |index| format!("OSC{}", index + 1))
-        .lens(SynthModel::osc_index);
+        .lens(Synth::osc_index);
 
     build_switcher(tabs,
-                   |data: &SynthModel, _env: &Env| data.osc_index,
-                   move |_index: &usize, _data: &SynthModel, _env: &Env| {
+                   |data: &Synth, _env: &Env| data.osc_index,
+                   move |_index: &usize, _data: &Synth, _env: &Env| {
                      Box::new(build_osc_view(synth_client.clone()).lens(OscFromSynth))
                    })
   }

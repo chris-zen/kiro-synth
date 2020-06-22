@@ -1,6 +1,6 @@
 use crate::float::Float;
 use crate::program::{Block, Program, SignalRef, ParamRef, ParamBlock};
-use crate::program::{dca, envgen, expr, filter, lfo, osc};
+use crate::program::blocks::*;
 use crate::globals::SynthGlobals;
 use crate::signal::SignalBus;
 
@@ -55,10 +55,10 @@ impl<F: Float> Processor<F> {
       Processor::Param(param_ref, signal_ref) => {
         if let Some((_, param)) = program.get_param(*param_ref) {
           let mut value = param.signal.get();
-          for modulator in param.modulators.iter() {
-            if let Some(source) = program.get_source(modulator.source_ref) {
+          for modulation in program.get_param_modulations(*param_ref) {
+            if let Some(source) = program.get_source(modulation.source_ref) {
               let source_signal = signals[source.signal].get();
-              value = value + source_signal * modulator.amount;
+              value = value + source_signal * modulation.amount;
             }
           }
           value = value.max(param.values.min).min(param.values.max);

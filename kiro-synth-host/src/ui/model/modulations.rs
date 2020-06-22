@@ -197,10 +197,10 @@ impl Modulations {
     for (index, param) in program.get_params().iter().enumerate() {
       let param_ref = ParamRef::new(index); // TODO param_ref should come from the program.get_params() call
       params.push_back(Param::new(program, param_ref, synth_client.clone()));
-      for modulator in param.modulators.iter() {
-        if let Some(source) = program.get_source(modulator.source_ref) {
+      for param_modulation in program.get_param_modulations(param_ref) {
+        if let Some(source) = program.get_source(param_modulation.source_ref) {
           let modulation = InternalModulation {
-            source_ref: modulator.source_ref,
+            source_ref: param_modulation.source_ref,
             source_name: source.id.to_string(),
             param_ref,
             param_name: param.id.to_string(),
@@ -208,7 +208,7 @@ impl Modulations {
             min: param.values.min.to_f64().unwrap(),
             max: param.values.max.to_f64().unwrap(),
             step: param.values.resolution.to_f64().unwrap(),
-            amount: modulator.amount.to_f64().unwrap(),
+            amount: param_modulation.amount.to_f64().unwrap(),
           };
           modulations.push_back(modulation)
         }
@@ -338,7 +338,7 @@ impl Modulations {
 
   pub fn add_modulation(&mut self, modulation: InternalModulation) {
     // TODO check that it can be added according to the synth internal capacity
-    self.synth_client.send_modulation_amount(modulation.source_ref, modulation.param_ref, modulation.amount as f32);
+    self.synth_client.send_modulation_update(modulation.source_ref, modulation.param_ref, modulation.amount as f32).unwrap();
     self.modulations.push_back(modulation);
   }
 }

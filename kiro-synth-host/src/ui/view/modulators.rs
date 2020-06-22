@@ -6,15 +6,15 @@ use druid::widget::{Flex, WidgetExt, SizedBox};
 use kiro_synth_core::float::Float;
 
 use crate::synth::SynthClient;
-use crate::ui::model::{SynthModel, EnvGen, EgFromSynth, Lfo, LfoFromSynth};
+use crate::ui::model::{Synth, EnvGen, EgFromSynth, Lfo, LfoFromSynth};
 use crate::ui::view::{build_tabs, build_switcher, build_knob_value, build_knob_enum};
 
 
 pub struct ModulatorsView;
 
 impl ModulatorsView {
-  pub fn new<F: Float + 'static>(synth_model: &SynthModel,
-                                 synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<SynthModel> {
+  pub fn new<F: Float + 'static>(synth_model: &Synth,
+                                 synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<Synth> {
 
     let eg_len = synth_model.eg.len();
     let tabs_len = eg_len + synth_model.lfo.len();
@@ -28,11 +28,11 @@ impl ModulatorsView {
     };
 
     let tabs = build_tabs(tabs_len, tab_title)
-        .lens(SynthModel::mod_index);
+        .lens(Synth::mod_index);
 
     build_switcher(tabs,
-                   |data: &SynthModel, _env: &Env| data.mod_index,
-                   move |index: &usize, _data: &SynthModel, _env: &Env| {
+                   |data: &Synth, _env: &Env| data.mod_index,
+                   move |index: &usize, _data: &Synth, _env: &Env| {
                      if *index < eg_len {
                        Box::new(build_eg_view().lens(EgFromSynth))
                      }

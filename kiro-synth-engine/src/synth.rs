@@ -4,7 +4,7 @@ use typenum::marker_traits::Unsigned;
 use ringbuf::Consumer;
 
 use crate::float::Float;
-use crate::program::{Program, Modulator};
+use crate::program::Program;
 use crate::voice::Voice;
 use crate::event::{Message, Event};
 use crate::globals::SynthGlobals;
@@ -63,27 +63,23 @@ impl<'a, F: Float> Synth<'a, F> {
         },
         Message::ParamChange { param_ref, change } => {
           if let Some((_, param)) = self.program.get_param_mut(param_ref) {
-            let value = param.signal.get() + change;
-            let value = value.min(param.values.max).max(param.values.min);
+            let value: F = param.signal.get() + change;
+            let value = value.max(param.values.min).min(param.values.max);
             println!("{} = {:?}", param.id, value);
             param.signal.set(value);
           }
         },
-        Message::ModulationAmount { source_ref, param_ref, amount } => {
+        Message::ModulationUpdate { source_ref, param_ref, amount } => {
           if let Some(source) = self.program.get_source(source_ref) {
             let source_id = source.id;
-            if let Some((_, param)) = self.program.get_param_mut(param_ref) {
+            if let Some((_, param)) = self.program.get_param(param_ref) {
               println!("{} -> {} {:?}", source_id, param.id, amount);
-              let maybe_modulator = param.modulators.iter_mut()
-                  .find(|m| m.source_ref == source_ref);
-              match maybe_modulator {
-                Some(modulator) => modulator.amount = amount,
-                None => if param.modulators.len() < param.modulators.capacity() {
-                  param.modulators.push(Modulator { source_ref, amount }).unwrap();
-                }
-              }
             }
+            self.program.update_modulation(param_ref, source_ref, amount).unwrap(); // TODO handle error
           }
+        },
+        Message::ModulationDelete { source_ref, param_ref } => {
+          self.program.delete_modulation(param_ref, source_ref).unwrap(); // TODO handle error
         }
       }
     }

@@ -1,3 +1,4 @@
+pub mod controllers;
 pub mod widgets;
 mod model;
 mod view;
@@ -11,10 +12,10 @@ use kiro_synth_core::float::Float;
 
 use crate::synth::SynthClient;
 
-pub use model::SynthModel;
+pub use model::Synth;
 
 
-pub fn start<F: Float + 'static>(synth_model: SynthModel,
+pub fn start<F: Float + 'static>(synth_model: Synth,
                                  synth_client: Arc<Mutex<SynthClient<F>>>) {
 
   let data = synth_model.clone();
@@ -35,7 +36,7 @@ pub fn start<F: Float + 'static>(synth_model: SynthModel,
 
 pub const KNOB_VALUE: Color = Color::rgb8(236, 138, 56);
 pub const KNOB_MODULATION: Color = Color::rgb8(204, 76, 0);
-pub const KNOB_WEIGHT: Color = Color::rgb8(255, 223, 35);
+pub const KNOB_CONFIG: Color = Color::rgb8(255, 223, 35);
 
 pub const GREY_23: Color = Color::grey8(23);
 pub const GREY_46: Color = Color::grey8(46);
@@ -55,5 +56,5 @@ fn setup_theme<T: Data>(env: &mut Env, _data: &T) {
   env.set(widgets::knob::theme::KNOB_VALUE_BG_COLOR, GREY_83);
   env.set(widgets::knob::theme::KNOB_MODULATION_VALUE_FG_COLOR, KNOB_MODULATION);
   env.set(widgets::knob::theme::KNOB_MODULATION_VALUE_BG_COLOR, GREY_54);
-  env.set(widgets::knob::theme::KNOB_MODULATION_TOTAL_AMOUNT_COLOR, KNOB_WEIGHT);
+  env.set(widgets::knob::theme::KNOB_MODULATION_TOTAL_AMOUNT_COLOR, KNOB_CONFIG);
 }

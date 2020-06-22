@@ -74,6 +74,41 @@ pub const MODULATION_PARAM: IconStaticData = IconStaticData {
 };
 
 #[allow(unused)]
+pub const MODULATION_REMOVE: IconStaticData = IconStaticData {
+  size: Size::new(10.0, 11.0),
+  paths: &[
+    IconStaticPath {
+      transform: Affine::new([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
+      fill: Some(IconPathFill { opacity: 1.0 }),
+      stroke: Some(IconPathStroke { opacity: 1.0, width: 1.0 }),
+      elements: &[
+        PathEl::MoveTo(Point::new(1.0, 1.0)),
+        PathEl::LineTo(Point::new(1.0, 2.0)),
+        PathEl::LineTo(Point::new(8.0, 10.0)),
+        PathEl::LineTo(Point::new(9.0, 10.0)),
+        PathEl::LineTo(Point::new(9.0, 9.0)),
+        PathEl::LineTo(Point::new(2.0, 1.0)),
+        PathEl::ClosePath,
+      ],
+    },
+    IconStaticPath {
+      transform: Affine::new([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
+      fill: Some(IconPathFill { opacity: 1.0 }),
+      stroke: Some(IconPathStroke { opacity: 1.0, width: 1.0 }),
+      elements: &[
+        PathEl::MoveTo(Point::new(8.0, 1.0)),
+        PathEl::LineTo(Point::new(9.0, 1.0)),
+        PathEl::LineTo(Point::new(9.0, 2.0)),
+        PathEl::LineTo(Point::new(2.0, 10.0)),
+        PathEl::LineTo(Point::new(1.0, 10.0)),
+        PathEl::LineTo(Point::new(1.0, 9.0)),
+        PathEl::ClosePath,
+      ],
+    },
+  ],
+};
+
+#[allow(unused)]
 pub const MODULATION_NEW: IconStaticData = IconStaticData {
   size: Size::new(11.0, 11.0),
   paths: &[

@@ -54,8 +54,13 @@ impl<F: Float> SynthClient<F> {
     self.send_event(Event::new(0u64, message));
   }
 
-  pub fn send_modulation_amount(&mut self, source_ref: SourceRef, param_ref: ParamRef, amount: F) {
-    let message = Message::ModulationAmount { source_ref, param_ref, amount };
+  pub fn send_modulation_update(&mut self, source_ref: SourceRef, param_ref: ParamRef, amount: F) {
+    let message = Message::ModulationUpdate { source_ref, param_ref, amount };
+    self.send_event(Event::new(0u64, message));
+  }
+
+  pub fn send_modulation_delete(&mut self, source_ref: SourceRef, param_ref: ParamRef) {
+    let message = Message::ModulationDelete { source_ref, param_ref };
     self.send_event(Event::new(0u64, message));
   }
 }
@@ -73,9 +78,14 @@ impl<F: Float> SynthClientMutex<F> {
         .map(|mut client| client.send_param_value(param_ref, value))
   }
 
-  pub fn send_modulation_amount(&self, source_ref: SourceRef, param_ref: ParamRef, amount: F) -> Result<(), PoisonError<MutexGuard<'_, SynthClient<F>>>> {
+  pub fn send_modulation_update(&self, source_ref: SourceRef, param_ref: ParamRef, amount: F) -> Result<(), PoisonError<MutexGuard<'_, SynthClient<F>>>> {
     self.0.lock()
-        .map(|mut client| client.send_modulation_amount(source_ref, param_ref, amount))
+        .map(|mut client| client.send_modulation_update(source_ref, param_ref, amount))
+  }
+
+  pub fn send_modulation_delete(&self, source_ref: SourceRef, param_ref: ParamRef) -> Result<(), PoisonError<MutexGuard<'_, SynthClient<F>>>> {
+    self.0.lock()
+        .map(|mut client| client.send_modulation_delete(source_ref, param_ref))
   }
 }
 

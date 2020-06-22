@@ -5,17 +5,17 @@ use kiro_synth_engine::program::Program;
 
 use crate::program::params::FilterParams;
 use crate::synth::SynthClientMutex;
-use crate::ui::model::{SynthModel, Param};
+use crate::ui::model::{Synth, Param};
 
 
 pub struct FilterFromSynth;
 
-impl Lens<SynthModel, Filter> for FilterFromSynth {
-  fn with<V, F: FnOnce(&Filter) -> V>(&self, data: &SynthModel, f: F) -> V {
+impl Lens<Synth, Filter> for FilterFromSynth {
+  fn with<V, F: FnOnce(&Filter) -> V>(&self, data: &Synth, f: F) -> V {
     f(&data.filter[data.filter_index])
   }
 
-  fn with_mut<V, F: FnOnce(&mut Filter) -> V>(&self, data: &mut SynthModel, f: F) -> V {
+  fn with_mut<V, F: FnOnce(&mut Filter) -> V>(&self, data: &mut Synth, f: F) -> V {
     f(&mut data.filter[data.filter_index])
   }
 }

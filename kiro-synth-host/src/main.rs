@@ -20,7 +20,7 @@ use crate::audio::{AudioDriver, AudioHandler};
 use crate::midi::drivers::{MidiDriver, MidiHandler};
 use crate::program::kiro::KiroModule;
 use crate::midi::mapper::MidiMapper;
-use crate::ui::SynthModel;
+use crate::ui::{Synth as SynthData};
 use crate::synth::{SynthClient, SynthClientMutex};
 
 const SAMPLE_RATE: u32 = 44100;
@@ -47,9 +47,9 @@ fn main() -> Result<()> {
     synth_globals.lfo_waveforms.len(),
     synth_globals.osc_waveforms.len());
 
-  // UI MODEL
+  // UI DATA
 
-  let synth_model = SynthModel::new(&program, &module, SynthClientMutex::new(synth_client.clone()));
+  let synth_data = SynthData::new(&program, &module, SynthClientMutex::new(synth_client.clone()));
 
   // MIDI
 
@@ -68,7 +68,7 @@ fn main() -> Result<()> {
 
   // UI
 
-  ui::start(synth_model, synth_client);
+  ui::start(synth_data, synth_client);
 
   Ok(())
 }

@@ -19,10 +19,14 @@ pub enum Message<F: Float> {
     param_ref: ParamRef,
     change: F,
   },
-  ModulationAmount {
+  ModulationUpdate {
     source_ref: SourceRef,
     param_ref: ParamRef,
     amount: F,
+  },
+  ModulationDelete {
+    source_ref: SourceRef,
+    param_ref: ParamRef,
   },
 }
 

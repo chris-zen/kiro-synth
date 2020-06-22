@@ -5,16 +5,16 @@ use kiro_synth_engine::program::Program;
 
 use crate::program::params::EnvGenParams;
 use crate::synth::SynthClientMutex;
-use crate::ui::model::{SynthModel, Param};
+use crate::ui::model::{Synth, Param};
 
 pub struct EgFromSynth;
 
-impl Lens<SynthModel, EnvGen> for EgFromSynth {
-  fn with<V, F: FnOnce(&EnvGen) -> V>(&self, data: &SynthModel, f: F) -> V {
+impl Lens<Synth, EnvGen> for EgFromSynth {
+  fn with<V, F: FnOnce(&EnvGen) -> V>(&self, data: &Synth, f: F) -> V {
     f(&data.eg[data.mod_index])
   }
 
-  fn with_mut<V, F: FnOnce(&mut EnvGen) -> V>(&self, data: &mut SynthModel, f: F) -> V {
+  fn with_mut<V, F: FnOnce(&mut EnvGen) -> V>(&self, data: &mut Synth, f: F) -> V {
     f(&mut data.eg[data.mod_index])
   }
 }

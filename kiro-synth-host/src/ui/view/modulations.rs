@@ -1,27 +1,28 @@
-use std::sync::{Arc, Mutex};
 use std::marker::PhantomData;
 
-use druid::{Widget, WidgetExt, lens::{self, LensExt}, UnitPoint, Env, EventCtx, Command, Selector, Data, Event, UpdateCtx};
+use druid::{Widget, WidgetExt, lens::{self, LensExt}, UnitPoint, Env, EventCtx, Command, Selector, Data, Event, UpdateCtx, Color};
 use druid::widget::{List, Flex, Label, Scroll, Container, CrossAxisAlignment, SizedBox, ViewSwitcher, FillStrat, Either, Controller};
 use druid::im::Vector;
+use druid::theme::LABEL_COLOR;
 
 use druid_icon::Icon;
 
-use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::{SourceRef, ParamRef};
 
-use crate::synth::SynthClient;
-use crate::ui::{GREY_83, KNOB_MODULATION, GREY_74, KNOB_VALUE, KNOB_WEIGHT};
-use crate::ui::model::SynthModel;
-use crate::ui::widgets::knob::{Knob, KnobData};
+use crate::ui::{GREY_83, GREY_74, KNOB_CONFIG};
+use crate::ui::controllers::{IconColorController, HotChangedController};
+use crate::ui::model::Synth;
 use crate::ui::model::modulations::{Group, Modulation, View, Modulations, ConfigMode, Reference};
-use crate::ui::view::build_static_tabs;
 use crate::ui::icons;
+use crate::ui::widgets::knob::{Knob, KnobData};
+use crate::ui::view::build_static_tabs;
 
 
 pub const START_MODULATIONS_CONFIG: Selector<SourceRef> = Selector::new("synth.modulation.start-config");
 pub const UPDATE_MODULATIONS_CONFIG: Selector<(SourceRef, ParamRef, f64)> = Selector::new("synth.modulation.update-config");
 pub const STOP_MODULATIONS_CONFIG: Selector<SourceRef> = Selector::new("synth.modulation.stop-config");
+
+pub const DELETE_MODULATION_IS_HOT: Selector<((SourceRef, ParamRef), Color)> = Selector::new("synth.modulation.delete-is-hot");
 
 
 pub struct ModulationController<T: Data> {
@@ -36,8 +37,8 @@ impl<T: Data> ModulationController<T> {
   }
 }
 
-impl<W: Widget<SynthModel>> Controller<SynthModel, W> for ModulationController<SynthModel> {
-  fn event(&mut self, child: &mut W, ctx: &mut EventCtx, event: &Event, data: &mut SynthModel, env: &Env) {
+impl<W: Widget<Synth>> Controller<Synth, W> for ModulationController<Synth> {
+  fn event(&mut self, child: &mut W, ctx: &mut EventCtx, event: &Event, data: &mut Synth, env: &Env) {
     match event {
       Event::Command(command) if command.is(START_MODULATIONS_CONFIG) => {
         if let Some(source_ref) = command.get::<SourceRef>(START_MODULATIONS_CONFIG) {
@@ -64,7 +65,7 @@ impl<W: Widget<SynthModel>> Controller<SynthModel, W> for ModulationController<S
 pub struct ModulationsView;
 
 impl ModulationsView {
-  pub fn new<F: Float + 'static>(_synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<SynthModel> {
+  pub fn new() -> impl Widget<Synth> {
 
     let views = vec![
       View::GroupBySource,
@@ -93,7 +94,8 @@ impl ModulationsView {
         .with_child(tabs.padding((4.0, 4.0, 0.0, 0.0)))
         .with_flex_child(body, 1.0)
         .cross_axis_alignment(CrossAxisAlignment::Start)
-        .lens(SynthModel::modulations)
+        .lens(Synth::modulations)
+        .controller(ModulationController::new())
   }
 
   fn build_tab(_index: usize, data: &View) -> impl Widget<View> {
@@ -155,7 +157,7 @@ impl ModulationsView {
             }
             ConfigMode::Ongoing => {
               Icon::new(&icons::MODULATION_ARROW)
-                  .color(KNOB_WEIGHT)
+                  .color(KNOB_CONFIG)
                   .fill_strategy(FillStrat::ScaleDown)
                   .fix_height(10.0)
                   .on_click(move |ctx: &mut EventCtx, _data: &mut Group, _: &Env| {
@@ -194,6 +196,31 @@ impl ModulationsView {
   }
 
   fn build_modulation_knob() -> impl Widget<Modulation> {
+
+    let callback = move |ctx: &mut UpdateCtx, data: &KnobData<Modulation>| {
+      let source_ref = data.context.source_ref;
+      let param_ref = data.context.param_ref;
+      // println!("modulation: callback: {:?} {:?}", source_ref, param_ref);
+      data.context.synth_client
+          .send_modulation_update(source_ref, param_ref, data.value as f32).unwrap();
+      let payload = (source_ref, param_ref, data.value);
+      let command = Command::new(UPDATE_MODULATIONS_CONFIG, payload);
+      ctx.submit_command(command, None)
+    };
+
+    let knob = Knob::new(callback)
+        .padding(4.0)
+        .center()
+        .fix_size(38.0, 38.0)
+        .lens(lens::Id.map(
+          |data: &Modulation| {
+            KnobData::new(data.origin, data.min, data.max, data.step, data.amount, data.clone())
+          },
+          |data: &mut Modulation, knob_data: KnobData<Modulation>| {
+            data.amount = knob_data.value
+          }
+        ));
+
     let name = Label::new(|data: &Modulation, _env: &_| data.name.clone())
         .align_vertical(UnitPoint::new(0.0, 0.5))
         .fix_height(19.0);
@@ -215,32 +242,31 @@ impl ModulationsView {
         .with_child(value)
         .expand_width();
 
-    let callback = move |ctx: &mut UpdateCtx, data: &KnobData<Modulation>| {
-      let source_ref = data.context.source_ref;
-      let param_ref = data.context.param_ref;
-      // println!("modulation: callback: {:?} {:?}", source_ref, param_ref);
-      data.context.synth_client
-          .send_modulation_amount(source_ref, param_ref, data.value as f32).unwrap();
-      let payload = (source_ref, param_ref, data.value);
-      let command = Command::new(UPDATE_MODULATIONS_CONFIG, payload);
-      ctx.submit_command(command, None)
+    let modulation_id = |data: &Modulation| (data.source_ref, data.param_ref);
+
+    let hot_color = |is_hot: bool, _: &Modulation, env: &Env| match is_hot {
+      true => env.get(LABEL_COLOR),
+      false => GREY_83,
     };
 
-    let knob = Knob::new(callback)
-        .padding(4.0)
-        .center()
-        .fix_size(38.0, 38.0)
-        .lens(lens::Id.map(
-          |data: &Modulation| {
-            KnobData::new(data.origin, data.min, data.max, data.step, data.amount, data.clone())
-          },
-          |data: &mut Modulation, knob_data: KnobData<Modulation>| {
-            data.amount = knob_data.value
-          }
-        ));
+    let remove = Icon::new(&icons::MODULATION_REMOVE)
+        .color(GREY_83)
+        .fill_strategy(FillStrat::ScaleDown)
+        .controller(IconColorController::new(DELETE_MODULATION_IS_HOT, modulation_id))
+        .fix_height(10.0)
+        .padding((0.0, 0.0, 2.0, 0.0))
+        .on_click(move |ctx: &mut EventCtx, data: &mut Modulation, _: &Env| {
+          println!("remove {:#?}", data);
+          // TODO remove the modulation from the list
+          // let command = Command::new(START_MODULATIONS_CONFIG, source_ref);
+          // ctx.submit_command(command, None);
+          data.synth_client.send_modulation_delete(data.source_ref, data.param_ref).unwrap();
+        });
 
     Flex::row()
         .with_child(knob)
         .with_flex_child(name_and_value, 1.0)
+        .with_child(remove)
+        .controller(HotChangedController::new(DELETE_MODULATION_IS_HOT, modulation_id, hot_color))
   }
 }

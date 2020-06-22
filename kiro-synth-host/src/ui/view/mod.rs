@@ -12,7 +12,7 @@ use druid::widget::{Flex, WidgetExt, Label, Container, ViewSwitcher, CrossAxisAl
 use kiro_synth_core::float::Float;
 
 use crate::synth::SynthClient;
-use crate::ui::model::{SynthModel, Param, KnobDataFromParam};
+use crate::ui::model::{Synth, Param, KnobDataFromParam};
 use crate::ui::widgets::knob::{KnobData, Knob};
 use crate::ui::{GREY_83, GREY_65, GREY_74};
 use crate::ui::widgets::tab::Tab;
@@ -22,11 +22,11 @@ use filters::FiltersView;
 use dca::DcaView;
 use modulators::ModulatorsView;
 use modulations::ModulationsView;
-use crate::ui::view::modulations::{ModulationController, UPDATE_MODULATIONS_CONFIG};
+use crate::ui::view::modulations::UPDATE_MODULATIONS_CONFIG;
 
 
-pub fn build<F: Float + 'static>(synth_model: &SynthModel,
-                                 synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<SynthModel> {
+pub fn build<F: Float + 'static>(synth_model: &Synth,
+                                 synth_client: Arc<Mutex<SynthClient<F>>>) -> impl Widget<Synth> {
 
   let height = 114.0;
   let devices = Flex::column()
@@ -57,8 +57,7 @@ pub fn build<F: Float + 'static>(synth_model: &SynthModel,
     )
     .cross_axis_alignment(CrossAxisAlignment::Start);
 
-  let modulators = ModulationsView::new(synth_client.clone())
-      .controller(ModulationController::new());
+  let modulators = ModulationsView::new();
 
   Flex::row()
     .with_child(devices.fix_width(330.0))

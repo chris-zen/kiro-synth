@@ -1,6 +1,6 @@
 use kiro_synth_core::float::Float;
-use kiro_synth_engine::program::{Program, Block, ProgramBuilder, ParamBlock, SignalRef, lfo, SourceRef};
-use kiro_synth_engine::program::{dca, envgen, filter, osc};
+use kiro_synth_engine::program::{Program, Block, ProgramBuilder, ParamBlock, SignalRef, SourceRef};
+use kiro_synth_engine::program::blocks::{dca, envgen, filter, lfo, osc};
 
 use crate::program::params::{EnvGenParams, OscParams, FilterParams, DcaParams, LfoParams};
 use crate::program::values;

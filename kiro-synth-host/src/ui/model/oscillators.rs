@@ -5,16 +5,16 @@ use kiro_synth_engine::program::Program;
 
 use crate::program::params::OscParams;
 use crate::synth::SynthClientMutex;
-use crate::ui::model::{SynthModel, Param};
+use crate::ui::model::{Synth, Param};
 
 pub struct OscFromSynth;
 
-impl Lens<SynthModel, Osc> for OscFromSynth {
-  fn with<V, F: FnOnce(&Osc) -> V>(&self, data: &SynthModel, f: F) -> V {
+impl Lens<Synth, Osc> for OscFromSynth {
+  fn with<V, F: FnOnce(&Osc) -> V>(&self, data: &Synth, f: F) -> V {
     f(&data.osc[data.osc_index])
   }
 
-  fn with_mut<V, F: FnOnce(&mut Osc) -> V>(&self, data: &mut SynthModel, f: F) -> V {
+  fn with_mut<V, F: FnOnce(&mut Osc) -> V>(&self, data: &mut Synth, f: F) -> V {
     f(&mut data.osc[data.osc_index])
   }
 }
