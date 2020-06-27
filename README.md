@@ -30,8 +30,8 @@ NOTE: You have to connect your MIDI keyboard before starting the synth. Also it 
 - [x] Controlling parameters from a Druid UI
 - [x] Modulation of parameters through a modulation matrix
 - [x] The modulation matrix can be tuned from the UI
-- [ ] UI feedback for the modulations
-- [ ] UI feedback for the CPU usage
+- [x] UI feedback for the modulations
+- [ ] UI feedback for the number of voices
 - [ ] UI feedback for the output levels
 - [ ] Improve the program with more blocks (add one more EG and LFO)
 - [ ] Improve the program graph to include global oscillators parameters
@@ -41,4 +41,5 @@ NOTE: You have to connect your MIDI keyboard before starting the synth. Also it 
 - [ ] Patch management from configuration
 - [ ] Patch management from the UI
 - [ ] Improve the Knob widget to support logarithmic parameters
+- [ ] UI feedback for the CPU usage
 - [ ] ...
