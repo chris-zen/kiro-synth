@@ -3,8 +3,8 @@ use druid::{Data, Lens};
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::Program;
 
-use crate::program::params::DcaParams;
 use crate::synth::SynthClientMutex;
+use crate::synth::program::params::DcaParams;
 use crate::ui::model::Param;
 
 

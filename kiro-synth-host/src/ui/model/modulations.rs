@@ -10,8 +10,8 @@ use druid::widget::ListIter;
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::{SourceRef, Program, ParamRef};
 
-use crate::program::kiro::KiroModule;
 use crate::synth::SynthClientMutex;
+use crate::synth::program::kiro::KiroModule;
 use crate::ui::model::Param;
 
 

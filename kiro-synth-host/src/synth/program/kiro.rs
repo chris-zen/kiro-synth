@@ -2,8 +2,8 @@ use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::{Program, Block, ProgramBuilder, ParamBlock, SignalRef, SourceRef};
 use kiro_synth_engine::program::blocks::{dca, envgen, filter, lfo, osc};
 
-use crate::program::params::{EnvGenParams, OscParams, FilterParams, DcaParams, LfoParams};
-use crate::program::values;
+use crate::synth::program::params::{EnvGenParams, OscParams, FilterParams, DcaParams, LfoParams};
+use crate::synth::program::values;
 
 pub struct KiroParams {
   pub pitch_bend: ParamBlock,
@@ -176,20 +176,20 @@ impl KiroModule {
 
     let lfo1 = lfo::Block {
       inputs: lfo::Inputs {
-        shape: params.lfo1.shape.signal,
-        rate: params.lfo1.rate.signal,
-        phase: params.lfo1.phase.signal,
-        depth: params.lfo1.depth.signal,
+        shape: params.lfo1.shape.out_signal_ref,
+        rate: params.lfo1.rate.out_signal_ref,
+        phase: params.lfo1.phase.out_signal_ref,
+        depth: params.lfo1.depth.out_signal_ref,
       },
       output: signals.lfo1,
     };
 
     let lfo2 = lfo::Block {
       inputs: lfo::Inputs {
-        shape: params.lfo2.shape.signal,
-        rate: params.lfo2.rate.signal,
-        phase: params.lfo2.phase.signal,
-        depth: params.lfo2.depth.signal,
+        shape: params.lfo2.shape.out_signal_ref,
+        rate: params.lfo2.rate.out_signal_ref,
+        phase: params.lfo2.phase.out_signal_ref,
+        depth: params.lfo2.depth.out_signal_ref,
       },
       output: signals.lfo2,
     };
@@ -202,13 +202,13 @@ impl KiroModule {
 
     let eg1 = envgen::Block {
       inputs: envgen::Inputs {
-        attack: params.eg1.attack.signal,
-        decay: params.eg1.decay.signal,
-        sustain: params.eg1.sustain.signal,
-        release: params.eg1.release.signal,
-        mode: params.eg1.mode.signal,
-        legato: params.eg1.legato.signal,
-        reset_to_zero: params.eg1.reset_to_zero.signal,
+        attack: params.eg1.attack.out_signal_ref,
+        decay: params.eg1.decay.out_signal_ref,
+        sustain: params.eg1.sustain.out_signal_ref,
+        release: params.eg1.release.out_signal_ref,
+        mode: params.eg1.mode.out_signal_ref,
+        legato: params.eg1.legato.out_signal_ref,
+        reset_to_zero: params.eg1.reset_to_zero.out_signal_ref,
       },
       outputs: envgen::Outputs {
         normal: signals.eg1_normal,
@@ -223,14 +223,14 @@ impl KiroModule {
 
     let osc1 = osc::Block {
       inputs: osc::Inputs {
-        shape: params.osc1.shape.signal,
-        amplitude: params.osc1.amplitude.signal,
+        shape: params.osc1.shape.out_signal_ref,
+        amplitude: params.osc1.amplitude.out_signal_ref,
         amp_mod: zero,
-        octaves: params.osc1.octaves.signal,
-        semitones: params.osc1.semitones.signal,
-        cents: params.osc1.cents.signal,
+        octaves: params.osc1.octaves.out_signal_ref,
+        semitones: params.osc1.semitones.out_signal_ref,
+        cents: params.osc1.cents.out_signal_ref,
         note_pitch: voice.note_pitch,
-        pitch_bend: params.pitch_bend.signal,
+        pitch_bend: params.pitch_bend.out_signal_ref,
         freq_mod: zero,
       },
       output: signals.osc1,
@@ -238,14 +238,14 @@ impl KiroModule {
 
     let osc2 = osc::Block {
       inputs: osc::Inputs {
-        shape: params.osc2.shape.signal,
-        amplitude: params.osc2.amplitude.signal,
+        shape: params.osc2.shape.out_signal_ref,
+        amplitude: params.osc2.amplitude.out_signal_ref,
         amp_mod: zero,
-        octaves: params.osc2.octaves.signal,
-        semitones: params.osc2.semitones.signal,
-        cents: params.osc2.cents.signal,
+        octaves: params.osc2.octaves.out_signal_ref,
+        semitones: params.osc2.semitones.out_signal_ref,
+        cents: params.osc2.cents.out_signal_ref,
         note_pitch: voice.note_pitch,
-        pitch_bend: params.pitch_bend.signal,
+        pitch_bend: params.pitch_bend.out_signal_ref,
         freq_mod: zero,
       },
       output: signals.osc2,
@@ -253,14 +253,14 @@ impl KiroModule {
 
     let osc3 = osc::Block {
       inputs: osc::Inputs {
-        shape: params.osc3.shape.signal,
-        amplitude: params.osc3.amplitude.signal,
+        shape: params.osc3.shape.out_signal_ref,
+        amplitude: params.osc3.amplitude.out_signal_ref,
         amp_mod: zero,
-        octaves: params.osc3.octaves.signal,
-        semitones: params.osc3.semitones.signal,
-        cents: params.osc3.cents.signal,
+        octaves: params.osc3.octaves.out_signal_ref,
+        semitones: params.osc3.semitones.out_signal_ref,
+        cents: params.osc3.cents.out_signal_ref,
         note_pitch: voice.note_pitch,
-        pitch_bend: params.pitch_bend.signal,
+        pitch_bend: params.pitch_bend.out_signal_ref,
         freq_mod: zero,
       },
       output: signals.osc3,
@@ -268,14 +268,14 @@ impl KiroModule {
 
     let osc4 = osc::Block {
       inputs: osc::Inputs {
-        shape: params.osc4.shape.signal,
-        amplitude: params.osc4.amplitude.signal,
+        shape: params.osc4.shape.out_signal_ref,
+        amplitude: params.osc4.amplitude.out_signal_ref,
         amp_mod: zero,
-        octaves: params.osc4.octaves.signal,
-        semitones: params.osc4.semitones.signal,
-        cents: params.osc4.cents.signal,
+        octaves: params.osc4.octaves.out_signal_ref,
+        semitones: params.osc4.semitones.out_signal_ref,
+        cents: params.osc4.cents.out_signal_ref,
         note_pitch: voice.note_pitch,
-        pitch_bend: params.pitch_bend.signal,
+        pitch_bend: params.pitch_bend.out_signal_ref,
         freq_mod: zero,
       },
       output: signals.osc4,
@@ -290,10 +290,10 @@ impl KiroModule {
     let filter1 = filter::Block {
       input: osc_mix.output,
       params: filter::Params {
-        mode: params.filter1.mode.signal,
-        freq: params.filter1.freq.signal,
+        mode: params.filter1.mode.out_signal_ref,
+        freq: params.filter1.freq.out_signal_ref,
         freq_mod: zero,
-        q: params.filter1.q.signal,
+        q: params.filter1.q.out_signal_ref,
       },
       output: signals.filter1,
     };
@@ -303,10 +303,10 @@ impl KiroModule {
         left: filter1.output,
         right: filter1.output,
         velocity: voice.velocity,
-        amplitude: params.dca.amplitude.signal,
+        amplitude: params.dca.amplitude.out_signal_ref,
         amp_mod: zero,
         eg_mod: eg1_dca_mod.output,
-        pan: params.dca.pan.signal,
+        pan: params.dca.pan.out_signal_ref,
         pan_mod: zero,
       },
       outputs: dca::Outputs {

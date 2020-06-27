@@ -23,6 +23,7 @@ pub enum AudioError {
 pub trait AudioHandler: Send {
   fn prepare(&mut self, len: usize);
   fn next(&mut self) -> (f32, f32);
+  fn finalize(&mut self);
 }
 
 pub struct AudioDriver {
@@ -63,6 +64,7 @@ impl AudioDriver {
             sample[i] = 0.0f32;
           }
         }
+        handler.finalize();
       },
       move |err| {
         eprintln!("an error occurred on stream: {}", err);

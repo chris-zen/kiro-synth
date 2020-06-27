@@ -386,8 +386,8 @@ impl<Context, Callback> Widget<KnobData<Context>> for Knob<Context, Callback>
     if self.modulation_width > 0.0 {
       let modulation_radius = value_radius + self.modulation_width;
       self.paint_modulation_background(ctx, env, center, modulation_radius);
-      self.paint_modulation_value(ctx, data, env, center, modulation_radius);
       self.paint_modulation_total_amount(ctx, data, env, center, value_radius);
+      self.paint_modulation_value(ctx, data, env, center, modulation_radius);
     }
 
     if data.modulation.config_source.is_some() {

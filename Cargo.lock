@@ -1128,6 +1128,7 @@ dependencies = [
  "druid",
  "druid-icon",
  "druid-icon-generator",
+ "generic-array 0.14.2",
  "heapless",
  "kiro-synth-core",
  "kiro-synth-engine",
@@ -1137,6 +1138,7 @@ dependencies = [
  "regex",
  "ringbuf",
  "thiserror",
+ "typenum",
 ]
 
 [[package]]

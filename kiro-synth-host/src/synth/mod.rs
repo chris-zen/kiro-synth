@@ -1,23 +1,86 @@
-use ringbuf::Producer;
+pub mod program;
+
+use std::fmt::Formatter;
+use std::sync::{Mutex, Arc, PoisonError, MutexGuard};
+
+use ringbuf::{Producer, Consumer};
 
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::event::{Event, Message};
-use kiro_synth_engine::program::{ParamRef, SourceRef};
+use kiro_synth_engine::program::{ParamRef, SourceRef, MaxParams};
 use kiro_synth_engine::globals::SynthGlobals;
 use kiro_synth_engine::waveforms::{OscWaveforms, LfoWaveforms};
-use std::fmt::Formatter;
-use std::sync::{Mutex, Arc, PoisonError, MutexGuard};
+use kiro_synth_engine::synth::Synth;
+
+use crate::audio::AudioHandler;
+use generic_array::GenericArray;
+
+
+#[derive(Debug, Clone)]
+pub struct SynthFeedback {
+  pub modulations: GenericArray<f32, MaxParams>
+}
+
+pub struct SynthAudioHandler<'a> {
+  synth: Synth<'a, f32>,
+  feedback: Producer<SynthFeedback>,
+}
+
+impl<'a> SynthAudioHandler<'a> {
+  pub fn new(synth: Synth<'a, f32>, feedback: Producer<SynthFeedback>) -> Self {
+    SynthAudioHandler {
+      synth,
+      feedback,
+    }
+  }
+}
+
+impl<'a> AudioHandler for SynthAudioHandler<'a> {
+  fn prepare(&mut self, _len: usize) {
+    self.synth.prepare();
+  }
+
+  fn next(&mut self) -> (f32, f32) {
+    self.synth.process()
+  }
+
+  fn finalize(&mut self) {
+    if let Some(index) = self.synth.get_active_voices().last() {
+      if !self.feedback.is_full() {
+        let mut modulations = GenericArray::default();
+
+        let voice = &self.synth.get_voices()[*index];
+        let signals = voice.get_signals();
+        let program = self.synth.get_program();
+        for (index, param) in program.get_params().iter().enumerate() {
+          let signal_index: usize = param.mod_signal_ref.into();
+          modulations[index] = signals[signal_index].get();
+        }
+
+        let feedback = SynthFeedback {
+          modulations,
+        };
+        self.feedback.push(feedback).unwrap_or_default();
+      }
+    }
+  }
+}
 
 pub struct SynthClient<F: Float> {
   globals: SynthGlobals<F>,
   events: Producer<Event<F>>,
+  feedback: Consumer<SynthFeedback>,
 }
 
 impl<F: Float> SynthClient<F> {
-  pub fn new(globals: SynthGlobals<F>, events: Producer<Event<F>>) -> Self {
+  pub fn new(globals: SynthGlobals<F>,
+             events: Producer<Event<F>>,
+             feedback: Consumer<SynthFeedback>) -> Self {
+
     SynthClient {
       globals,
-      events
+      events,
+      feedback,
     }
   }
 
@@ -86,6 +149,11 @@ impl<F: Float> SynthClientMutex<F> {
   pub fn send_modulation_delete(&self, source_ref: SourceRef, param_ref: ParamRef) -> Result<(), PoisonError<MutexGuard<'_, SynthClient<F>>>> {
     self.0.lock()
         .map(|mut client| client.send_modulation_delete(source_ref, param_ref))
+  }
+
+  pub fn get_feedback(&mut self) -> Result<Option<SynthFeedback>, PoisonError<MutexGuard<'_, SynthClient<F>>>> {
+    self.0.lock()
+        .map(|mut client| client.feedback.pop())
   }
 }
 

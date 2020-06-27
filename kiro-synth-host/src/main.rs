@@ -1,8 +1,7 @@
 mod audio;
 mod midi;
-mod program;
 mod synth;
-pub mod ui;
+mod ui;
 
 use std::sync::{Mutex, Arc};
 
@@ -18,10 +17,10 @@ use kiro_synth_engine::globals::SynthGlobals;
 
 use crate::audio::{AudioDriver, AudioHandler};
 use crate::midi::drivers::{MidiDriver, MidiHandler};
-use crate::program::kiro::KiroModule;
 use crate::midi::mapper::MidiMapper;
+use crate::synth::{SynthClient, SynthClientMutex, SynthAudioHandler, SynthFeedback};
+use crate::synth::program::kiro::KiroModule;
 use crate::ui::{Synth as SynthData};
-use crate::synth::{SynthClient, SynthClientMutex};
 
 const SAMPLE_RATE: u32 = 44100;
 
@@ -39,17 +38,29 @@ fn main() -> Result<()> {
 
   let events_ring_buffer = RingBuffer::<Event<f32>>::new(1024);
   let (events_producer, events_consumer) = events_ring_buffer.split();
-  let synth_client = Arc::new(Mutex::new(SynthClient::new(synth_globals.clone(), events_producer)));
+
+  // FEEDBACK
+
+  let feedback_ring_buffer = RingBuffer::<SynthFeedback>::new(2);
+  let (feedback_producer, feedback_consumer) = feedback_ring_buffer.split();
+
+  // SYNTH CLIENT
+
+  let synth_client = Arc::new(Mutex::new(
+    SynthClient::new(synth_globals.clone(), events_producer, feedback_consumer)
+  ));
 
   // PROGRAM
 
   let (program, module) = KiroModule::new_program(
     synth_globals.lfo_waveforms.len(),
-    synth_globals.osc_waveforms.len());
+    synth_globals.osc_waveforms.len()
+  );
 
   // UI DATA
 
-  let synth_data = SynthData::new(&program, &module, SynthClientMutex::new(synth_client.clone()));
+  let synth_client_mutex = SynthClientMutex::new(synth_client.clone());
+  let synth_data = SynthData::new(&program, &module, synth_client_mutex);
 
   // MIDI
 
@@ -63,7 +74,7 @@ fn main() -> Result<()> {
 
   // AUDIO
 
-  let handler = SynthAudioHandler(synth);
+  let handler = SynthAudioHandler::new(synth, feedback_producer);
   let _audio_driver = AudioDriver::new(SAMPLE_RATE, handler)?;
 
   // UI
@@ -71,18 +82,6 @@ fn main() -> Result<()> {
   ui::start(synth_data, synth_client);
 
   Ok(())
-}
-
-struct SynthAudioHandler<'a>(Synth<'a, f32>);
-
-impl<'a> AudioHandler for SynthAudioHandler<'a> {
-  fn prepare(&mut self, _len: usize) {
-    self.0.prepare();
-  }
-
-  fn next(&mut self) -> (f32, f32) {
-    self.0.process()
-  }
 }
 
 struct EventsMidiHandler {

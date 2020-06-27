@@ -7,7 +7,7 @@ use crate::signal::SignalBus;
 #[derive(Debug)]
 pub(crate) enum Processor<F: Float> {
   Const(F, SignalRef),
-  Param(ParamRef, SignalRef),
+  Param(ParamRef),
   DCA(dca::Processor<F>),
   EG(envgen::Processor<F>),
   Expr(expr::Processor<F>),
@@ -21,7 +21,7 @@ impl<F: Float> Processor<F> {
   pub fn new(sample_rate: F, block: &Block<F>) -> Self {
     match block.clone() {
       Block::Const { value, signal } => Processor::Const(value, signal),
-      Block::Param(ParamBlock { reference, signal }) => Processor::Param(reference, signal),
+      Block::Param(ParamBlock { reference, out_signal_ref: _, mod_signal_ref: _ }) => Processor::Param(reference),
       Block::DCA(dca_block) => Processor::DCA(dca::Processor::new(sample_rate, dca_block)),
       Block::EG(eg_block) => Processor::EG(envgen::Processor::new(sample_rate, eg_block)),
       Block::Lfo(lfo_block) => Processor::Lfo(lfo::Processor::new(sample_rate, lfo_block)),
@@ -34,8 +34,8 @@ impl<F: Float> Processor<F> {
 
   pub fn reset(&mut self) {
     match self {
-      Processor::Const(_value, _signal) => {},
-      Processor::Param(_param, _signal) => {},
+      Processor::Const(_, _) => {},
+      Processor::Param(_) => {},
       Processor::DCA(ref mut proc) => proc.reset(),
       Processor::EG(ref mut proc) => proc.reset(),
       Processor::Expr(ref mut proc) => proc.reset(),
@@ -52,17 +52,19 @@ impl<F: Float> Processor<F> {
                      synth_globals: &SynthGlobals<F>) {
     match self {
       Processor::Const(value, signal) => signals[*signal].set(*value),
-      Processor::Param(param_ref, signal_ref) => {
+      Processor::Param(param_ref) => {
         if let Some((_, param)) = program.get_param(*param_ref) {
-          let mut value = param.signal.get();
+          let mut value = F::zero();
           for modulation in program.get_param_modulations(*param_ref) {
             if let Some(source) = program.get_source(modulation.source_ref) {
               let source_signal = signals[source.signal].get();
               value = value + source_signal * modulation.amount;
             }
           }
+          signals[param.mod_signal_ref].set(value);
+          value = value + param.value.get();
           value = value.max(param.values.min).min(param.values.max);
-          signals[*signal_ref].set(value)
+          signals[param.out_signal_ref].set(value);
         }
       }
       Processor::DCA(ref mut proc) => proc.process(signals, program),

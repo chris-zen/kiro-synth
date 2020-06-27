@@ -72,19 +72,24 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
   }
 
   pub fn param(&mut self, id: &'a str, values: ParamValues<F>) -> ParamBlock {
-    let initial_value = values.initial_value;
+    let out_signal_ref = self.signal_refs.create();
+    let mod_signal_ref = self.signal_refs.create();
+
+    let value = Signal::new(values.initial_value);
     let param = Param {
       id,
       values,
-      signal: Signal::new(initial_value),
-      // modulations: Vec::new(),
+      value,
+      out_signal_ref,
+      mod_signal_ref,
     };
 
     self.params.push(param).unwrap();
 
     ParamBlock {
       reference: ParamRef(self.params.len() - 1),
-      signal: self.signal_refs.create(),
+      out_signal_ref,
+      mod_signal_ref,
     }
   }
 

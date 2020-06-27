@@ -46,6 +46,18 @@ impl<'a, F: Float> Synth<'a, F> {
     }
   }
 
+  pub fn get_program(&self) -> &Program<'a, F> {
+    &self.program
+  }
+
+  pub fn get_voices(&self) -> &[Voice<F>] {
+    self.voices.as_ref()
+  }
+
+  pub fn get_active_voices(&self) -> &[usize] {
+    self.active_voices.as_ref()
+  }
+
   pub fn prepare(&mut self) {
     while let Some(Event { timestamp: _, message }) = self.events.pop() {
       match message {
@@ -58,15 +70,15 @@ impl<'a, F: Float> Synth<'a, F> {
         Message::ParamValue { param_ref, value } => {
           if let Some((_, param)) = self.program.get_param_mut(param_ref) {
             println!("{} = {:?}", param.id, value);
-            param.signal.set(value)
+            param.value.set(value)
           }
         },
         Message::ParamChange { param_ref, change } => {
           if let Some((_, param)) = self.program.get_param_mut(param_ref) {
-            let value: F = param.signal.get() + change;
+            let value: F = param.value.get() + change;
             let value = value.max(param.values.min).min(param.values.max);
             println!("{} = {:?}", param.id, value);
-            param.signal.set(value);
+            param.value.set(value);
           }
         },
         Message::ModulationUpdate { source_ref, param_ref, amount } => {
@@ -140,3 +152,5 @@ impl<'a, F: Float> Synth<'a, F> {
     (left, right)
   }
 }
+
+pub struct VoiceIter<'a, F: Float + 'a, I>(I) where I: Iterator<Item=&'a Voice<F>>;

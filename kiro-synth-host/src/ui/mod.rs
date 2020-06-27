@@ -36,7 +36,7 @@ pub fn start<F: Float + 'static>(synth_model: Synth,
 
 pub const KNOB_VALUE: Color = Color::rgb8(236, 138, 56);
 pub const KNOB_MODULATION: Color = Color::rgb8(204, 76, 0);
-pub const KNOB_CONFIG: Color = Color::rgb8(255, 223, 35);
+pub const KNOB_CONFIG: Color = Color::rgb8(253, 191, 0);
 
 pub const GREY_23: Color = Color::grey8(23);
 pub const GREY_46: Color = Color::grey8(46);

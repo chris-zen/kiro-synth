@@ -4,8 +4,8 @@ use druid::im::{vector, Vector};
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::{Program, SourceRef, ParamRef};
 
-use crate::program::kiro::KiroModule;
-use crate::synth::SynthClientMutex;
+use crate::synth::{SynthClientMutex, SynthFeedback};
+use crate::synth::program::kiro::KiroModule;
 
 use crate::ui::model::{Osc, EnvGen, Lfo, Filter, Dca, Modulations, Param};
 
@@ -28,6 +28,12 @@ pub struct Synth {
   pub dca: Dca,
 
   pub modulations: Modulations,
+
+  #[data(ignore)]
+  pub synth_client: SynthClientMutex<f32>,
+
+  #[data(ignore)]
+  pub last_feedback: Option<usize>,
 }
 
 impl Synth {
@@ -65,6 +71,11 @@ impl Synth {
       dca: Dca::new(program, &params.dca, synth_client.clone()),
 
       modulations: Modulations::new(program, module, synth_client.clone()),
+
+      synth_client: synth_client.clone(),
+
+      last_feedback: None,
+
     }.with_init_modulations_config()
   }
 }
@@ -146,5 +157,27 @@ impl<'a> Synth {
       filter.for_each_modulated_param(&apply);
     }
     self.dca.for_each_modulated_param(&apply);
+  }
+
+  pub fn update_feedback(&mut self) {
+    if let Some(feedback) = self.synth_client.get_feedback().unwrap_or(None) {
+      self.last_feedback = Some(4);
+      self.for_each_modulated_param(|param| {
+        let param_index: usize = param.param_ref.into();
+        let modulation = feedback.modulations[param_index];
+        param.modulation.value = modulation as f64;
+      });
+    }
+    else if let Some(count) = self.last_feedback {
+      self.last_feedback = if count == 0 {
+        self.for_each_modulated_param(|param| {
+          param.modulation.value = 0.0;
+        });
+        None
+      }
+      else {
+        Some(count - 1)
+      };
+    }
   }
 }

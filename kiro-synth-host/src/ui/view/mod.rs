@@ -6,8 +6,8 @@ mod modulations;
 
 use std::sync::{Arc, Mutex};
 
-use druid::{Widget, Data, Env, UpdateCtx, Command};
-use druid::widget::{Flex, WidgetExt, Label, Container, ViewSwitcher, CrossAxisAlignment};
+use druid::{Widget, Data, Env, UpdateCtx, Command, LifeCycleCtx, LifeCycle, EventCtx, Event, Selector};
+use druid::widget::{Flex, WidgetExt, Label, Container, ViewSwitcher, CrossAxisAlignment, Controller};
 
 use kiro_synth_core::float::Float;
 
@@ -23,6 +23,42 @@ use dca::DcaView;
 use modulators::ModulatorsView;
 use modulations::ModulationsView;
 use crate::ui::view::modulations::UPDATE_MODULATIONS_CONFIG;
+
+
+const UPDATE_FEEDBACK: Selector<()> = Selector::new("synth.update-feedback");
+
+
+pub struct FeedbackController;
+
+impl<W: Widget<Synth>> Controller<Synth, W> for FeedbackController {
+  fn event(&mut self, child: &mut W, ctx: &mut EventCtx, event: &Event, data: &mut Synth, env: &Env) {
+    match event {
+      Event::Command(command) if command.is(UPDATE_FEEDBACK) => {
+        data.update_feedback();
+      }
+      _ => child.event(ctx, event, data, env),
+    }
+  }
+
+  fn lifecycle(
+    &mut self,
+    child: &mut W,
+    ctx: &mut LifeCycleCtx,
+    event: &LifeCycle,
+    data: &Synth,
+    env: &Env,
+  ) {
+    match event {
+      LifeCycle::WidgetAdded => ctx.request_anim_frame(),
+      LifeCycle::AnimFrame(_) => {
+        let command = Command::new(UPDATE_FEEDBACK, ());
+        ctx.submit_command(command, None);
+        ctx.request_anim_frame();
+      },
+      _ => child.lifecycle(ctx, event, data, env),
+    }
+  }
+}
 
 
 pub fn build<F: Float + 'static>(synth_model: &Synth,
@@ -57,12 +93,13 @@ pub fn build<F: Float + 'static>(synth_model: &Synth,
     )
     .cross_axis_alignment(CrossAxisAlignment::Start);
 
-  let modulators = ModulationsView::new();
+  let modulations = ModulationsView::new();
 
   Flex::row()
     .with_child(devices.fix_width(330.0))
-    .with_flex_child(modulators, 1.0)
+    .with_flex_child(modulations, 1.0)
     .cross_axis_alignment(CrossAxisAlignment::Start)
+    .controller(FeedbackController)
     // .debug_widget_id()
     // .debug_paint_layout()
 }

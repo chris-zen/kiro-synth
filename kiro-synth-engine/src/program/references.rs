@@ -3,6 +3,12 @@ use crate::program::ParamBlock;
 #[derive(Debug, Clone, PartialEq, Eq, Hash32, Copy)]
 pub struct SignalRef(pub(crate) usize);
 
+impl Into<usize> for SignalRef {
+  fn into(self) -> usize {
+    self.0
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash32, Copy)]
 pub struct SourceRef(pub(crate) usize);
 

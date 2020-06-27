@@ -50,14 +50,16 @@ impl<F: Float> ParamValues<F> {
 pub struct Param<'a, F: Float> {
   pub id: &'a str,
   pub values: ParamValues<F>,
-  pub signal: Signal<F>,
-  // pub modulations: Vec<Modulation<F>, MaxModulations>,
+  pub value: Signal<F>,
+  pub out_signal_ref: SignalRef,
+  pub mod_signal_ref: SignalRef,
 }
 
 #[derive(Debug, Clone)]
 pub struct ParamBlock {
   pub reference: ParamRef,
-  pub signal: SignalRef,
+  pub out_signal_ref: SignalRef,
+  pub mod_signal_ref: SignalRef,
 }
 
 #[derive(Debug, Clone)]
@@ -154,11 +156,11 @@ impl<'a, F: Float> Program<'a, F> {
 //  }
 
   pub fn get_param_signal(&self, param: ParamRef) -> &Signal<F> {
-    &self.params[param.0].signal
+    &self.params[param.0].value
   }
 
   pub fn get_param_signal_mut(&mut self, param: ParamRef) -> &mut Signal<F> {
-    &mut self.params[param.0].signal
+    &mut self.params[param.0].value
   }
 
   pub fn update_modulation(&mut self, param_ref: ParamRef, source_ref: SourceRef, amount: F) -> Result<(), modulations::Error> {
@@ -179,14 +181,14 @@ impl<'a, F: Float> Program<'a, F> {
 
   pub fn reset_params(&mut self) {
     for param in self.params.iter_mut() {
-      param.signal.set(param.values.initial_value);
-      param.signal.reset();
+      param.value.set(param.values.initial_value);
+      param.value.reset();
     }
   }
 
   pub fn update_params(&mut self) {
     for param in self.params.iter_mut() {
-      param.signal.update_state();
+      param.value.update_state();
     }
   }
 
