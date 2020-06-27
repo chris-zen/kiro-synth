@@ -1,7 +1,7 @@
 mod audio;
 mod midi;
 mod synth;
-mod ui;
+pub mod ui;
 
 use std::sync::{Mutex, Arc};
 
@@ -15,7 +15,7 @@ use kiro_synth_engine::event::Event;
 use kiro_synth_engine::synth::Synth;
 use kiro_synth_engine::globals::SynthGlobals;
 
-use crate::audio::{AudioDriver, AudioHandler};
+use crate::audio::AudioDriver;
 use crate::midi::drivers::{MidiDriver, MidiHandler};
 use crate::midi::mapper::MidiMapper;
 use crate::synth::{SynthClient, SynthClientMutex, SynthAudioHandler, SynthFeedback};

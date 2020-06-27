@@ -244,7 +244,7 @@ impl<Context, Callback> Knob<Context, Callback>
 
   fn paint_modulation_total_amount(&mut self, ctx: &mut PaintCtx, data: &KnobData<Context>, env: &Env, center: Point, value_radius: f64) {
     let width = (self.modulation_width / 2.0).floor();
-    let radius = value_radius + self.modulation_width + 0.9;
+    let radius = value_radius + self.modulation_width + 1.9;
     let start_value = (data.value - data.modulation.total_amount).max(data.min).min(data.max);
     let start_angle = self.value_to_angle(start_value, data.min, data.max);
     let end_value = (data.value + data.modulation.total_amount).max(data.min).min(data.max);
@@ -257,8 +257,6 @@ impl<Context, Callback> Knob<Context, Callback>
   }
 
   fn paint_modulation_config_amount(&mut self, ctx: &mut PaintCtx, data: &KnobData<Context>, env: &Env, center: Point, value_radius: f64, config_amount: f64) {
-    // let weight_width = self.modulation_width / 2.0;
-    // let weight_radius = value_radius + weight_width + 0.9;
     let width = self.value_width;
     let radius = value_radius;
     let value = data.value + config_amount;
@@ -384,7 +382,7 @@ impl<Context, Callback> Widget<KnobData<Context>> for Knob<Context, Callback>
     self.paint_value(ctx, data, env, center, value_radius);
 
     if self.modulation_width > 0.0 {
-      let modulation_radius = value_radius + self.modulation_width;
+      let modulation_radius = value_radius + self.modulation_width + 1.0;
       self.paint_modulation_background(ctx, env, center, modulation_radius);
       self.paint_modulation_total_amount(ctx, data, env, center, value_radius);
       self.paint_modulation_value(ctx, data, env, center, modulation_radius);

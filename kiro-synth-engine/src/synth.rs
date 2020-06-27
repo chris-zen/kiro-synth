@@ -50,12 +50,14 @@ impl<'a, F: Float> Synth<'a, F> {
     &self.program
   }
 
-  pub fn get_voices(&self) -> &[Voice<F>] {
-    self.voices.as_ref()
+  pub fn get_last_voice(&self) -> Option<&Voice<F>> {
+    self.active_voices
+        .last()
+        .map(|index| &self.voices[*index])
   }
 
-  pub fn get_active_voices(&self) -> &[usize] {
-    self.active_voices.as_ref()
+  pub fn get_num_active_voices(&self) -> usize {
+    self.active_voices.len()
   }
 
   pub fn prepare(&mut self) {
