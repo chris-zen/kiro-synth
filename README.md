@@ -18,8 +18,8 @@ NOTE: You have to connect your MIDI keyboard before starting the synth. Also it 
 
 # Screenshots
 
-<img src="screenshot1.png" width="70%" height="70%" />
-<img src="screenshot2.png" width="70%" height="70%" />
+<img src="screenshot1.png" width="60%" height="60%" />
+<img src="screenshot2.png" width="60%" height="60%" />
 
 ## Roadmap
 
