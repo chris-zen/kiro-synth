@@ -1,7 +1,7 @@
 use crate::float::Float;
-use crate::waveforms::Waveform;
 use crate::funcs::signal_polarity::unipolar_to_bipolar;
 use crate::oscillators::clamp_modulo;
+use crate::waveforms::Waveform;
 
 /// DPW Triangle Wave Oscillator
 /// https://sci-hub.se/https://ieeexplore.ieee.org/document/1395943
@@ -13,9 +13,7 @@ pub struct TriangleDpw2x<F: Float> {
 
 impl<F: Float> Default for TriangleDpw2x<F> {
   fn default() -> Self {
-    TriangleDpw2x {
-      z1: F::zero(),
-    }
+    TriangleDpw2x { z1: F::zero() }
   }
 }
 
@@ -34,7 +32,6 @@ impl<F: Float> TriangleDpw2x<F> {
 }
 
 impl<F: Float> Waveform<F> for TriangleDpw2x<F> {
-
   fn reset(&mut self) {
     self.z1 = F::zero();
   }
@@ -43,7 +40,11 @@ impl<F: Float> Waveform<F> for TriangleDpw2x<F> {
     let modulo2x = modulo * F::val(2.0);
 
     let m1 = clamp_modulo(modulo2x);
-    let sign1 = if modulo2x < F::one() { F::one() } else { F::one().neg() };
+    let sign1 = if modulo2x < F::one() {
+      F::one()
+    } else {
+      F::one().neg()
+    };
     let s1 = self.dpw_triangle(m1, sign1);
 
     let m2 = clamp_modulo(m1 + phase_inc * F::val(0.5));

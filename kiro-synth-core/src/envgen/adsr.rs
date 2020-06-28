@@ -25,7 +25,6 @@ struct ADR<F: Float> {
 }
 
 impl<F: Float> ADR<F> {
-
   const ANALOG_DECAY_EXPONENT: f32 = -4.95;
   const DIGITAL_DECAY_EXPONENT: f32 = -11.05;
 
@@ -40,7 +39,12 @@ impl<F: Float> ADR<F> {
     let coefficient = ((tco_plus_one / time_constant_overshoot).ln().neg() / samples).exp();
     let offset = tco_plus_one * (F::one() - coefficient);
 
-    ADR { time_sec, time_constant_overshoot, coefficient, offset }
+    ADR {
+      time_sec,
+      time_constant_overshoot,
+      coefficient,
+      offset,
+    }
   }
 
   pub fn decay(sample_rate: F, mode: Mode, time_sec: F, sustain_level: F) -> ADR<F> {
@@ -54,7 +58,12 @@ impl<F: Float> ADR<F> {
     let coefficient = ((tco_plus_one / time_constant_overshoot).ln().neg() / samples).exp();
     let offset = (sustain_level - time_constant_overshoot) * (F::one() - coefficient);
 
-    ADR { time_sec, time_constant_overshoot, coefficient, offset }
+    ADR {
+      time_sec,
+      time_constant_overshoot,
+      coefficient,
+      offset,
+    }
   }
 
   pub fn release(sample_rate: F, mode: Mode, time_sec: F) -> ADR<F> {
@@ -68,7 +77,12 @@ impl<F: Float> ADR<F> {
     let coefficient = ((tco_plus_one / time_constant_overshoot).ln().neg() / samples).exp();
     let offset = time_constant_overshoot.neg() * (F::one() - coefficient);
 
-    ADR { time_sec, time_constant_overshoot, coefficient, offset }
+    ADR {
+      time_sec,
+      time_constant_overshoot,
+      coefficient,
+      offset,
+    }
   }
 
   fn samples(sample_rate: F, time_sec: F) -> F {
@@ -91,7 +105,7 @@ pub struct EnvGen<F: Float> {
   shutdown_dec: F,
 
   state: State,
-  output: F
+  output: F,
 }
 
 impl<F: Float> EnvGen<F> {
@@ -117,7 +131,12 @@ impl<F: Float> EnvGen<F> {
   pub fn set_mode(&mut self, mode: Mode) {
     self.mode = mode;
     self.attack = ADR::attack(self.sample_rate, mode, self.attack.time_sec);
-    self.decay = ADR::decay(self.sample_rate, mode, self.decay.time_sec, self.sustain_level);
+    self.decay = ADR::decay(
+      self.sample_rate,
+      mode,
+      self.decay.time_sec,
+      self.sustain_level,
+    );
     self.release = ADR::release(self.sample_rate, mode, self.release.time_sec);
   }
 
@@ -135,9 +154,14 @@ impl<F: Float> EnvGen<F> {
 
   pub fn set_sustain_level(&mut self, level: F) {
     self.sustain_level = level;
-    self.decay = ADR::decay(self.sample_rate, self.mode, self.decay.time_sec, self.sustain_level);
+    self.decay = ADR::decay(
+      self.sample_rate,
+      self.mode,
+      self.decay.time_sec,
+      self.sustain_level,
+    );
     match self.state {
-      State::Release => {},
+      State::Release => {}
       _ => self.release = ADR::release(self.sample_rate, self.mode, self.release.time_sec), // TODO guess why needed
     }
   }
@@ -161,29 +185,28 @@ impl<F: Float> EnvGen<F> {
     }
   }
 
-//  pub fn stop(&mut self) {
-//    self.state = State::Off;
-//  }
+  //  pub fn stop(&mut self) {
+  //    self.state = State::Off;
+  //  }
 
   pub fn is_active(&self) -> bool {
     match self.state {
       State::Off | State::Release => false,
-      _                           => true,
+      _ => true,
     }
   }
 
   pub fn is_off(&self) -> bool {
     match self.state {
       State::Off => true,
-      _          => false,
+      _ => false,
     }
   }
 
   pub fn note_off(&mut self) {
     self.state = if self.output > F::zero() {
       State::Release
-    }
-    else {
+    } else {
       State::Off
     }
   }
@@ -201,31 +224,31 @@ impl<F: Float> EnvGen<F> {
         if self.reset_to_zero {
           self.output = F::zero();
         }
-      },
+      }
       State::Attack => {
         self.output = self.attack.offset + self.output * self.attack.coefficient;
         if self.output >= F::one() || self.attack.time_sec <= F::zero() {
           self.output = F::one();
           self.state = State::Decay;
         }
-      },
+      }
       State::Decay => {
         self.output = self.decay.offset + self.output * self.decay.coefficient;
         if self.output <= self.sustain_level || self.decay.time_sec <= F::zero() {
           self.output = self.sustain_level;
           self.state = State::Sustain;
         }
-      },
+      }
       State::Sustain => {
         self.output = self.sustain_level;
-      },
+      }
       State::Release => {
         self.output = self.release.offset + self.output * self.release.coefficient;
         if self.output <= F::zero() || self.release.time_sec <= F::zero() {
           self.output = F::zero();
           self.state = State::Off;
         }
-      },
+      }
       State::Shutdown => {
         if self.reset_to_zero {
           self.output = self.output - self.shutdown_dec;
@@ -233,13 +256,12 @@ impl<F: Float> EnvGen<F> {
             self.output = F::zero();
             self.state = State::Off;
           }
-        }
-        else {
+        } else {
           self.state = State::Off;
         }
-      },
+      }
     };
-//    println!("{:?} {:?}", self.state, self.output);
+    //    println!("{:?} {:?}", self.state, self.output);
     self.output
   }
 

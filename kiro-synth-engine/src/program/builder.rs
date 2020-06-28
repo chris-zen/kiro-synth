@@ -1,11 +1,14 @@
 use heapless::Vec;
 
 use crate::float::Float;
-use crate::signal::Signal;
-use crate::program::{VoiceBlock, Source, MaxSources, Param, MaxParams, Block, MaxBlocks, ParamValues, ParamBlock, Program};
-use crate::program::references::{SignalRefs, SignalRef, SourceRef, ParamRef, BlockRef};
+use crate::program::blocks::expr::{self, ExprBuilder, OpRef};
 use crate::program::modulations::Modulations;
-use crate::program::blocks::expr::{self, OpRef, ExprBuilder};
+use crate::program::references::{BlockRef, ParamRef, SignalRef, SignalRefs, SourceRef};
+use crate::program::{
+  Block, MaxBlocks, MaxParams, MaxSources, Param, ParamBlock, ParamValues, Program, Source,
+  VoiceBlock,
+};
+use crate::signal::Signal;
 
 pub struct ProgramBuilder<'a, F: Float> {
   signal_refs: SignalRefs,
@@ -17,7 +20,6 @@ pub struct ProgramBuilder<'a, F: Float> {
 }
 
 impl<'a, F: Float> ProgramBuilder<'a, F> {
-
   pub fn new() -> Self {
     let mut signal_refs = SignalRefs::new();
 
@@ -61,10 +63,7 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
   }
 
   pub fn source(&mut self, name: &'a str, signal: SignalRef) -> SourceRef {
-    let source = Source {
-      id: name,
-      signal,
-    };
+    let source = Source { id: name, signal };
 
     self.sources.push(source).unwrap();
 
@@ -98,7 +97,10 @@ impl<'a, F: Float> ProgramBuilder<'a, F> {
   }
 
   pub fn modulation<P: Into<ParamRef>>(&mut self, param: P, source_ref: SourceRef, amount: F) {
-    self.modulations.update(param.into(), source_ref, amount).unwrap();
+    self
+      .modulations
+      .update(param.into(), source_ref, amount)
+      .unwrap();
   }
 
   pub fn expr<B: Fn(&mut ExprBuilder<F>) -> OpRef>(&mut self, build_expr: B) -> expr::Block<F> {

@@ -1,6 +1,6 @@
 use crate::float::Float;
-use crate::oscillators::osc_waveform::OscWaveform;
 use crate::oscillators::clamp_modulo;
+use crate::oscillators::osc_waveform::OscWaveform;
 
 // TODO add another waveform for quadrature phase output
 

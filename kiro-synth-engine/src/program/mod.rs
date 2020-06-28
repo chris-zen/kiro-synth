@@ -1,20 +1,20 @@
 pub mod blocks;
+pub mod builder;
 pub mod modulations;
 pub mod references;
-pub mod builder;
 
 use std::ops::{Deref, DerefMut};
 
-use heapless::Vec;
 use heapless::consts;
+use heapless::Vec;
 
 use crate::float::Float;
 use crate::signal::Signal;
 
 use blocks::*;
+pub use builder::ProgramBuilder;
 use modulations::Modulations;
 pub use references::*;
-pub use builder::ProgramBuilder;
 
 pub type MaxSignals = consts::U256;
 pub type MaxSources = consts::U32;
@@ -41,7 +41,7 @@ impl<F: Float> ParamValues<F> {
   pub fn with_initial_value(self, initial_value: F) -> Self {
     Self {
       initial_value,
-      .. self
+      ..self
     }
   }
 }
@@ -64,10 +64,7 @@ pub struct ParamBlock {
 
 #[derive(Debug, Clone)]
 pub enum Block<F: Float> {
-  Const {
-    value: F,
-    signal: SignalRef,
-  },
+  Const { value: F, signal: SignalRef },
 
   Param(ParamBlock),
 
@@ -83,10 +80,7 @@ pub enum Block<F: Float> {
 
   Osc(osc::Block),
 
-  Out {
-    left: SignalRef,
-    right: SignalRef,
-  },
+  Out { left: SignalRef, right: SignalRef },
 }
 
 #[derive(Debug, Clone)]
@@ -112,7 +106,6 @@ pub struct Program<'a, F: Float> {
 }
 
 impl<'a, F: Float> Program<'a, F> {
-
   pub fn get_signals_count(&self) -> usize {
     self.signals_count
   }
@@ -121,9 +114,9 @@ impl<'a, F: Float> Program<'a, F> {
     &self.voice
   }
 
-//  pub fn get_params_count(&self) -> usize {
-//    self.params.len()
-//  }
+  //  pub fn get_params_count(&self) -> usize {
+  //    self.params.len()
+  //  }
 
   pub fn get_params(&self) -> &[Param<'a, F>] {
     self.params.deref()
@@ -138,22 +131,28 @@ impl<'a, F: Float> Program<'a, F> {
     self.params.get(param_ref.0).map(|param| (param_ref, param))
   }
 
-  pub fn get_param_mut<R: Into<ParamRef>>(&mut self, param: R) -> Option<(ParamRef, &mut Param<'a, F>)> {
+  pub fn get_param_mut<R: Into<ParamRef>>(
+    &mut self,
+    param: R,
+  ) -> Option<(ParamRef, &mut Param<'a, F>)> {
     let param_ref = param.into();
-    self.params.get_mut(param_ref.0).map(|param| (param_ref, param))
+    self
+      .params
+      .get_mut(param_ref.0)
+      .map(|param| (param_ref, param))
   }
 
-//  pub fn get_param_by_id(&self, id: &str) -> Option<(usize, &Param<'a, F>)> {
-//    self.params.iter()
-//        .position(|param| param.id == id)
-//        .map(|param_index| (param_index, &self.params[param_index]))
-//  }
+  //  pub fn get_param_by_id(&self, id: &str) -> Option<(usize, &Param<'a, F>)> {
+  //    self.params.iter()
+  //        .position(|param| param.id == id)
+  //        .map(|param_index| (param_index, &self.params[param_index]))
+  //  }
 
-//  pub fn get_param_ref(&self, id: &'a str) -> Option<ParamRef> {
-//    self.params.iter()
-//        .position(|param| param.id == id)
-//        .map(|param_index| ParamRef(param_index))
-//  }
+  //  pub fn get_param_ref(&self, id: &'a str) -> Option<ParamRef> {
+  //    self.params.iter()
+  //        .position(|param| param.id == id)
+  //        .map(|param_index| ParamRef(param_index))
+  //  }
 
   pub fn get_param_signal(&self, param: ParamRef) -> &Signal<F> {
     &self.params[param.0].value
@@ -163,11 +162,20 @@ impl<'a, F: Float> Program<'a, F> {
     &mut self.params[param.0].value
   }
 
-  pub fn update_modulation(&mut self, param_ref: ParamRef, source_ref: SourceRef, amount: F) -> Result<(), modulations::Error> {
+  pub fn update_modulation(
+    &mut self,
+    param_ref: ParamRef,
+    source_ref: SourceRef,
+    amount: F,
+  ) -> Result<(), modulations::Error> {
     self.modulations.update(param_ref, source_ref, amount)
   }
 
-  pub fn delete_modulation(&mut self, param_ref: ParamRef, source_ref: SourceRef) -> Result<(), modulations::Error> {
+  pub fn delete_modulation(
+    &mut self,
+    param_ref: ParamRef,
+    source_ref: SourceRef,
+  ) -> Result<(), modulations::Error> {
     self.modulations.delete(param_ref, source_ref)
   }
 

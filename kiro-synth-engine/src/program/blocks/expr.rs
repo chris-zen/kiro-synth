@@ -1,8 +1,8 @@
-use heapless::Vec;
 use heapless::consts;
+use heapless::Vec;
 
 use crate::float::Float;
-use crate::program::{SignalRef, ParamRef, Program, ProgramBuilder};
+use crate::program::{ParamRef, Program, ProgramBuilder, SignalRef};
 use crate::signal::SignalBus;
 
 type MaxOps = consts::U8;
@@ -44,9 +44,7 @@ pub struct ExprBuilder<F: Float> {
 
 impl<F: Float> ExprBuilder<F> {
   pub fn new() -> Self {
-    ExprBuilder {
-      ops: Vec::new()
-    }
+    ExprBuilder { ops: Vec::new() }
   }
 
   pub fn value(&mut self, v: F) -> OpRef {
@@ -171,14 +169,12 @@ impl<F: Float> ExprBuilder<F> {
 
 #[derive(Debug)]
 pub(crate) struct Processor<F: Float> {
-  block: Block<F>
+  block: Block<F>,
 }
 
 impl<F: Float> Processor<F> {
   pub fn new(block: Block<F>) -> Self {
-    Processor {
-      block
-    }
+    Processor { block }
   }
 
   pub fn reset(&mut self) {}
@@ -187,87 +183,85 @@ impl<F: Float> Processor<F> {
     let mut stack = Vec::<F, MaxOps>::new();
     for op in self.block.ops.iter() {
       match op {
-        Op::Value(value) => {
-          drop(stack.push(*value))
-        },
+        Op::Value(value) => drop(stack.push(*value)),
         Op::Param(param_ref) => {
           let param_value = program.get_param_signal(*param_ref).get();
           drop(stack.push(param_value))
-        },
+        }
         Op::Signal(signal_ref) => {
           let signal_value = signals[*signal_ref].get();
           drop(stack.push(signal_value))
-        },
+        }
         Op::Neg(_) => {
           let x = stack.pop().unwrap();
           drop(stack.push(-x));
-        },
+        }
         Op::Add(_, _) => {
           let x = stack.pop().unwrap();
           let y = stack.pop().unwrap();
           drop(stack.push(x + y));
-        },
+        }
         Op::AddValue(_, value) => {
           let x = stack.pop().unwrap();
           drop(stack.push(x + *value));
-        },
+        }
         Op::AddParam(_, param_ref) => {
           let x = stack.pop().unwrap();
           let param_value = program.get_param_signal(*param_ref).get();
           drop(stack.push(x + param_value));
-        },
+        }
         Op::AddSignal(_, signal_ref) => {
           let x = stack.pop().unwrap();
           let signal_value = signals[*signal_ref].get();
           drop(stack.push(x + signal_value));
-        },
+        }
         Op::AddSignals(signal_ref1, signal_ref2) => {
           let signal_value1 = signals[*signal_ref1].get();
           let signal_value2 = signals[*signal_ref2].get();
           drop(stack.push(signal_value1 + signal_value2));
-        },
+        }
         Op::AddSignalValue(signal_ref, value) => {
           let signal_value = signals[*signal_ref].get();
           drop(stack.push(signal_value + *value));
-        },
+        }
         Op::AddSignalParam(signal_ref, param_ref) => {
           let signal_value = signals[*signal_ref].get();
           let param_value = program.get_param_signal(*param_ref).get();
           drop(stack.push(signal_value + param_value));
-        },
+        }
         Op::Mul(_, _) => {
           let x = stack.pop().unwrap();
           let y = stack.pop().unwrap();
           drop(stack.push(x * y));
-        },
+        }
         Op::MulValue(_, value) => {
           let x = stack.pop().unwrap();
           drop(stack.push(x * *value));
-        },
+        }
         Op::MulParam(_, param_ref) => {
           let x = stack.pop().unwrap();
           let param_value = program.get_param_signal(*param_ref).get();
           drop(stack.push(x * param_value));
-        },
+        }
         Op::MulSignal(_, signal_ref) => {
           let x = stack.pop().unwrap();
           let signal_value = signals[*signal_ref].get();
           drop(stack.push(x * signal_value));
-        },
+        }
         Op::MulSignals(signal_ref1, signal_ref2) => {
           let signal_value1 = signals[*signal_ref1].get();
           let signal_value2 = signals[*signal_ref2].get();
           drop(stack.push(signal_value1 * signal_value2));
-        },
+        }
         Op::MulSignalValue(signal_ref, value) => {
           let signal_value = signals[*signal_ref].get();
           drop(stack.push(signal_value * *value));
-        },
+        }
         Op::MulSignalParam(signal_ref, param_ref) => {
           let signal_value = signals[*signal_ref].get();
           let param_value = program.get_param_signal(*param_ref).get();
           drop(stack.push(signal_value * param_value));
-        },
+        }
       }
     }
     signals[self.block.output].set(stack.pop().unwrap());

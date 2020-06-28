@@ -1,16 +1,10 @@
-use std::{
-  fs::File,
-  path::PathBuf,
-  io::Read,
-  error::Error
-};
+use std::{error::Error, fs::File, io::Read, path::PathBuf};
 
-use druid_icon::{IconData, IconPath, IconPathFill, IconPathStroke};
 use druid::kurbo::{BezPath, Size};
 use druid::Affine;
-use log::{info, error};
+use druid_icon::{IconData, IconPath, IconPathFill, IconPathStroke};
+use log::{error, info};
 use std::path::Path;
-
 
 #[derive(Debug)]
 pub struct IconFile {
@@ -20,7 +14,6 @@ pub struct IconFile {
 }
 
 impl IconFile {
-
   pub fn with_module<P: AsRef<Path>>(mut self, module: P) -> Self {
     self.module = module.as_ref().to_path_buf();
     self
@@ -36,7 +29,7 @@ impl IconFile {
 
     let re_opt = usvg::Options {
       keep_named_groups: false,
-      .. usvg::Options::default()
+      ..usvg::Options::default()
     };
 
     let mut file = File::open(&self.path)?;
@@ -63,7 +56,14 @@ impl IconFile {
               usvg::PathSegment::LineTo { x, y } => {
                 bezier_path.line_to((x, y));
               }
-              usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y, } => {
+              usvg::PathSegment::CurveTo {
+                x1,
+                y1,
+                x2,
+                y2,
+                x,
+                y,
+              } => {
                 bezier_path.curve_to((x1, y1), (x2, y2), (x, y));
               }
               usvg::PathSegment::ClosePath => {
@@ -80,12 +80,13 @@ impl IconFile {
             svg_path.transform.f,
           ]);
 
-          let fill = svg_path.fill.as_ref().map(|fill| {
-            IconPathFill { opacity: fill.opacity.value() }
+          let fill = svg_path.fill.as_ref().map(|fill| IconPathFill {
+            opacity: fill.opacity.value(),
           });
 
-          let stroke = svg_path.stroke.as_ref().map(|stroke| {
-            IconPathStroke { opacity: stroke.opacity.value(), width: stroke.width.value() }
+          let stroke = svg_path.stroke.as_ref().map(|stroke| IconPathStroke {
+            opacity: stroke.opacity.value(),
+            width: stroke.width.value(),
           });
 
           paths.push(IconPath {
@@ -99,7 +100,7 @@ impl IconFile {
         usvg::NodeKind::Defs => {
           // TODO: implement defs
           error!("{:?} is unimplemented", child.clone());
-        },
+        }
 
         _ => {
           // TODO: handle more of the SVG spec.

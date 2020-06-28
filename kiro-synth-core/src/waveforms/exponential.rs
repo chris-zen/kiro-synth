@@ -1,6 +1,6 @@
 use crate::float::Float;
-use crate::waveforms::Waveform;
 use crate::funcs::concave_transforms::concave_inverted_transform;
+use crate::waveforms::Waveform;
 
 #[derive(Debug, Clone)]
 pub struct Exponential;
@@ -18,7 +18,6 @@ impl Exponential {
 }
 
 impl<F: Float> Waveform<F> for Exponential {
-
   fn initial_modulo(&self) -> F {
     F::zero()
   }

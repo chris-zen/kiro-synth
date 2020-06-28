@@ -1,7 +1,7 @@
-use crate::float::Float;
 use crate::filters::freq_control::FreqControl;
-use crate::filters::saturation::Saturation;
 use crate::filters::q_control::QControl;
+use crate::filters::saturation::Saturation;
+use crate::float::Float;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Mode {

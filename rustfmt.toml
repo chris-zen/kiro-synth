@@ -1,1 +1,4 @@
 tab_spaces = 2
+#ignore = [
+#  "kiro-synth-host/src/ui/icons/*"
+#]

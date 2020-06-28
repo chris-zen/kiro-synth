@@ -36,8 +36,7 @@ impl<F: Float> Signal<F> {
   pub fn set(&mut self, value: F) {
     self.state = if self.value != value {
       SignalState::Updated
-    }
-    else {
+    } else {
       self.state
     };
     self.value = value;
@@ -70,10 +69,13 @@ impl<F: Float> Signal<F> {
     }
   }
 
-  pub fn if_updated<G>(&mut self, f: G) where G: FnOnce(F) -> () {
+  pub fn if_updated<G>(&mut self, f: G)
+  where
+    G: FnOnce(F) -> (),
+  {
     match self.state {
       SignalState::Updated | SignalState::Consumed => f(self.consume()),
-      SignalState::Off => {},
+      SignalState::Off => {}
     }
   }
 }
@@ -91,7 +93,7 @@ impl<F: Float> Signal<F> {
 //}
 
 pub(crate) struct SignalBus<'a, F: Float> {
-  signals: &'a mut [Signal<F>]
+  signals: &'a mut [Signal<F>],
 }
 
 impl<'a, F: Float> SignalBus<'a, F> {

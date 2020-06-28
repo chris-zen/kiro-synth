@@ -18,27 +18,23 @@ impl<F: Float> Default for SquareTrivial<F> {
 impl<F: Float> SquareTrivial<F> {
   /// pulse width between [0.0, 1.0)
   pub fn new(pulse_width: F) -> Self {
-    SquareTrivial {
-      pulse_width,
-    }
+    SquareTrivial { pulse_width }
   }
 
   /// pulse width between [0.0, 1.0)
   pub fn with_pulse_width(self, pulse_width: F) -> Self {
     SquareTrivial {
       pulse_width,
-      .. self
+      ..self
     }
   }
 }
 
 impl<F: Float> Waveform<F> for SquareTrivial<F> {
-
   fn generate(&mut self, modulo: F, _phase_inc: F) -> F {
     if modulo <= self.pulse_width {
       F::one()
-    }
-    else {
+    } else {
       F::one().neg()
     }
   }

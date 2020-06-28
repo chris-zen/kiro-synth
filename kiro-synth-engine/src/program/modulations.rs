@@ -1,16 +1,15 @@
-use typenum::marker_traits::Unsigned;
 use generic_array::{ArrayLength, GenericArray};
 use heapless::consts;
+use typenum::marker_traits::Unsigned;
 
 use crate::float::Float;
-use crate::program::{SourceRef, MaxParams, ParamRef};
+use crate::program::{MaxParams, ParamRef, SourceRef};
 use std::ops::{Index, IndexMut};
 
 pub type MaxModulations = consts::U1024;
 type ModulationsPool<F> = Pool<Modulation<F>, MaxModulations>;
 
 const NIL: usize = (1 << 16) - 1;
-
 
 #[derive(Debug, Clone)]
 pub enum Error {
@@ -25,10 +24,7 @@ pub struct Modulation<F: Float> {
 
 impl<F: Float> Modulation<F> {
   pub fn new(source_ref: SourceRef, amount: F) -> Self {
-    Modulation {
-      source_ref,
-      amount,
-    }
+    Modulation { source_ref, amount }
   }
 }
 
@@ -55,15 +51,11 @@ impl<F: Float> Default for Modulations<F> {
       heads[i] = NIL;
     }
 
-    Modulations {
-      pool,
-      heads,
-    }
+    Modulations { pool, heads }
   }
 }
 
 impl<'a, F: Float> Modulations<F> {
-
   fn find(&mut self, param_ref: ParamRef, source_ref: SourceRef) -> Option<(usize, usize)> {
     let param_index: usize = param_ref.into();
     let mut head = self.heads[param_index];
@@ -82,7 +74,12 @@ impl<'a, F: Float> Modulations<F> {
     result
   }
 
-  pub fn update(&mut self, param_ref: ParamRef, source_ref: SourceRef, amount: F) -> Result<(), Error> {
+  pub fn update(
+    &mut self,
+    param_ref: ParamRef,
+    source_ref: SourceRef,
+    amount: F,
+  ) -> Result<(), Error> {
     match self.find(param_ref, source_ref) {
       Some((_prev, head)) => {
         let node = self.pool.get_mut(head);
@@ -95,7 +92,12 @@ impl<'a, F: Float> Modulations<F> {
     Ok(())
   }
 
-  pub fn push(&mut self, param_ref: ParamRef, source_ref: SourceRef, amount: F) -> Result<(), Error>{
+  pub fn push(
+    &mut self,
+    param_ref: ParamRef,
+    source_ref: SourceRef,
+    amount: F,
+  ) -> Result<(), Error> {
     let (head, node) = self.pool.alloc()?;
 
     let param_index: usize = param_ref.into();
@@ -126,7 +128,10 @@ impl<'a, F: Float> Modulations<F> {
         self.pool.free(head);
       }
       None => {
-        println!("Can not delete the modulation {:?} -> {:?}", source_ref, param_ref);
+        println!(
+          "Can not delete the modulation {:?} -> {:?}",
+          source_ref, param_ref
+        );
       }
     }
     Ok(())
@@ -169,7 +174,7 @@ impl<'a, F: Float> Iterator for Iter<'a, F> {
         let node = &self.pool[self.next];
         self.next = node.next;
         Some(&node.data)
-      },
+      }
     }
   }
 }
@@ -204,18 +209,14 @@ impl<T: Default, N: ArrayLength<Node<T>>> Pool<T, N> {
     }
     elements[capacity - 1].next = NIL;
 
-    Pool {
-      elements,
-      free: 0,
-    }
+    Pool { elements, free: 0 }
   }
 
   pub fn alloc(&mut self) -> Result<(usize, &mut Node<T>), Error> {
     let index = self.free;
     if index == NIL {
       Err(Error::OutOfMemory)
-    }
-    else {
+    } else {
       let node = &mut self.elements[index];
       self.free = node.next;
       Ok((index, node))

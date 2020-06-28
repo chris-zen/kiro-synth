@@ -1,5 +1,5 @@
-use crate::float::Float;
 use crate::filters::freq_control::FreqControl;
+use crate::float::Float;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Mode {

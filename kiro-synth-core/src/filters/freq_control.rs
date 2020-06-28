@@ -26,8 +26,7 @@ impl<F: Float> FreqControl<F> {
     self.invalidated = true;
     self.modulation = if modulation == F::zero() {
       F::one()
-    }
-    else {
+    } else {
       F::val(2.0).powf(modulation / F::val(12.0))
     };
   }

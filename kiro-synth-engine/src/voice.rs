@@ -2,10 +2,10 @@ use core::ops::DerefMut;
 use heapless::Vec;
 
 use crate::float::Float;
-use crate::key_freqs::KEY_FREQ;
-use crate::program::{MaxSignals, MaxBlocks, Block, Program};
-use crate::processor::Processor;
 use crate::globals::SynthGlobals;
+use crate::key_freqs::KEY_FREQ;
+use crate::processor::Processor;
+use crate::program::{Block, MaxBlocks, MaxSignals, Program};
 use crate::signal::{Signal, SignalBus};
 
 pub struct Voice<F: Float> {
@@ -24,13 +24,12 @@ impl<F: Float> Voice<F> {
     for block in program.get_blocks().iter() {
       if let Block::Const { value, signal } = block {
         signals[signal.0].set(*value)
-      }
-      else {
+      } else {
         processors.push(Processor::new(sample_rate, block)).unwrap();
       }
     }
 
-//    println!("voice::signals {:?}", signals.iter_mut().map(|s| (s.consume(), s.state())).collect::<Vec<(F, SignalState), MaxSignals>>());
+    //    println!("voice::signals {:?}", signals.iter_mut().map(|s| (s.consume(), s.state())).collect::<Vec<(F, SignalState), MaxSignals>>());
 
     Voice {
       signals,
@@ -45,10 +44,10 @@ impl<F: Float> Voice<F> {
   pub(crate) fn get_key(&self, program: &Program<F>) -> u8 {
     self.signals[program.voice().key.0].get().to_u8().unwrap()
   }
-//
-//  pub fn get_velocity(&self, program: &Program<F>) -> F {
-//    self.signals[program.voice().velocity.0].get()
-//  }
+  //
+  //  pub fn get_velocity(&self, program: &Program<F>) -> F {
+  //    self.signals[program.voice().velocity.0].get()
+  //  }
 
   pub(crate) fn is_off(&self, program: &Program<F>) -> bool {
     self.signals[program.voice().off.0].get() == F::one()
@@ -103,14 +102,14 @@ impl<F: Float> Voice<F> {
       signals[voice.trigger].set(F::zero())
     }
 
-   // println!("{:?}", self.signals.iter_mut().skip(3)/*.take(2)*/.map(|s| (s.get(), s.state())).collect::<Vec<(F, SignalState), MaxSignals>>());
+    // println!("{:?}", self.signals.iter_mut().skip(3)/*.take(2)*/.map(|s| (s.get(), s.state())).collect::<Vec<(F, SignalState), MaxSignals>>());
   }
 
   pub(crate) fn output(&self, program: &Program<F>) -> (F, F) {
     let voice = program.voice();
     (
       self.signals[voice.output_left.0].get(),
-      self.signals[voice.output_right.0].get()
+      self.signals[voice.output_right.0].get(),
     )
   }
 }

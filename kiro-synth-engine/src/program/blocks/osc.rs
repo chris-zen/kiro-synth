@@ -1,11 +1,10 @@
-use kiro_synth_core::oscillators::pitched_oscillator::PitchedOscillator;
 use kiro_synth_core::oscillators::osc_waveform::OscWaveform;
+use kiro_synth_core::oscillators::pitched_oscillator::PitchedOscillator;
 
 use crate::float::Float;
-use crate::program::{SignalRef, Program};
 use crate::globals::SynthGlobals;
+use crate::program::{Program, SignalRef};
 use crate::signal::SignalBus;
-
 
 #[derive(Debug, Clone)]
 pub struct Inputs {
@@ -33,33 +32,43 @@ pub(crate) struct Processor<F: Float> {
 }
 
 impl<F: Float> Processor<F> {
-
   pub fn new(sample_rate: F, block: Block) -> Self {
     let waveform = OscWaveform::default();
     let osc = PitchedOscillator::new(sample_rate, waveform, F::zero());
 
-    Processor {
-      osc,
-      block,
-    }
+    Processor { osc, block }
   }
 
   pub fn reset(&mut self) {
     self.osc.reset()
   }
 
-  pub fn process<'a>(&mut self,
-                     signals: &mut SignalBus<'a, F>,
-                     _program: &Program<F>,
-                     synth_globals: &SynthGlobals<F>) {
-
+  pub fn process<'a>(
+    &mut self,
+    signals: &mut SignalBus<'a, F>,
+    _program: &Program<F>,
+    synth_globals: &SynthGlobals<F>,
+  ) {
     let Block { inputs, output } = self.block.clone();
-    let Inputs { shape, amplitude, amp_mod,
-                 octaves, semitones, cents,
-                 note_pitch, pitch_bend, freq_mod } = inputs;
+    let Inputs {
+      shape,
+      amplitude,
+      amp_mod,
+      octaves,
+      semitones,
+      cents,
+      note_pitch,
+      pitch_bend,
+      freq_mod,
+    } = inputs;
 
     signals[shape].if_updated(|value| {
-      self.osc.set_waveform(synth_globals.osc_waveforms.waveform(value.to_usize().unwrap()).clone())
+      self.osc.set_waveform(
+        synth_globals
+          .osc_waveforms
+          .waveform(value.to_usize().unwrap())
+          .clone(),
+      )
     });
     signals[amplitude].if_updated(|value| self.osc.set_amplitude(value));
     signals[amp_mod].if_updated(|value| self.osc.set_amplitude_modulation(value));

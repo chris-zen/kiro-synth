@@ -1,8 +1,7 @@
 use crate::float::Float;
+use crate::oscillators::clamp_modulo;
 use crate::oscillators::osc_pitch_shift::OscPitchShift;
 use crate::oscillators::osc_waveform::OscWaveform;
-use crate::oscillators::clamp_modulo;
-
 
 #[derive(Debug)]
 pub struct PitchedOscillator<F: Float> {
@@ -19,7 +18,6 @@ pub struct PitchedOscillator<F: Float> {
 }
 
 impl<F: Float> PitchedOscillator<F> {
-
   // FIXME do not require the waveform (and maybe the pitch_freq) in the constructor
   pub fn new(sample_rate: F, waveform: OscWaveform<F>, pitch_freq: F) -> Self {
     let pitch_shift = OscPitchShift::default();

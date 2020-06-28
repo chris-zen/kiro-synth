@@ -1,13 +1,13 @@
-use typenum::marker_traits::Unsigned;
-use heapless::Vec;
 use heapless::consts;
+use heapless::Vec;
 use ringbuf::Consumer;
+use typenum::marker_traits::Unsigned;
 
+use crate::event::{Event, Message};
 use crate::float::Float;
+use crate::globals::SynthGlobals;
 use crate::program::Program;
 use crate::voice::Voice;
-use crate::event::{Message, Event};
-use crate::globals::SynthGlobals;
 
 pub type MaxVoices = consts::U32;
 
@@ -22,12 +22,12 @@ pub struct Synth<'a, F: Float> {
 }
 
 impl<'a, F: Float> Synth<'a, F> {
-
-  pub fn new(sample_rate: F,
-             events: Consumer<Event<F>>,
-             program: Program<'a, F>,
-             globals: SynthGlobals<F>) -> Self {
-
+  pub fn new(
+    sample_rate: F,
+    events: Consumer<Event<F>>,
+    program: Program<'a, F>,
+    globals: SynthGlobals<F>,
+  ) -> Self {
     let mut voices: Vec<Voice<F>, MaxVoices> = Vec::new();
     let mut free_voices: Vec<usize, MaxVoices> = Vec::new();
     for index in 0..MaxVoices::to_usize() {
@@ -51,9 +51,7 @@ impl<'a, F: Float> Synth<'a, F> {
   }
 
   pub fn get_last_voice(&self) -> Option<&Voice<F>> {
-    self.active_voices
-        .last()
-        .map(|index| &self.voices[*index])
+    self.active_voices.last().map(|index| &self.voices[*index])
   }
 
   pub fn get_num_active_voices(&self) -> usize {
@@ -61,20 +59,20 @@ impl<'a, F: Float> Synth<'a, F> {
   }
 
   pub fn prepare(&mut self) {
-    while let Some(Event { timestamp: _, message }) = self.events.pop() {
+    while let Some(Event {
+      timestamp: _,
+      message,
+    }) = self.events.pop()
+    {
       match message {
-        Message::NoteOn { key, velocity } => {
-          self.note_on(key, velocity)
-        },
-        Message::NoteOff { key, velocity } => {
-          self.note_off(key, velocity)
-        },
+        Message::NoteOn { key, velocity } => self.note_on(key, velocity),
+        Message::NoteOff { key, velocity } => self.note_off(key, velocity),
         Message::ParamValue { param_ref, value } => {
           if let Some((_, param)) = self.program.get_param_mut(param_ref) {
             println!("{} = {:?}", param.id, value);
             param.value.set(value)
           }
-        },
+        }
         Message::ParamChange { param_ref, change } => {
           if let Some((_, param)) = self.program.get_param_mut(param_ref) {
             let value: F = param.value.get() + change;
@@ -82,18 +80,31 @@ impl<'a, F: Float> Synth<'a, F> {
             println!("{} = {:?}", param.id, value);
             param.value.set(value);
           }
-        },
-        Message::ModulationUpdate { source_ref, param_ref, amount } => {
+        }
+        Message::ModulationUpdate {
+          source_ref,
+          param_ref,
+          amount,
+        } => {
           if let Some(source) = self.program.get_source(source_ref) {
             let source_id = source.id;
             if let Some((_, param)) = self.program.get_param(param_ref) {
               println!("{} -> {} {:?}", source_id, param.id, amount);
             }
-            self.program.update_modulation(param_ref, source_ref, amount).unwrap(); // TODO handle error
+            self
+              .program
+              .update_modulation(param_ref, source_ref, amount)
+              .unwrap(); // TODO handle error
           }
-        },
-        Message::ModulationDelete { source_ref, param_ref } => {
-          self.program.delete_modulation(param_ref, source_ref).unwrap(); // TODO handle error
+        }
+        Message::ModulationDelete {
+          source_ref,
+          param_ref,
+        } => {
+          self
+            .program
+            .delete_modulation(param_ref, source_ref)
+            .unwrap(); // TODO handle error
         }
       }
     }
@@ -139,8 +150,7 @@ impl<'a, F: Float> Synth<'a, F> {
         self.active_voices.swap_remove(active_voice_index);
         drop(self.free_voices.push(voice_index));
         freed_voices = true;
-      }
-      else {
+      } else {
         active_voice_index += 1;
       }
     }
@@ -155,4 +165,6 @@ impl<'a, F: Float> Synth<'a, F> {
   }
 }
 
-pub struct VoiceIter<'a, F: Float + 'a, I>(I) where I: Iterator<Item=&'a Voice<F>>;
+pub struct VoiceIter<'a, F: Float + 'a, I>(I)
+where
+  I: Iterator<Item = &'a Voice<F>>;

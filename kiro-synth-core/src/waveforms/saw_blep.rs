@@ -27,7 +27,7 @@ pub struct SawBlep<F: Float> {
   saturation: F,
 }
 
-impl<F:Float> Default for SawBlep<F> {
+impl<F: Float> Default for SawBlep<F> {
   fn default() -> Self {
     SawBlep {
       mode: Mode::Bipolar,
@@ -38,7 +38,6 @@ impl<F:Float> Default for SawBlep<F> {
 }
 
 impl<F: Float> SawBlep<F> {
-
   /// 8-point BLEP can only be calculated when freq <= Nyquist4, where Nyquist4 is sample_rate / 8
   /// Given that the phase_inc is freq / sample_rate, then the maximum phase_inc allowed is 1 / 8
   const MAX_PHASE_INC_FOR_8_BLEP: f32 = 1.0 / 8.0;
@@ -58,29 +57,19 @@ impl<F: Float> SawBlep<F> {
   }
 
   pub fn with_mode(self, mode: Mode) -> Self {
-    Self {
-      mode,
-      .. self
-    }
+    Self { mode, ..self }
   }
 
   pub fn with_correction(self, correction: Correction) -> Self {
-    Self {
-      correction,
-      .. self
-    }
+    Self { correction, ..self }
   }
 
   pub fn with_saturation(self, saturation: F) -> Self {
-    Self {
-      saturation,
-      .. self
-    }
+    Self { saturation, ..self }
   }
 }
 
 impl<F: Float> Waveform<F> for SawBlep<F> {
-
   fn initial_modulo(&self) -> F {
     F::val(0.5)
   }

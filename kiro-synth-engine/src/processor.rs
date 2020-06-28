@@ -1,7 +1,7 @@
 use crate::float::Float;
-use crate::program::{Block, Program, SignalRef, ParamRef, ParamBlock};
-use crate::program::blocks::*;
 use crate::globals::SynthGlobals;
+use crate::program::blocks::*;
+use crate::program::{Block, ParamBlock, ParamRef, Program, SignalRef};
 use crate::signal::SignalBus;
 
 #[derive(Debug)]
@@ -21,35 +21,43 @@ impl<F: Float> Processor<F> {
   pub fn new(sample_rate: F, block: &Block<F>) -> Self {
     match block.clone() {
       Block::Const { value, signal } => Processor::Const(value, signal),
-      Block::Param(ParamBlock { reference, out_signal_ref: _, mod_signal_ref: _ }) => Processor::Param(reference),
+      Block::Param(ParamBlock {
+        reference,
+        out_signal_ref: _,
+        mod_signal_ref: _,
+      }) => Processor::Param(reference),
       Block::DCA(dca_block) => Processor::DCA(dca::Processor::new(sample_rate, dca_block)),
       Block::EG(eg_block) => Processor::EG(envgen::Processor::new(sample_rate, eg_block)),
       Block::Lfo(lfo_block) => Processor::Lfo(lfo::Processor::new(sample_rate, lfo_block)),
       Block::Osc(osc_block) => Processor::Osc(osc::Processor::new(sample_rate, osc_block)),
       Block::Expr(expr_block) => Processor::Expr(expr::Processor::new(expr_block)),
-      Block::Filter(filt_block) => Processor::Filter(filter::Processor::new(sample_rate, filt_block)),
+      Block::Filter(filt_block) => {
+        Processor::Filter(filter::Processor::new(sample_rate, filt_block))
+      }
       Block::Out { left, right } => Processor::Out(left, right),
     }
   }
 
   pub fn reset(&mut self) {
     match self {
-      Processor::Const(_, _) => {},
-      Processor::Param(_) => {},
+      Processor::Const(_, _) => {}
+      Processor::Param(_) => {}
       Processor::DCA(ref mut proc) => proc.reset(),
       Processor::EG(ref mut proc) => proc.reset(),
       Processor::Expr(ref mut proc) => proc.reset(),
       Processor::Filter(ref mut proc) => proc.reset(),
       Processor::Lfo(ref mut proc) => proc.reset(),
       Processor::Osc(ref mut proc) => proc.reset(),
-      Processor::Out(ref _left, ref _right) => {},
+      Processor::Out(ref _left, ref _right) => {}
     }
   }
 
-  pub fn process<'b>(&mut self,
-                     signals: &mut SignalBus<'b, F>,
-                     program: &mut Program<F>,
-                     synth_globals: &SynthGlobals<F>) {
+  pub fn process<'b>(
+    &mut self,
+    signals: &mut SignalBus<'b, F>,
+    program: &mut Program<F>,
+    synth_globals: &SynthGlobals<F>,
+  ) {
     match self {
       Processor::Const(value, signal) => signals[*signal].set(*value),
       Processor::Param(param_ref) => {

@@ -17,8 +17,7 @@ impl<F: Float> Saturation<F> {
   pub fn saturate(&self, input: F) -> F {
     if self.enabled {
       (self.value * input).tanh()
-    }
-    else {
+    } else {
       input
     }
   }

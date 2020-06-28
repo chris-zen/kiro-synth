@@ -1,10 +1,10 @@
 use crate::float::Float;
-use crate::waveforms::Waveform;
 use crate::waveforms::saw_blep::SawBlep;
+use crate::waveforms::saw_trivial::SawTrivial;
 use crate::waveforms::sine_parabolic::SineParabolic;
 use crate::waveforms::triangle_dpw2x::TriangleDpw2x;
 use crate::waveforms::triangle_trivial::TriangleTrivial;
-use crate::waveforms::saw_trivial::SawTrivial;
+use crate::waveforms::Waveform;
 
 #[derive(Debug, Clone)]
 pub enum OscWaveform<F: Float> {

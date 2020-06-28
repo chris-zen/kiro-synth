@@ -1,12 +1,12 @@
-use heapless::Vec;
 use heapless::consts;
+use heapless::Vec;
 
 use kiro_synth_core::oscillators::osc_waveform::OscWaveform;
+use kiro_synth_core::waveforms::saw_blep::{self, SawBlep};
+use kiro_synth_core::waveforms::saw_trivial::SawTrivial;
 use kiro_synth_core::waveforms::sine_parabolic::SineParabolic;
 use kiro_synth_core::waveforms::triangle_dpw2x::TriangleDpw2x;
 use kiro_synth_core::waveforms::triangle_trivial::TriangleTrivial;
-use kiro_synth_core::waveforms::saw_blep::{self, SawBlep};
-use kiro_synth_core::waveforms::saw_trivial::SawTrivial;
 
 use crate::float::Float;
 
@@ -18,13 +18,20 @@ pub struct OscWaveforms<F: Float>(Vec<(&'static str, OscWaveform<F>), MaxWavefor
 impl<F: Float> OscWaveforms<F> {
   pub fn new() -> Self {
     let mut waveforms: Vec<(&'static str, OscWaveform<F>), MaxWaveforms> = heapless::Vec::new();
-    drop(waveforms.extend_from_slice(&[
-      ("sin", OscWaveform::SineParabolic(SineParabolic)),
-      ("tri", OscWaveform::TriangleDpw2x(TriangleDpw2x::default())),
-      ("saw", OscWaveform::SawBlep(SawBlep::default()
-          .with_mode(saw_blep::Mode::Bipolar)
-          .with_correction(saw_blep::Correction::EightPointBlepWithInterpolation))),
-    ]));
+    drop(
+      waveforms.extend_from_slice(&[
+        ("sin", OscWaveform::SineParabolic(SineParabolic)),
+        ("tri", OscWaveform::TriangleDpw2x(TriangleDpw2x::default())),
+        (
+          "saw",
+          OscWaveform::SawBlep(
+            SawBlep::default()
+              .with_mode(saw_blep::Mode::Bipolar)
+              .with_correction(saw_blep::Correction::EightPointBlepWithInterpolation),
+          ),
+        ),
+      ]),
+    );
     OscWaveforms(waveforms)
   }
 
@@ -49,7 +56,10 @@ impl<F: Float> LfoWaveforms<F> {
     let mut waveforms: Vec<(&'static str, OscWaveform<F>), MaxWaveforms> = heapless::Vec::new();
     drop(waveforms.extend_from_slice(&[
       ("sin", OscWaveform::SineParabolic(SineParabolic)),
-      ("tri", OscWaveform::TriangleTrivial(TriangleTrivial::default())),
+      (
+        "tri",
+        OscWaveform::TriangleTrivial(TriangleTrivial::default()),
+      ),
       ("saw", OscWaveform::SawTrivial(SawTrivial::default())),
     ]));
     LfoWaveforms(waveforms)

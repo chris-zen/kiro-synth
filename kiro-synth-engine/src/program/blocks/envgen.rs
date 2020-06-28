@@ -1,7 +1,7 @@
-use kiro_synth_core::float::Float;
 use kiro_synth_core::envgen::adsr::{EnvGen, Mode};
+use kiro_synth_core::float::Float;
 
-use crate::program::{SignalRef, Program};
+use crate::program::{Program, SignalRef};
 use crate::signal::SignalBus;
 
 #[derive(Debug, Clone)]
@@ -35,7 +35,6 @@ pub(crate) struct Processor<F: Float> {
 }
 
 impl<F: Float> Processor<F> {
-
   pub fn new(sample_rate: F, block: Block) -> Self {
     Processor {
       envgen: EnvGen::new(sample_rate),
@@ -49,9 +48,20 @@ impl<F: Float> Processor<F> {
 
   pub fn process<'a>(&mut self, signals: &mut SignalBus<'a, F>, program: &Program<F>) {
     let Block { inputs, outputs } = self.block.clone();
-    let Inputs { attack, decay, sustain, release,
-                 mode, legato: _, reset_to_zero: _ } = inputs;
-    let Outputs { normal, biased, voice_off } = outputs;
+    let Inputs {
+      attack,
+      decay,
+      sustain,
+      release,
+      mode,
+      legato: _,
+      reset_to_zero: _,
+    } = inputs;
+    let Outputs {
+      normal,
+      biased,
+      voice_off,
+    } = outputs;
 
     let voice = program.voice();
 
@@ -72,16 +82,14 @@ impl<F: Float> Processor<F> {
     signals[sustain].if_updated(|value| self.envgen.set_sustain_level(value));
     signals[release].if_updated(|value| self.envgen.set_release_time_sec(value));
 
-    signals[mode].if_updated(|value| {
-      match value {
-        v if v == F::zero() => self.envgen.set_mode(Mode::Analog),
-        v if v == F::one() => self.envgen.set_mode(Mode::Digital),
-        _ => {}
-      }
+    signals[mode].if_updated(|value| match value {
+      v if v == F::zero() => self.envgen.set_mode(Mode::Analog),
+      v if v == F::one() => self.envgen.set_mode(Mode::Digital),
+      _ => {}
     });
 
-// TODO   signals[legato].if_updated(|value| self.envgen.set_legato(value));
-// TODO   signals[reset_to_zero].if_updated(|value| self.envgen.set_reset_to_zero(value));
+    // TODO   signals[legato].if_updated(|value| self.envgen.set_legato(value));
+    // TODO   signals[reset_to_zero].if_updated(|value| self.envgen.set_reset_to_zero(value));
 
     signals[normal].set(self.envgen.generate());
     signals[biased].set(self.envgen.biased_output());

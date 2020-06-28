@@ -1,6 +1,6 @@
 use crate::float::Float;
-use crate::waveforms::Waveform;
 use crate::funcs::signal_polarity::unipolar_to_bipolar;
+use crate::waveforms::Waveform;
 
 #[derive(Debug, Clone)]
 pub enum Shape {
@@ -23,33 +23,23 @@ impl Default for TriangleTrivial {
 
 impl TriangleTrivial {
   pub fn new(shape: Shape) -> Self {
-    TriangleTrivial {
-      shape,
-    }
+    TriangleTrivial { shape }
   }
 
   pub fn with_shape(self, shape: Shape) -> Self {
-    TriangleTrivial {
-      shape,
-      .. self
-    }
+    TriangleTrivial { shape, ..self }
   }
 }
 
 impl<F: Float> Waveform<F> for TriangleTrivial {
-
   fn initial_modulo(&self) -> F {
     F::val(0.5)
   }
 
   fn generate(&mut self, modulo: F, _phase_inc: F) -> F {
     match self.shape {
-      Shape::Bipolar => {
-        unipolar_to_bipolar(modulo).abs() * F::val(2.0) - F::one()
-      }
-      Shape::Unipolar => {
-        unipolar_to_bipolar(modulo).abs()
-      }
+      Shape::Bipolar => unipolar_to_bipolar(modulo).abs() * F::val(2.0) - F::one(),
+      Shape::Unipolar => unipolar_to_bipolar(modulo).abs(),
     }
   }
 }

@@ -5,11 +5,11 @@ use crate::program::{ParamRef, SourceRef};
 pub enum Message<F: Float> {
   NoteOn {
     key: u8,
-    velocity: F
+    velocity: F,
   },
   NoteOff {
     key: u8,
-    velocity: F
+    velocity: F,
   },
   ParamValue {
     param_ref: ParamRef,
@@ -38,10 +38,7 @@ pub struct Event<F: Float> {
 
 impl<F: Float> Event<F> {
   pub fn new(timestamp: u64, message: Message<F>) -> Self {
-    Event {
-      timestamp,
-      message,
-    }
+    Event { timestamp, message }
   }
 
   pub fn now(message: Message<F>) -> Self {

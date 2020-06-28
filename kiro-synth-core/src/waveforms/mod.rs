@@ -9,12 +9,11 @@ pub mod triangle_dpw2x;
 pub mod triangle_trivial;
 
 pub trait Waveform<F: Float> {
-
   fn initial_modulo(&self) -> F {
     F::zero()
   }
 
-  fn reset(&mut self) { }
+  fn reset(&mut self) {}
 
   fn generate(&mut self, modulo: F, phase_inc: F) -> F;
 }

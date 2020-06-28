@@ -1,5 +1,5 @@
 use crate::float::Float;
-use crate::funcs::signal_polarity::{bipolar_to_unipolar};
+use crate::funcs::signal_polarity::bipolar_to_unipolar;
 
 #[derive(Debug)]
 pub struct DCA<F: Float> {
@@ -20,7 +20,6 @@ pub struct DCA<F: Float> {
 }
 
 impl<F: Float> DCA<F> {
-
   pub fn new() -> Self {
     DCA {
       amplitude: F::one(),
@@ -88,8 +87,7 @@ impl<F: Float> DCA<F> {
       self.gain_invalidated = false;
       let eg_mod = if self.eg_mod >= F::zero() {
         self.eg_mod
-      }
-      else {
+      } else {
         self.eg_mod + F::one()
       };
 

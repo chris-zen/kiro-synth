@@ -8,8 +8,7 @@ const CONCAVE_LIMIT: f64 = 0.99601893;
 pub fn concave_transform<F: Float>(value: F) -> F {
   if value >= F::val(CONCAVE_LIMIT) {
     F::one()
-  }
-  else {
+  } else {
     -(F::val(5.0) / F::val(12.0)) * (F::one() - value).log10()
   }
 }
@@ -19,8 +18,7 @@ pub fn concave_transform<F: Float>(value: F) -> F {
 pub fn concave_inverted_transform<F: Float>(value: F) -> F {
   if value <= F::val(CONVEX_LIMIT) {
     F::one()
-  }
-  else {
+  } else {
     -(F::val(5.0) / F::val(12.0)) * value.log10()
   }
 }

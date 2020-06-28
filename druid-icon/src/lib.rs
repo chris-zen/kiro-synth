@@ -1,11 +1,15 @@
-use std::marker::PhantomData;
-use druid::{kurbo::{Affine, BezPath, PathEl, Rect, Size}, widget::prelude::*, Color, Data, KeyOrValue};
-use druid::widget::FillStrat;
 use druid::theme::LABEL_COLOR;
+use druid::widget::FillStrat;
+use druid::{
+  kurbo::{Affine, BezPath, PathEl, Rect, Size},
+  widget::prelude::*,
+  Color, Data, KeyOrValue,
+};
+use std::marker::PhantomData;
 
 pub mod prelude {
+  pub use crate::{IconPathFill, IconPathStroke, IconStaticData, IconStaticPath};
   pub use druid::kurbo::{Affine, PathEl, Point, Size};
-  pub use crate::{IconStaticData, IconStaticPath, IconPathFill, IconPathStroke};
 }
 
 #[derive(Debug)]
@@ -13,7 +17,7 @@ pub struct IconStaticPath {
   pub transform: Affine,
   pub fill: Option<IconPathFill>,
   pub stroke: Option<IconPathStroke>,
-  pub elements: &'static [PathEl]
+  pub elements: &'static [PathEl],
 }
 
 #[derive(Debug)]
@@ -60,9 +64,11 @@ pub struct IconData {
 
 impl From<&IconStaticData> for IconData {
   fn from(static_data: &IconStaticData) -> Self {
-    let paths = static_data.paths.iter()
-        .map(|static_path| IconPath::from(static_path))
-        .collect::<Vec<IconPath>>();
+    let paths = static_data
+      .paths
+      .iter()
+      .map(|static_path| IconPath::from(static_path))
+      .collect::<Vec<IconPath>>();
 
     IconData {
       paths,
@@ -84,7 +90,7 @@ impl<T: Data> Icon<T> {
       data: data.into(),
       fill_strategy: FillStrat::None,
       color: KeyOrValue::Key(LABEL_COLOR),
-      _phantom: PhantomData
+      _phantom: PhantomData,
     }
   }
 
@@ -127,7 +133,9 @@ impl<T: Data> Widget<T> for Icon<T> {
   }
 
   fn paint(&mut self, ctx: &mut PaintCtx, _data: &T, env: &Env) {
-    let offset_matrix = self.fill_strategy.affine_to_fill(ctx.size(), self.data.size);
+    let offset_matrix = self
+      .fill_strategy
+      .affine_to_fill(ctx.size(), self.data.size);
 
     let clip_rect = Rect::ZERO.with_size(ctx.size());
     ctx.clip(clip_rect);

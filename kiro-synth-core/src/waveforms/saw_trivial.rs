@@ -1,6 +1,6 @@
 use crate::float::Float;
-use crate::waveforms::Waveform;
 use crate::funcs::signal_polarity::unipolar_to_bipolar;
+use crate::waveforms::Waveform;
 
 #[derive(Debug, Clone)]
 pub enum Shape {
@@ -31,41 +31,27 @@ impl Default for SawTrivial {
 
 impl SawTrivial {
   pub fn new(shape: Shape, direction: Direction) -> Self {
-    SawTrivial {
-      shape,
-      direction,
-    }
+    SawTrivial { shape, direction }
   }
 
   pub fn with_shape(self, shape: Shape) -> Self {
-    SawTrivial {
-      shape,
-      .. self
-    }
+    SawTrivial { shape, ..self }
   }
 
   pub fn with_direction(self, direction: Direction) -> Self {
-    SawTrivial {
-      direction,
-      .. self
-    }
+    SawTrivial { direction, ..self }
   }
 }
 
 impl<F: Float> Waveform<F> for SawTrivial {
-
   fn initial_modulo(&self) -> F {
     F::val(0.5)
   }
 
   fn generate(&mut self, modulo: F, _phase_inc: F) -> F {
     let out = match self.shape {
-      Shape::Bipolar => {
-        unipolar_to_bipolar(modulo)
-      }
-      Shape::Unipolar => {
-        modulo - F::one()
-      }
+      Shape::Bipolar => unipolar_to_bipolar(modulo),
+      Shape::Unipolar => modulo - F::one(),
     };
 
     match self.direction {

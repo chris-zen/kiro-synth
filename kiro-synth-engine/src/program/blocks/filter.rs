@@ -1,9 +1,9 @@
-use kiro_synth_core::float::Float;
 use kiro_synth_core::filters::freq_control::FreqControl;
-use kiro_synth_core::filters::va_one_pole::{self, VAOnePoleFilter};
 use kiro_synth_core::filters::oberheim_sem::{self, OberheimSEM};
+use kiro_synth_core::filters::va_one_pole::{self, VAOnePoleFilter};
+use kiro_synth_core::float::Float;
 
-use crate::program::{SignalRef, Program};
+use crate::program::{Program, SignalRef};
 use crate::signal::SignalBus;
 use kiro_synth_core::filters::q_control::QControl;
 
@@ -30,9 +30,9 @@ impl Mode {
   }
 
   pub fn from<F: Float>(value: F) -> Option<Self> {
-    value.to_usize().and_then(|index| {
-      Self::MODES.get(index).map(|mode| mode.clone())
-    })
+    value
+      .to_usize()
+      .and_then(|index| Self::MODES.get(index).map(|mode| mode.clone()))
   }
 }
 
@@ -60,12 +60,15 @@ pub(crate) struct Processor<F: Float> {
 }
 
 impl<F: Float> Processor<F> {
-
   pub fn new(sample_rate: F, block: Block) -> Self {
     Processor {
       mode: Mode::PassThrough,
       va_one_pole: VAOnePoleFilter::new(sample_rate, FreqControl::default_frequency()),
-      oberheim_sem: OberheimSEM::new(sample_rate, FreqControl::default_frequency(), QControl::default_q()),
+      oberheim_sem: OberheimSEM::new(
+        sample_rate,
+        FreqControl::default_frequency(),
+        QControl::default_q(),
+      ),
       block,
     }
   }
@@ -74,7 +77,7 @@ impl<F: Float> Processor<F> {
     Mode::from(mode.round()).iter().for_each(|mode| {
       self.mode = mode.clone();
       match self.mode {
-        Mode::PassThrough => {},
+        Mode::PassThrough => {}
         Mode::VAOnePole(va_one_pole_mode) => self.va_one_pole.set_mode(va_one_pole_mode),
         Mode::OberheimSEM(oberheim_sem_mode) => self.oberheim_sem.set_mode(oberheim_sem_mode),
       }
@@ -83,7 +86,7 @@ impl<F: Float> Processor<F> {
 
   fn set_freq(&mut self, freq: F) {
     match self.mode {
-      Mode::PassThrough => {},
+      Mode::PassThrough => {}
       Mode::VAOnePole(_) => self.va_one_pole.set_frequency(freq),
       Mode::OberheimSEM(_) => self.oberheim_sem.set_frequency(freq),
     }
@@ -91,7 +94,7 @@ impl<F: Float> Processor<F> {
 
   fn set_freq_mod(&mut self, freq_mod: F) {
     match self.mode {
-      Mode::PassThrough => {},
+      Mode::PassThrough => {}
       Mode::VAOnePole(_) => self.va_one_pole.set_frequency_modulation(freq_mod),
       Mode::OberheimSEM(_) => self.oberheim_sem.set_frequency_modulation(freq_mod),
     }
@@ -99,22 +102,27 @@ impl<F: Float> Processor<F> {
 
   fn set_q(&mut self, q: F) {
     match self.mode {
-      Mode::PassThrough => {},
-      Mode::VAOnePole(_) => {},
+      Mode::PassThrough => {}
+      Mode::VAOnePole(_) => {}
       Mode::OberheimSEM(_) => self.oberheim_sem.set_q(q),
     }
   }
 
   pub fn reset(&mut self) {
     match self.mode {
-      Mode::PassThrough => {},
+      Mode::PassThrough => {}
       Mode::VAOnePole(_) => self.va_one_pole.reset(),
       Mode::OberheimSEM(_) => self.oberheim_sem.reset(),
     }
   }
 
   pub fn process<'a>(&mut self, signals: &mut SignalBus<'a, F>, _program: &Program<F>) {
-    let Params { mode, freq, freq_mod, q } = self.block.params;
+    let Params {
+      mode,
+      freq,
+      freq_mod,
+      q,
+    } = self.block.params;
 
     signals[mode].if_updated(|value| self.set_mode(value));
     signals[freq].if_updated(|value| self.set_freq(value));
