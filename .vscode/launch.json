@@ -1,0 +1,111 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "tests 'druid-icon'",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib", "--package=druid-icon"],
+        "filter": {
+          "name": "druid-icon",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "tests 'druid-icon-generator'",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib", "--package=druid-icon-generator"],
+        "filter": {
+          "name": "druid-icon-generator",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "tests 'kiro-synth-core'",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib", "--package=kiro-synth-core"],
+        "filter": {
+          "name": "kiro-synth-core",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "tests 'kiro-synth-engine'",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib", "--package=kiro-synth-engine"],
+        "filter": {
+          "name": "kiro-synth-engine",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "tests 'kiro-synth-midi'",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib", "--package=kiro-synth-midi"],
+        "filter": {
+          "name": "kiro-synth-midi",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "kiro-synth-host",
+      "cargo": {
+        "args": ["build", "--bin=kiro-synth-host", "--package=kiro-synth-host"],
+        "filter": {
+          "name": "kiro-synth-host",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "tests 'kiro-synth-host'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--bin=kiro-synth-host",
+          "--package=kiro-synth-host"
+        ],
+        "filter": {
+          "name": "kiro-synth-host",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
