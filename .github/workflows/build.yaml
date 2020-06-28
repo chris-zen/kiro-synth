@@ -1,0 +1,36 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        rust: [stable]
+        os: [macOS-latest] # we could add ubuntu-latest & windows-latest but don't need it for the moment
+    steps:
+      - name: Setup Rust
+        uses: hecrj/setup-rust-action@master
+        with:
+          rust-version: ${{ matrix.rust }}
+          components: rustfmt, clippy
+      - name: Install cargo-make
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-make
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Run cargo fmt
+        run: cargo make format
+      - name: Run cargo clippy
+        run: cargo make clippy
+      - name: Run tests
+        run: cargo make test

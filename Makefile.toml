@@ -1,0 +1,24 @@
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = "true"
+
+[tasks.format]
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--all", "--", "--check"]
+
+[tasks.clippy]
+install_crate = "cargo-clippy"
+command = "cargo"
+# args = ["clippy", "--all", "--", "-D", "clippy::pedantic", "-D", "clippy::nursery", "-D", "warnings"]
+args = ["clippy", "--all"]
+
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
+[tasks.all]
+dependencies = [
+    "format",
+    "clippy",
+    "test"
+]
