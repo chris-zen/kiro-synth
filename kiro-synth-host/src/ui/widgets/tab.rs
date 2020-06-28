@@ -59,7 +59,7 @@ impl<T: Data> Tab<T> {
     }
   }
 
-  pub fn corner_radius(self, radius: f64) -> Self {
+  pub fn rounded(self, radius: f64) -> Self {
     Self {
       corner_radius: Some(radius),
       .. self

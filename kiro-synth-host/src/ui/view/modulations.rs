@@ -184,7 +184,7 @@ impl ModulationsView {
           SizedBox::empty().fix_height(10.0).boxed()
         }
       },
-    ).padding((0.0, 0.0, 2.0, 0.0));
+    ).padding((0.0, 0.0, 8.0, 0.0));
 
     Flex::row()
         .with_child(group_icon)
@@ -259,7 +259,7 @@ impl ModulationsView {
         .fill_strategy(FillStrat::ScaleDown)
         .controller(IconColorController::new(DELETE_MODULATION_IS_HOT, modulation_id))
         .fix_height(10.0)
-        .padding((0.0, 0.0, 2.0, 0.0))
+        .padding((0.0, 0.0, 8.0, 0.0))
         .on_click(move |ctx: &mut EventCtx, data: &mut Modulation, _: &Env| {
           let payload = (data.source_ref, data.param_ref);
           let command = Command::new(DELETE_MODULATION, payload);

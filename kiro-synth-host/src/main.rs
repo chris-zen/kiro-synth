@@ -41,7 +41,7 @@ fn main() -> Result<()> {
 
   // FEEDBACK
 
-  let feedback_ring_buffer = RingBuffer::<SynthFeedback>::new(2);
+  let feedback_ring_buffer = RingBuffer::<SynthFeedback>::new(1);
   let (feedback_producer, feedback_consumer) = feedback_ring_buffer.split();
 
   // SYNTH CLIENT

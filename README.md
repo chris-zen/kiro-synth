@@ -31,15 +31,22 @@ NOTE: You have to connect your MIDI keyboard before starting the synth. Also it 
 - [x] Modulation of parameters through a modulation matrix
 - [x] The modulation matrix can be tuned from the UI
 - [x] UI feedback for the modulations
-- [ ] UI feedback for the number of voices
+- [x] UI feedback for the number of voices
 - [ ] UI feedback for the output levels
-- [ ] Improve the program with more blocks (add one more EG and LFO)
-- [ ] Improve the program graph to include global oscillators parameters
-- [ ] Improve the program graph to allow FM synthesis using the oscillators
-- [ ] Add a square waveshape
-- [ ] Add more filters
 - [ ] Patch management from configuration
 - [ ] Patch management from the UI
+- [ ] Fix modulation parameters value ranges
+- [ ] Fix LFO phase parameter
+- [ ] Add note expression as modulation sources (velocity, pitch, modwheel, after touch)
+- [ ] Improve the program with more blocks (add one more EG and LFO)
+- [ ] Improve the program graph to include global oscillators parameters (octave, semitones, cents, drift, filter output)
+- [ ] Improve the program graph to allow FM synthesis using the oscillators
+- [ ] Improve the program graph to add more parameters for the oscillators (filter output)
+- [ ] Add a square waveshape (including new parameter for width)
+- [ ] Add noise waveshapes
+- [ ] Add more filters
+- [ ] Filter mode parameter shows the filter name in the UI
 - [ ] Improve the Knob widget to support logarithmic parameters
+- [ ] Unison ?
 - [ ] UI feedback for the CPU usage
 - [ ] ...

@@ -13,6 +13,8 @@ use crate::ui::model::{Osc, EnvGen, Lfo, Filter, Dca, Modulations, Param};
 #[derive(Debug, Clone, Data, Lens)]
 pub struct Synth {
 
+  pub active_voices: usize,
+
   pub osc: Vector<Osc>,
   pub osc_index: usize,
 
@@ -41,6 +43,8 @@ impl Synth {
     let params = &module.params;
 
     Synth {
+      active_voices: 0,
+
       osc: vector![
         Osc::new(program, &params.osc1, synth_client.clone()),
         Osc::new(program, &params.osc2, synth_client.clone()),
@@ -156,6 +160,7 @@ impl<'a> Synth {
 
   pub fn update_feedback(&mut self) {
     if let Some(feedback) = self.synth_client.get_feedback().unwrap_or(None) {
+      self.active_voices = feedback.num_active_voices;
       self.for_each_modulated_param(|param| {
         let param_index: usize = param.param_ref.into();
         let modulation = feedback.modulations[param_index];

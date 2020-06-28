@@ -1,6 +1,6 @@
+use typenum::marker_traits::Unsigned;
 use heapless::Vec;
 use heapless::consts;
-use typenum::marker_traits::Unsigned;
 use ringbuf::Consumer;
 
 use crate::float::Float;
@@ -9,7 +9,7 @@ use crate::voice::Voice;
 use crate::event::{Message, Event};
 use crate::globals::SynthGlobals;
 
-type MaxVoices = consts::U32;
+pub type MaxVoices = consts::U32;
 
 pub struct Synth<'a, F: Float> {
   _sample_rate: F,

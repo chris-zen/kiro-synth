@@ -1,3 +1,4 @@
+mod header;
 mod oscillators;
 mod filters;
 mod dca;
@@ -6,35 +7,83 @@ mod modulations;
 
 use std::sync::{Arc, Mutex};
 
-use druid::{Widget, Data, Env, UpdateCtx, Command, LifeCycleCtx, LifeCycle, EventCtx, Event, Selector};
-use druid::widget::{Flex, WidgetExt, Label, Container, ViewSwitcher, CrossAxisAlignment, Controller};
-
 use kiro_synth_core::float::Float;
+
+use druid::{Widget, Data, Env, UpdateCtx, Command, LifeCycleCtx, LifeCycle, EventCtx, Event, TimerToken};
+use druid::widget::{Flex, WidgetExt, Label, Container, ViewSwitcher, CrossAxisAlignment, Controller};
 
 use crate::synth::SynthClient;
 use crate::ui::model::{Synth, Param, KnobDataFromParam};
 use crate::ui::widgets::knob::{KnobData, Knob};
 use crate::ui::{GREY_83, GREY_65, GREY_74};
 use crate::ui::widgets::tab::Tab;
+use crate::ui::view::modulations::UPDATE_MODULATIONS_CONFIG;
+use crate::ui::view::header::HeaderView;
 
 use oscillators::OscillatorsView;
 use filters::FiltersView;
 use dca::DcaView;
 use modulators::ModulatorsView;
 use modulations::ModulationsView;
-use crate::ui::view::modulations::UPDATE_MODULATIONS_CONFIG;
+use std::time::Duration;
 
+// use druid::Selector;
+//
+// struct AnimFeedbackController;
+//
+// impl AnimFeedbackController {
+//   const UPDATE_FEEDBACK: Selector<()> = Selector::new("synth.update-feedback");
+//
+//   pub fn new() -> Self {
+//     AnimFeedbackController
+//   }
+// }
+//
+// impl<W: Widget<Synth>> Controller<Synth, W> for AnimFeedbackController {
+//   fn event(&mut self, child: &mut W, ctx: &mut EventCtx, event: &Event, data: &mut Synth, env: &Env) {
+//     match event {
+//       Event::Command(command) if command.is(Self::UPDATE_FEEDBACK) => {
+//         data.update_feedback();
+//         ctx.request_paint();
+//       }
+//       _ => child.event(ctx, event, data, env),
+//     }
+//   }
+//
+//   fn lifecycle(&mut self, child: &mut W, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &Synth, env: &Env) {
+//     match event {
+//       LifeCycle::WidgetAdded => ctx.request_anim_frame(),
+//       LifeCycle::AnimFrame(_) => {
+//         ctx.submit_command(Self::UPDATE_FEEDBACK, None);
+//         ctx.request_anim_frame();
+//       },
+//       _ => {}
+//     }
+//     child.lifecycle(ctx, event, data, env)
+//   }
+// }
 
-const UPDATE_FEEDBACK: Selector<()> = Selector::new("synth.update-feedback");
+pub struct TimerFeedbackController {
+  timer_token: Option<TimerToken>
+}
 
+impl TimerFeedbackController {
+  const UPDATE_PERIOD: Duration = Duration::from_millis(1000 / 30);
 
-pub struct FeedbackController;
+  pub fn new() -> Self {
+    TimerFeedbackController {
+      timer_token: None,
+    }
+  }
+}
 
-impl<W: Widget<Synth>> Controller<Synth, W> for FeedbackController {
+impl<W: Widget<Synth>> Controller<Synth, W> for TimerFeedbackController {
   fn event(&mut self, child: &mut W, ctx: &mut EventCtx, event: &Event, data: &mut Synth, env: &Env) {
     match event {
-      Event::Command(command) if command.is(UPDATE_FEEDBACK) => {
+      Event::Timer(token) if Some(*token) == self.timer_token => {
+        self.timer_token = Some(ctx.request_timer(Self::UPDATE_PERIOD));
         data.update_feedback();
+        ctx.request_paint();
       }
       _ => child.event(ctx, event, data, env),
     }
@@ -49,14 +98,10 @@ impl<W: Widget<Synth>> Controller<Synth, W> for FeedbackController {
     env: &Env,
   ) {
     match event {
-      LifeCycle::WidgetAdded => ctx.request_anim_frame(),
-      LifeCycle::AnimFrame(_) => {
-        let command = Command::new(UPDATE_FEEDBACK, ());
-        ctx.submit_command(command, None);
-        ctx.request_anim_frame();
-      },
-      _ => child.lifecycle(ctx, event, data, env),
+      LifeCycle::WidgetAdded => self.timer_token = Some(ctx.request_timer(Self::UPDATE_PERIOD)),
+      _ => {}
     }
+    child.lifecycle(ctx, event, data, env);
   }
 }
 
@@ -95,13 +140,20 @@ pub fn build<F: Float + 'static>(synth_model: &Synth,
 
   let modulations = ModulationsView::new();
 
-  Flex::row()
+  let main_panel = Flex::row()
     .with_child(devices.fix_width(330.0))
     .with_flex_child(modulations, 1.0)
-    .cross_axis_alignment(CrossAxisAlignment::Start)
-    .controller(FeedbackController)
-    // .debug_widget_id()
-    // .debug_paint_layout()
+    .cross_axis_alignment(CrossAxisAlignment::Start);
+
+  let header = HeaderView::new();
+
+  Flex::column()
+      .with_child(header)
+      .with_spacer(4.0)
+      .with_flex_child(main_panel, 1.0)
+      .controller(TimerFeedbackController::new())
+      // .debug_widget_id()
+      // .debug_paint_layout()
 }
 
 pub fn build_static_tabs<T, W, F>(tabs_data: Vec<T>,
@@ -126,7 +178,7 @@ pub fn build_static_tabs<T, W, F>(tabs_data: Vec<T>,
         .selected_background(GREY_83)
         .unselected_background(GREY_65)
         .hover_background(GREY_74)
-        .corner_radius(2.0);
+        .rounded(2.0);
 
     tabs_row.add_child(tab);
     tabs_row.add_spacer(4.0);
