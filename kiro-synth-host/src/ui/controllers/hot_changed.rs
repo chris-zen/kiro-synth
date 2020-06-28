@@ -1,5 +1,5 @@
-use druid::{Widget, Selector, Env, Data, LifeCycleCtx, LifeCycle, Command};
 use druid::widget::Controller;
+use druid::{Command, Data, Env, LifeCycle, LifeCycleCtx, Selector, Widget};
 
 pub struct HotChangedController<T, ID, V> {
   selector: Selector<(ID, V)>,
@@ -8,10 +8,11 @@ pub struct HotChangedController<T, ID, V> {
 }
 
 impl<T: Data, ID: PartialEq + 'static, V: Clone + 'static> HotChangedController<T, ID, V> {
-  pub fn new(selector: Selector<(ID, V)>,
-             id: impl Fn(&T) -> ID + 'static,
-             value: impl Fn(bool, &T, &Env) -> V + 'static) -> Self {
-    
+  pub fn new(
+    selector: Selector<(ID, V)>,
+    id: impl Fn(&T) -> ID + 'static,
+    value: impl Fn(bool, &T, &Env) -> V + 'static,
+  ) -> Self {
     HotChangedController {
       selector,
       id: Box::new(id),
@@ -20,7 +21,9 @@ impl<T: Data, ID: PartialEq + 'static, V: Clone + 'static> HotChangedController<
   }
 }
 
-impl<T: Data, W: Widget<T>, ID: PartialEq + 'static, V: Clone + 'static> Controller<T, W> for HotChangedController<T, ID, V> {
+impl<T: Data, W: Widget<T>, ID: PartialEq + 'static, V: Clone + 'static> Controller<T, W>
+  for HotChangedController<T, ID, V>
+{
   fn lifecycle(
     &mut self,
     child: &mut W,
@@ -34,8 +37,7 @@ impl<T: Data, W: Widget<T>, ID: PartialEq + 'static, V: Clone + 'static> Control
       let value: V = (self.value)(*is_hot, data, env);
       let command = Command::new(self.selector, (id, value));
       ctx.submit_command(command, None);
-    }
-    else {
+    } else {
       child.lifecycle(ctx, event, data, env);
     }
   }

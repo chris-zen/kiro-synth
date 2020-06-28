@@ -1,8 +1,10 @@
 use kiro_synth_core::float::Float;
-use kiro_synth_engine::program::{Program, Block, ProgramBuilder, ParamBlock, SignalRef, SourceRef};
 use kiro_synth_engine::program::blocks::{dca, envgen, filter, lfo, osc};
+use kiro_synth_engine::program::{
+  Block, ParamBlock, Program, ProgramBuilder, SignalRef, SourceRef,
+};
 
-use crate::synth::program::params::{EnvGenParams, OscParams, FilterParams, DcaParams, LfoParams};
+use crate::synth::program::params::{DcaParams, EnvGenParams, FilterParams, LfoParams, OscParams};
 use crate::synth::program::values;
 
 pub struct KiroParams {
@@ -55,8 +57,10 @@ pub struct KiroModule {
 }
 
 impl KiroModule {
-
-  pub fn new_program<'a, F: Float>(num_lfo_shapes: usize, num_osc_shapes: usize) -> (Program<'a, F>, KiroModule) {
+  pub fn new_program<'a, F: Float>(
+    num_lfo_shapes: usize,
+    num_osc_shapes: usize,
+  ) -> (Program<'a, F>, KiroModule) {
     let mut program_builder = ProgramBuilder::new();
 
     let module = Self::new(&mut program_builder, num_lfo_shapes, num_osc_shapes);
@@ -66,10 +70,11 @@ impl KiroModule {
     (program_builder.build(), module)
   }
 
-  pub fn new<F: Float>(program: &mut ProgramBuilder<F>,
-                       num_lfo_shapes: usize,
-                       num_osc_shapes: usize) -> KiroModule {
-
+  pub fn new<F: Float>(
+    program: &mut ProgramBuilder<F>,
+    num_lfo_shapes: usize,
+    num_osc_shapes: usize,
+  ) -> KiroModule {
     let voice = program.voice().clone();
 
     let zero = program.const_zero();
@@ -115,7 +120,10 @@ impl KiroModule {
 
       osc2: OscParams {
         shape: program.param("osc2-shape", values::enumeration(num_osc_shapes)),
-        amplitude: program.param("osc2-amplitude", values::amplitude().with_initial_value(F::zero())),
+        amplitude: program.param(
+          "osc2-amplitude",
+          values::amplitude().with_initial_value(F::zero()),
+        ),
         octaves: program.param("osc2-octaves", values::octave()),
         semitones: program.param("osc2-semitones", values::semitones()),
         cents: program.param("osc2-cents", values::cents()),
@@ -123,7 +131,10 @@ impl KiroModule {
 
       osc3: OscParams {
         shape: program.param("osc3-shape", values::enumeration(num_osc_shapes)),
-        amplitude: program.param("osc3-amplitude", values::amplitude().with_initial_value(F::zero())),
+        amplitude: program.param(
+          "osc3-amplitude",
+          values::amplitude().with_initial_value(F::zero()),
+        ),
         octaves: program.param("osc3-octaves", values::octave()),
         semitones: program.param("osc3-semitones", values::semitones()),
         cents: program.param("osc3-cents", values::cents()),
@@ -131,7 +142,10 @@ impl KiroModule {
 
       osc4: OscParams {
         shape: program.param("osc4-shape", values::enumeration(num_osc_shapes)),
-        amplitude: program.param("osc4-amplitude", values::amplitude().with_initial_value(F::zero())),
+        amplitude: program.param(
+          "osc4-amplitude",
+          values::amplitude().with_initial_value(F::zero()),
+        ),
         octaves: program.param("osc4-octaves", values::octave()),
         semitones: program.param("osc4-semitones", values::semitones()),
         cents: program.param("osc4-cents", values::cents()),
@@ -214,12 +228,11 @@ impl KiroModule {
         normal: signals.eg1_normal,
         biased: signals.eg1_biased,
         voice_off: voice.off,
-      }
+      },
     };
 
-    let eg1_dca_mod = program.expr(|expr| {
-      expr.mul_signal_param(eg1.outputs.normal, params.eg1.dca_mod.reference)
-    });
+    let eg1_dca_mod =
+      program.expr(|expr| expr.mul_signal_param(eg1.outputs.normal, params.eg1.dca_mod.reference));
 
     let osc1 = osc::Block {
       inputs: osc::Inputs {
@@ -312,7 +325,7 @@ impl KiroModule {
       outputs: dca::Outputs {
         left: signals.dca_left,
         right: signals.dca_right,
-      }
+      },
     };
 
     params.lfo1.add_param_blocks(program);

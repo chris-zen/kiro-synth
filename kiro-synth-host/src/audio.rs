@@ -1,9 +1,9 @@
 use anyhow::Result;
 use thiserror::Error;
 
-use cpal::{Device, StreamConfig, SampleRate, Stream, OutputCallbackInfo};
-use cpal::{DefaultStreamConfigError, BuildStreamError, PlayStreamError};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use cpal::{BuildStreamError, DefaultStreamConfigError, PlayStreamError};
+use cpal::{Device, OutputCallbackInfo, SampleRate, Stream, StreamConfig};
 
 #[derive(Error, Debug)]
 pub enum AudioError {
@@ -33,7 +33,10 @@ pub struct AudioDriver {
 }
 
 impl AudioDriver {
-  pub fn new<Handler: AudioHandler + 'static>(sample_rate: u32, mut handler: Handler) -> Result<Self> {
+  pub fn new<Handler: AudioHandler + 'static>(
+    sample_rate: u32,
+    mut handler: Handler,
+  ) -> Result<Self> {
     let host = cpal::default_host();
 
     let device = host
@@ -41,7 +44,8 @@ impl AudioDriver {
       .ok_or(AudioError::NoDefaultOutputDevice)?;
     println!("Using default output device: '{}'", device.name()?);
 
-    let mut config: StreamConfig = device.default_output_config()
+    let mut config: StreamConfig = device
+      .default_output_config()
       .map_err(|source| AudioError::NoDefaultStreamConfig(source))?
       .into();
 
@@ -71,9 +75,7 @@ impl AudioDriver {
       },
     )?;
 
-    stream
-      .play()
-      .map_err(|err| AudioError::PlayStream(err))?;
+    stream.play().map_err(|err| AudioError::PlayStream(err))?;
 
     Ok(AudioDriver {
       _device: device,

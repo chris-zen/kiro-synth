@@ -4,7 +4,9 @@ use thiserror::Error;
 mod coremidi;
 
 #[cfg(target_os = "macos")]
-pub use crate::midi::drivers::coremidi::{CoreMidiDriver as MidiDriver, CoreMidiError as MidiErrorSource};
+pub use crate::midi::drivers::coremidi::{
+  CoreMidiDriver as MidiDriver, CoreMidiError as MidiErrorSource,
+};
 
 use kiro_synth_midi::messages::Message;
 

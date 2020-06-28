@@ -3,24 +3,24 @@ mod midi;
 mod synth;
 pub mod ui;
 
-use std::sync::{Mutex, Arc};
+use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use ringbuf::RingBuffer;
 
 use kiro_synth_core::float::Float;
-use kiro_synth_midi::messages::Message as MidiMessage;
-use kiro_synth_engine::program::Program;
 use kiro_synth_engine::event::Event;
-use kiro_synth_engine::synth::Synth;
 use kiro_synth_engine::globals::SynthGlobals;
+use kiro_synth_engine::program::Program;
+use kiro_synth_engine::synth::Synth;
+use kiro_synth_midi::messages::Message as MidiMessage;
 
 use crate::audio::AudioDriver;
 use crate::midi::drivers::{MidiDriver, MidiHandler};
 use crate::midi::mapper::MidiMapper;
-use crate::synth::{SynthClient, SynthClientMutex, SynthAudioHandler, SynthFeedback};
 use crate::synth::program::kiro::KiroModule;
-use crate::ui::{Synth as SynthData};
+use crate::synth::{SynthAudioHandler, SynthClient, SynthClientMutex, SynthFeedback};
+use crate::ui::Synth as SynthData;
 
 const SAMPLE_RATE: u32 = 44100;
 
@@ -46,15 +46,17 @@ fn main() -> Result<()> {
 
   // SYNTH CLIENT
 
-  let synth_client = Arc::new(Mutex::new(
-    SynthClient::new(synth_globals.clone(), events_producer, feedback_consumer)
-  ));
+  let synth_client = Arc::new(Mutex::new(SynthClient::new(
+    synth_globals.clone(),
+    events_producer,
+    feedback_consumer,
+  )));
 
   // PROGRAM
 
   let (program, module) = KiroModule::new_program(
     synth_globals.lfo_waveforms.len(),
-    synth_globals.osc_waveforms.len()
+    synth_globals.osc_waveforms.len(),
   );
 
   // UI DATA
@@ -93,7 +95,7 @@ impl EventsMidiHandler {
   pub fn new(midi_mapper: MidiMapper<f32>, synth_client: Arc<Mutex<SynthClient<f32>>>) -> Self {
     EventsMidiHandler {
       midi_mapper,
-      synth_client
+      synth_client,
     }
   }
 }
@@ -102,18 +104,38 @@ impl MidiHandler for EventsMidiHandler {
   fn on_message(&mut self, timestamp: u64, message: MidiMessage) {
     println!("{:014}: {:?}", timestamp, message);
     match message {
-      MidiMessage::NoteOn { channel: _, key, velocity } => {
-        self.synth_client.lock().unwrap().send_note_on(key, velocity as f32 / 127.0);
-      },
-      MidiMessage::NoteOff { channel: _, key, velocity } => {
-        self.synth_client.lock().unwrap().send_note_off(key, velocity as f32 / 127.0);
-      },
+      MidiMessage::NoteOn {
+        channel: _,
+        key,
+        velocity,
+      } => {
+        self
+          .synth_client
+          .lock()
+          .unwrap()
+          .send_note_on(key, velocity as f32 / 127.0);
+      }
+      MidiMessage::NoteOff {
+        channel: _,
+        key,
+        velocity,
+      } => {
+        self
+          .synth_client
+          .lock()
+          .unwrap()
+          .send_note_off(key, velocity as f32 / 127.0);
+      }
       MidiMessage::PitchBend { channel: _, value } => {
         if let Some(event) = self.midi_mapper.map_midi_pitch_bend(value) {
           self.synth_client.lock().unwrap().send_event(event);
         }
-      },
-      MidiMessage::ControlChange { channel: _, controller, value } => {
+      }
+      MidiMessage::ControlChange {
+        channel: _,
+        controller,
+        value,
+      } => {
         if let Some(event) = self.midi_mapper.map_midi_controller(controller, value) {
           self.synth_client.lock().unwrap().send_event(event);
         }
@@ -142,11 +164,11 @@ fn create_midi_mapper<F: Float>(program: &Program<F>, module: &KiroModule) -> Mi
   midi_mapper.rel_controller(26, program.get_param(module.params.dca.amplitude.reference));
   midi_mapper.rel_controller(27, program.get_param(module.params.dca.pan.reference));
 
-//  midi_mapper.rel_controller(29, program.get_param(module.params.osc2.amplitude.reference));
-//  midi_mapper.rel_controller(30, program.get_param(module.params.osc2.shape.reference));
-//  midi_mapper.rel_controller(31, program.get_param(module.params.osc2.octave.reference));
-//  midi_mapper.rel_controller(32, program.get_param(module.params.osc2.semitones.reference));
-//  midi_mapper.rel_controller(33, program.get_param(module.params.osc2.cents.reference));
+  //  midi_mapper.rel_controller(29, program.get_param(module.params.osc2.amplitude.reference));
+  //  midi_mapper.rel_controller(30, program.get_param(module.params.osc2.shape.reference));
+  //  midi_mapper.rel_controller(31, program.get_param(module.params.osc2.octave.reference));
+  //  midi_mapper.rel_controller(32, program.get_param(module.params.osc2.semitones.reference));
+  //  midi_mapper.rel_controller(33, program.get_param(module.params.osc2.cents.reference));
 
   midi_mapper.rel_controller(29, program.get_param(module.params.eg1.attack.reference));
   midi_mapper.rel_controller(30, program.get_param(module.params.eg1.decay.reference));
@@ -154,19 +176,34 @@ fn create_midi_mapper<F: Float>(program: &Program<F>, module: &KiroModule) -> Mi
   midi_mapper.rel_controller(32, program.get_param(module.params.eg1.release.reference));
   midi_mapper.rel_controller(33, program.get_param(module.params.eg1.mode.reference));
   midi_mapper.rel_controller(34, program.get_param(module.params.eg1.legato.reference));
-  midi_mapper.rel_controller(35, program.get_param(module.params.eg1.reset_to_zero.reference));
+  midi_mapper.rel_controller(
+    35,
+    program.get_param(module.params.eg1.reset_to_zero.reference),
+  );
   midi_mapper.rel_controller(36, program.get_param(module.params.eg1.dca_mod.reference));
 
-  midi_mapper.rel_controller(41, program.get_param(module.params.osc3.amplitude.reference));
+  midi_mapper.rel_controller(
+    41,
+    program.get_param(module.params.osc3.amplitude.reference),
+  );
   midi_mapper.rel_controller(42, program.get_param(module.params.osc3.shape.reference));
   midi_mapper.rel_controller(43, program.get_param(module.params.osc3.octaves.reference));
-  midi_mapper.rel_controller(44, program.get_param(module.params.osc3.semitones.reference));
+  midi_mapper.rel_controller(
+    44,
+    program.get_param(module.params.osc3.semitones.reference),
+  );
   midi_mapper.rel_controller(45, program.get_param(module.params.osc3.cents.reference));
 
-  midi_mapper.rel_controller(49, program.get_param(module.params.osc4.amplitude.reference));
+  midi_mapper.rel_controller(
+    49,
+    program.get_param(module.params.osc4.amplitude.reference),
+  );
   midi_mapper.rel_controller(50, program.get_param(module.params.osc4.shape.reference));
   midi_mapper.rel_controller(51, program.get_param(module.params.osc4.octaves.reference));
-  midi_mapper.rel_controller(52, program.get_param(module.params.osc4.semitones.reference));
+  midi_mapper.rel_controller(
+    52,
+    program.get_param(module.params.osc4.semitones.reference),
+  );
   midi_mapper.rel_controller(53, program.get_param(module.params.osc4.cents.reference));
 
   midi_mapper.rel_controller(54, program.get_param(module.params.filter1.mode.reference));

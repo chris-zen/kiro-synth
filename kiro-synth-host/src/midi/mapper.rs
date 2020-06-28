@@ -1,5 +1,5 @@
-use heapless::{Vec, FnvIndexMap};
 use heapless::consts;
+use heapless::{FnvIndexMap, Vec};
 
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::event::{Event, Message as SynthMessage};
@@ -39,7 +39,7 @@ impl<F: Float> Transform<F> {
         let range = *max - *min;
         let value = midi_value * F::val(1.0 / 16383.0) * range + *min;
         (value / *resolution).round() * *resolution
-      },
+      }
       Transform::Relative64(resolution) => {
         let midi_value = F::val(midi_value & 0x7f);
         (midi_value - F::val(64.0)) * *resolution
@@ -78,8 +78,12 @@ impl<F: Float> MidiMapper<F> {
 
   pub fn pitch_bend<'a>(&mut self, param_info: Option<(ParamRef, &Param<'a, F>)>) {
     if let Some((param_ref, param)) = param_info {
-      let transform = Transform::MinMaxU14(param.values.min, param.values.max, param.values.resolution);
-      self.pitch_bend_mapping = Some(PitchBendMapping { param_ref, transform })
+      let transform =
+        Transform::MinMaxU14(param.values.min, param.values.max, param.values.resolution);
+      self.pitch_bend_mapping = Some(PitchBendMapping {
+        param_ref,
+        transform,
+      })
     }
   }
 
@@ -87,7 +91,7 @@ impl<F: Float> MidiMapper<F> {
     self.pitch_bend_mapping.as_ref().map(|mapping| {
       let message = SynthMessage::ParamValue {
         param_ref: mapping.param_ref,
-        value: mapping.transform.param_value_from(midi_value as usize)
+        value: mapping.transform.param_value_from(midi_value as usize),
       };
       Event::new(0u64, message)
     })
@@ -100,41 +104,64 @@ impl<F: Float> MidiMapper<F> {
   //   }
   // }
 
-  pub fn rel_controller<'a>(&mut self, midi_controller: MidiController, param_info: Option<(ParamRef, &Param<'a, F>)>) {
+  pub fn rel_controller<'a>(
+    &mut self,
+    midi_controller: MidiController,
+    param_info: Option<(ParamRef, &Param<'a, F>)>,
+  ) {
     if let Some((param_ref, param)) = param_info {
       let transform = Transform::Relative64(param.values.resolution);
       self.add_controller_mapping(midi_controller, param_ref, transform)
     }
   }
 
-  fn add_controller_mapping(&mut self, midi_controller: MidiController, param_ref: ParamRef, transform: Transform<F>) {
+  fn add_controller_mapping(
+    &mut self,
+    midi_controller: MidiController,
+    param_ref: ParamRef,
+    transform: Transform<F>,
+  ) {
     let mapping_index = self.controller_mappings.len();
     let mapping = ControllerMapping {
       param_ref,
       controller: midi_controller,
-      transform
+      transform,
     };
     drop(self.controller_mappings.push(mapping));
-    drop(self.controller_to_param.insert(midi_controller, mapping_index));
+    drop(
+      self
+        .controller_to_param
+        .insert(midi_controller, mapping_index),
+    );
     drop(self.param_to_controller.insert(param_ref, mapping_index));
   }
 
   fn get_controller_mapping(&self, controller: MidiController) -> Option<&ControllerMapping<F>> {
-    self.controller_to_param
-        .get(&controller)
-        .map(|mapping_index| &self.controller_mappings[*mapping_index])
+    self
+      .controller_to_param
+      .get(&controller)
+      .map(|mapping_index| &self.controller_mappings[*mapping_index])
   }
 
-  pub fn map_midi_controller(&self, controller: MidiController, midi_value: U7) -> Option<Event<F>> {
+  pub fn map_midi_controller(
+    &self,
+    controller: MidiController,
+    midi_value: U7,
+  ) -> Option<Event<F>> {
     self.get_controller_mapping(controller).and_then(|mapping| {
       let is_relative = Self::is_relative_controller(mapping);
       let value = mapping.transform.param_value_from(midi_value as usize);
       let maybe_message = if is_relative {
-        Some(SynthMessage::ParamChange { param_ref: mapping.param_ref, change: value })
-            .filter(|_| value != F::zero())
-      }
-      else {
-        Some(SynthMessage::ParamValue { param_ref: mapping.param_ref, value })
+        Some(SynthMessage::ParamChange {
+          param_ref: mapping.param_ref,
+          change: value,
+        })
+        .filter(|_| value != F::zero())
+      } else {
+        Some(SynthMessage::ParamValue {
+          param_ref: mapping.param_ref,
+          value,
+        })
       };
       maybe_message.map(|message| Event::new(0u64, message))
     })

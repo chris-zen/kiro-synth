@@ -1,16 +1,15 @@
 use std::fmt::Formatter;
-use std::sync::{Mutex, Arc, PoisonError, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
-use ringbuf::{Producer, Consumer};
+use ringbuf::{Consumer, Producer};
 
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::event::{Event, Message};
-use kiro_synth_engine::program::{ParamRef, SourceRef};
 use kiro_synth_engine::globals::SynthGlobals;
-use kiro_synth_engine::waveforms::{OscWaveforms, LfoWaveforms};
+use kiro_synth_engine::program::{ParamRef, SourceRef};
+use kiro_synth_engine::waveforms::{LfoWaveforms, OscWaveforms};
 
 use crate::synth::SynthFeedback;
-
 
 pub struct SynthClient<F: Float> {
   globals: SynthGlobals<F>,
@@ -19,10 +18,11 @@ pub struct SynthClient<F: Float> {
 }
 
 impl<F: Float> SynthClient<F> {
-  pub fn new(globals: SynthGlobals<F>,
-             events: Producer<Event<F>>,
-             feedback: Consumer<SynthFeedback>) -> Self {
-
+  pub fn new(
+    globals: SynthGlobals<F>,
+    events: Producer<Event<F>>,
+    feedback: Consumer<SynthFeedback>,
+  ) -> Self {
     SynthClient {
       globals,
       events,
@@ -64,12 +64,19 @@ impl<F: Float> SynthClient<F> {
   }
 
   pub fn send_modulation_update(&mut self, source_ref: SourceRef, param_ref: ParamRef, amount: F) {
-    let message = Message::ModulationUpdate { source_ref, param_ref, amount };
+    let message = Message::ModulationUpdate {
+      source_ref,
+      param_ref,
+      amount,
+    };
     self.send_event(Event::new(0u64, message));
   }
 
   pub fn send_modulation_delete(&mut self, source_ref: SourceRef, param_ref: ParamRef) {
-    let message = Message::ModulationDelete { source_ref, param_ref };
+    let message = Message::ModulationDelete {
+      source_ref,
+      param_ref,
+    };
     self.send_event(Event::new(0u64, message));
   }
 }
@@ -82,24 +89,44 @@ impl<F: Float> SynthClientMutex<F> {
     SynthClientMutex(mutex)
   }
 
-  pub fn send_param_value(&self, param_ref: ParamRef, value: F) -> Result<(), PoisonError<MutexGuard<'_, SynthClient<F>>>> {
-    self.0.lock()
-        .map(|mut client| client.send_param_value(param_ref, value))
+  pub fn send_param_value(
+    &self,
+    param_ref: ParamRef,
+    value: F,
+  ) -> Result<(), PoisonError<MutexGuard<'_, SynthClient<F>>>> {
+    self
+      .0
+      .lock()
+      .map(|mut client| client.send_param_value(param_ref, value))
   }
 
-  pub fn send_modulation_update(&self, source_ref: SourceRef, param_ref: ParamRef, amount: F) -> Result<(), PoisonError<MutexGuard<'_, SynthClient<F>>>> {
-    self.0.lock()
-        .map(|mut client| client.send_modulation_update(source_ref, param_ref, amount))
+  pub fn send_modulation_update(
+    &self,
+    source_ref: SourceRef,
+    param_ref: ParamRef,
+    amount: F,
+  ) -> Result<(), PoisonError<MutexGuard<'_, SynthClient<F>>>> {
+    self
+      .0
+      .lock()
+      .map(|mut client| client.send_modulation_update(source_ref, param_ref, amount))
   }
 
-  pub fn send_modulation_delete(&self, source_ref: SourceRef, param_ref: ParamRef) -> Result<(), PoisonError<MutexGuard<'_, SynthClient<F>>>> {
-    self.0.lock()
-        .map(|mut client| client.send_modulation_delete(source_ref, param_ref))
+  pub fn send_modulation_delete(
+    &self,
+    source_ref: SourceRef,
+    param_ref: ParamRef,
+  ) -> Result<(), PoisonError<MutexGuard<'_, SynthClient<F>>>> {
+    self
+      .0
+      .lock()
+      .map(|mut client| client.send_modulation_delete(source_ref, param_ref))
   }
 
-  pub fn get_feedback(&mut self) -> Result<Option<SynthFeedback>, PoisonError<MutexGuard<'_, SynthClient<F>>>> {
-    self.0.lock()
-        .map(|mut client| client.feedback.pop())
+  pub fn get_feedback(
+    &mut self,
+  ) -> Result<Option<SynthFeedback>, PoisonError<MutexGuard<'_, SynthClient<F>>>> {
+    self.0.lock().map(|mut client| client.feedback.pop())
   }
 }
 

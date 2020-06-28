@@ -1,16 +1,15 @@
-use ringbuf::Producer;
 use generic_array::GenericArray;
+use ringbuf::Producer;
 
 use kiro_synth_engine::program::MaxParams;
 use kiro_synth_engine::synth::Synth;
 
 use crate::audio::AudioHandler;
 
-
 #[derive(Debug, Clone)]
 pub struct SynthFeedback {
   pub num_active_voices: usize,
-  pub modulations: GenericArray<f32, MaxParams>
+  pub modulations: GenericArray<f32, MaxParams>,
 }
 
 pub struct SynthAudioHandler<'a> {
@@ -20,15 +19,11 @@ pub struct SynthAudioHandler<'a> {
 
 impl<'a> SynthAudioHandler<'a> {
   pub fn new(synth: Synth<'a, f32>, feedback: Producer<SynthFeedback>) -> Self {
-    SynthAudioHandler {
-      synth,
-      feedback,
-    }
+    SynthAudioHandler { synth, feedback }
   }
 }
 
 impl<'a> AudioHandler for SynthAudioHandler<'a> {
-
   fn prepare(&mut self, _len: usize) {
     self.synth.prepare();
   }

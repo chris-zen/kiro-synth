@@ -1,5 +1,5 @@
-use kiro_synth_core::float::Float;
 use kiro_synth_core::filters::freq_control::FreqControl;
+use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::ParamValues;
 use num_traits::ToPrimitive;
 
@@ -62,7 +62,6 @@ pub fn amplitude<F: Float>() -> ParamValues<F> {
     resolution: F::val(0.01),
   }
 }
-
 
 pub fn amplitude_db<F: Float>() -> ParamValues<F> {
   ParamValues {

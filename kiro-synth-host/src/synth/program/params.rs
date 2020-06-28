@@ -1,5 +1,5 @@
-use kiro_synth_engine::program::{ParamBlock, ProgramBuilder, Block};
 use kiro_synth_core::float::Float;
+use kiro_synth_engine::program::{Block, ParamBlock, ProgramBuilder};
 
 macro_rules! param_blocks {
   ( $name:ident, $( $param_block:ident ),* $(, $( [$nested:ident] ),* )? ) => {
@@ -30,7 +30,17 @@ pub struct EnvGenParams {
   pub dca_mod: ParamBlock,
 }
 
-param_blocks!(EnvGenParams, attack, decay, sustain, release, mode, legato, reset_to_zero, dca_mod);
+param_blocks!(
+  EnvGenParams,
+  attack,
+  decay,
+  sustain,
+  release,
+  mode,
+  legato,
+  reset_to_zero,
+  dca_mod
+);
 
 pub struct LfoParams {
   pub shape: ParamBlock,

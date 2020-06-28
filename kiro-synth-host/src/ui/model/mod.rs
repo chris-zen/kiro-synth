@@ -1,21 +1,21 @@
-mod param;
-mod eg;
-mod lfo;
-mod oscillators;
-mod filter;
 mod dca;
+mod eg;
+mod filter;
+mod lfo;
 pub mod modulations;
+mod oscillators;
+mod param;
 mod synth;
 
 use druid::Lens;
 
-pub use param::{KnobDataFromParam, Param};
-pub use eg::{EgFromSynth, EnvGen};
-pub use lfo::{LfoFromSynth, Lfo};
-pub use oscillators::{OscFromSynth, Osc};
-pub use filter::{FilterFromSynth, Filter};
 pub use dca::Dca;
+pub use eg::{EgFromSynth, EnvGen};
+pub use filter::{Filter, FilterFromSynth};
+pub use lfo::{Lfo, LfoFromSynth};
 pub use modulations::Modulations;
+pub use oscillators::{Osc, OscFromSynth};
+pub use param::{KnobDataFromParam, Param};
 pub use synth::Synth;
 
 pub struct ZeroIndex;

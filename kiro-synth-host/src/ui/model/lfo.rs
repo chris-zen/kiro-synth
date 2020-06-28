@@ -3,10 +3,9 @@ use druid::{Data, Lens};
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::Program;
 
-use crate::synth::SynthClientMutex;
 use crate::synth::program::params::LfoParams;
-use crate::ui::model::{Synth, Param};
-
+use crate::synth::SynthClientMutex;
+use crate::ui::model::{Param, Synth};
 
 pub struct LfoFromSynth;
 
@@ -29,9 +28,11 @@ pub struct Lfo {
 }
 
 impl Lfo {
-  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
-                                     params: &LfoParams,
-                                     synth_client: SynthClientMutex<f32>) -> Self {
+  pub fn new<'a, F: Float + 'static>(
+    program: &Program<'a, F>,
+    params: &LfoParams,
+    synth_client: SynthClientMutex<f32>,
+  ) -> Self {
     Lfo {
       shape: Param::new(program, &params.shape, synth_client.clone()),
       rate: Param::new(program, &params.rate, synth_client.clone()),

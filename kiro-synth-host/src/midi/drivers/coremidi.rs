@@ -43,7 +43,7 @@ where
 
 pub struct CoreMidiDriver {
   _client: Client,
-  _input_port: InputPort
+  _input_port: InputPort,
 }
 
 impl CoreMidiDriver {
@@ -90,7 +90,7 @@ impl CoreMidiDriver {
     decoder: &mut Decoder,
     handler: &mut Handler,
   ) {
-//    println!("{:?}", packet_list);
+    //    println!("{:?}", packet_list);
     for packet in packet_list.iter() {
       let timestamp = packet.timestamp();
       let mut source = packet.data().iter().map(|v| *v);

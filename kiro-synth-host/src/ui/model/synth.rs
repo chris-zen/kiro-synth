@@ -1,18 +1,16 @@
-use druid::{Data, Lens};
 use druid::im::{vector, Vector};
+use druid::{Data, Lens};
 
 use kiro_synth_core::float::Float;
-use kiro_synth_engine::program::{Program, SourceRef, ParamRef};
+use kiro_synth_engine::program::{ParamRef, Program, SourceRef};
 
-use crate::synth::SynthClientMutex;
 use crate::synth::program::kiro::KiroModule;
+use crate::synth::SynthClientMutex;
 
-use crate::ui::model::{Osc, EnvGen, Lfo, Filter, Dca, Modulations, Param};
-
+use crate::ui::model::{Dca, EnvGen, Filter, Lfo, Modulations, Osc, Param};
 
 #[derive(Debug, Clone, Data, Lens)]
 pub struct Synth {
-
   pub active_voices: usize,
 
   pub osc: Vector<Osc>,
@@ -36,10 +34,11 @@ pub struct Synth {
 }
 
 impl Synth {
-  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
-                                     module: &KiroModule,
-                                     synth_client: SynthClientMutex<f32>) -> Self {
-
+  pub fn new<'a, F: Float + 'static>(
+    program: &Program<'a, F>,
+    module: &KiroModule,
+    synth_client: SynthClientMutex<f32>,
+  ) -> Self {
     let params = &module.params;
 
     Synth {
@@ -55,18 +54,14 @@ impl Synth {
 
       mod_index: 0,
 
-      eg: vector![
-        EnvGen::new(program, &params.eg1, synth_client.clone()),
-      ],
+      eg: vector![EnvGen::new(program, &params.eg1, synth_client.clone()),],
 
       lfo: vector![
         Lfo::new(program, &params.lfo1, synth_client.clone()),
         Lfo::new(program, &params.lfo2, synth_client.clone()),
       ],
 
-      filter: vector![
-        Filter::new(program, &params.filter1, synth_client.clone()),
-      ],
+      filter: vector![Filter::new(program, &params.filter1, synth_client.clone()),],
       filter_index: 0,
 
       dca: Dca::new(program, &params.dca, synth_client.clone()),
@@ -74,8 +69,8 @@ impl Synth {
       modulations: Modulations::new(program, module, synth_client.clone()),
 
       synth_client: synth_client.clone(),
-
-    }.with_init_modulations_config()
+    }
+    .with_init_modulations_config()
   }
 }
 
@@ -85,9 +80,9 @@ impl<'a> Synth {
 
     self.for_each_modulated_param(move |param| {
       param.modulation.total_amount = total_amounts
-          .get(&param.param_ref.into())
-          .cloned()
-          .unwrap_or(0.0);
+        .get(&param.param_ref.into())
+        .cloned()
+        .unwrap_or(0.0);
     });
 
     self
@@ -108,12 +103,21 @@ impl<'a> Synth {
     });
   }
 
-  pub fn update_modulations_config(&mut self, source_ref: SourceRef, param_ref: ParamRef, config_amount: f64) {
-    self.modulations.update_modulation(source_ref, param_ref, config_amount);
+  pub fn update_modulations_config(
+    &mut self,
+    source_ref: SourceRef,
+    param_ref: ParamRef,
+    config_amount: f64,
+  ) {
+    self
+      .modulations
+      .update_modulation(source_ref, param_ref, config_amount);
     let total_amount = self.modulations.get_total_amounts_for_param(param_ref);
-    let same_source = self.modulations.config_source
-        .filter(|source| *source == source_ref)
-        .is_some();
+    let same_source = self
+      .modulations
+      .config_source
+      .filter(|source| *source == source_ref)
+      .is_some();
     self.for_each_modulated_param(move |param| {
       if param.param_ref == param_ref {
         if same_source {

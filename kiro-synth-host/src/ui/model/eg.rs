@@ -3,9 +3,9 @@ use druid::{Data, Lens};
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::Program;
 
-use crate::synth::SynthClientMutex;
 use crate::synth::program::params::EnvGenParams;
-use crate::ui::model::{Synth, Param};
+use crate::synth::SynthClientMutex;
+use crate::ui::model::{Param, Synth};
 
 pub struct EgFromSynth;
 
@@ -32,9 +32,11 @@ pub struct EnvGen {
 }
 
 impl EnvGen {
-  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
-                                     params: &EnvGenParams,
-                                     synth_client: SynthClientMutex<f32>) -> Self {
+  pub fn new<'a, F: Float + 'static>(
+    program: &Program<'a, F>,
+    params: &EnvGenParams,
+    synth_client: SynthClientMutex<f32>,
+  ) -> Self {
     EnvGen {
       attack: Param::new(program, &params.attack, synth_client.clone()),
       decay: Param::new(program, &params.decay, synth_client.clone()),

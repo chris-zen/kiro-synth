@@ -3,10 +3,9 @@ use druid::{Data, Lens};
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::Program;
 
-use crate::synth::SynthClientMutex;
 use crate::synth::program::params::FilterParams;
-use crate::ui::model::{Synth, Param};
-
+use crate::synth::SynthClientMutex;
+use crate::ui::model::{Param, Synth};
 
 pub struct FilterFromSynth;
 
@@ -28,9 +27,11 @@ pub struct Filter {
 }
 
 impl Filter {
-  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
-                                     params: &FilterParams,
-                                     synth_client: SynthClientMutex<f32>) -> Self {
+  pub fn new<'a, F: Float + 'static>(
+    program: &Program<'a, F>,
+    params: &FilterParams,
+    synth_client: SynthClientMutex<f32>,
+  ) -> Self {
     Filter {
       mode: Param::new(program, &params.mode, synth_client.clone()),
       freq: Param::new(program, &params.freq, synth_client.clone()),

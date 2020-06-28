@@ -1,10 +1,10 @@
-use druid::{Widget, Selector, Env, Data, Color, EventCtx, Event};
 use druid::widget::Controller;
+use druid::{Color, Data, Env, Event, EventCtx, Selector, Widget};
 use druid_icon::Icon;
 
 pub struct IconColorController<T, ID> {
   selector: Selector<(ID, Color)>,
-  id: Box<dyn Fn(&T) -> ID + 'static>
+  id: Box<dyn Fn(&T) -> ID + 'static>,
 }
 
 impl<T: Data, ID: PartialEq> IconColorController<T, ID> {
@@ -17,7 +17,14 @@ impl<T: Data, ID: PartialEq> IconColorController<T, ID> {
 }
 
 impl<T: Data, ID: PartialEq + 'static> Controller<T, Icon<T>> for IconColorController<T, ID> {
-  fn event(&mut self, child: &mut Icon<T>, ctx: &mut EventCtx, event: &Event, data: &mut T, env: &Env) {
+  fn event(
+    &mut self,
+    child: &mut Icon<T>,
+    ctx: &mut EventCtx,
+    event: &Event,
+    data: &mut T,
+    env: &Env,
+  ) {
     match event {
       Event::Command(command) if command.is(self.selector) => {
         if let Some((target_id, color)) = command.get(self.selector) {

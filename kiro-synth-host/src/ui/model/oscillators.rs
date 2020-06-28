@@ -3,9 +3,9 @@ use druid::{Data, Lens};
 use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::Program;
 
-use crate::synth::SynthClientMutex;
 use crate::synth::program::params::OscParams;
-use crate::ui::model::{Synth, Param};
+use crate::synth::SynthClientMutex;
+use crate::ui::model::{Param, Synth};
 
 pub struct OscFromSynth;
 
@@ -29,9 +29,11 @@ pub struct Osc {
 }
 
 impl Osc {
-  pub fn new<'a, F: Float + 'static>(program: &Program<'a, F>,
-                                     params: &OscParams,
-                                     synth_client: SynthClientMutex<f32>) -> Self {
+  pub fn new<'a, F: Float + 'static>(
+    program: &Program<'a, F>,
+    params: &OscParams,
+    synth_client: SynthClientMutex<f32>,
+  ) -> Self {
     Osc {
       shape: Param::new(program, &params.shape, synth_client.clone()),
       octaves: Param::new(program, &params.octaves, synth_client.clone()).with_origin(0.0),

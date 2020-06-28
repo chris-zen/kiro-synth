@@ -1,12 +1,11 @@
 use druid::{Data, Lens};
 
 use kiro_synth_core::float::Float;
-use kiro_synth_engine::program::{ParamRef, Program, Param as ProgParam, SourceRef};
+use kiro_synth_engine::program::{Param as ProgParam, ParamRef, Program, SourceRef};
 
-use crate::ui::widgets::knob::{KnobData, KnobModulationData};
 use crate::synth::SynthClientMutex;
+use crate::ui::widgets::knob::{KnobData, KnobModulationData};
 use std::sync::Arc;
-
 
 pub struct KnobDataFromParam;
 
@@ -14,9 +13,21 @@ impl KnobDataFromParam {
   fn create_knob_data_from_param(data: &Param) -> KnobData<Param> {
     let modulation = &data.modulation;
     let config_source = modulation.config_source.map(|source_ref| source_ref.into());
-    let knob_modulation = KnobModulationData::new(modulation.value, config_source, modulation.config_amount, modulation.total_amount);
-    KnobData::new(data.origin, data.min, data.max, data.step, data.value, data.clone())
-        .with_modulation(knob_modulation)
+    let knob_modulation = KnobModulationData::new(
+      modulation.value,
+      config_source,
+      modulation.config_amount,
+      modulation.total_amount,
+    );
+    KnobData::new(
+      data.origin,
+      data.min,
+      data.max,
+      data.step,
+      data.value,
+      data.clone(),
+    )
+    .with_modulation(knob_modulation)
   }
 }
 
@@ -83,17 +94,20 @@ pub struct Param {
 }
 
 impl Param {
-  pub fn new<F: Float, P: Into<ParamRef>>(program: &Program<F>,
-                                          param_ref: P,
-                                          synth_client: SynthClientMutex<f32>) -> Self {
-
+  pub fn new<F: Float, P: Into<ParamRef>>(
+    program: &Program<F>,
+    param_ref: P,
+    synth_client: SynthClientMutex<f32>,
+  ) -> Self {
     let (param_ref, param) = program.get_param(param_ref.into()).unwrap();
     Self::from(param_ref, param, synth_client)
   }
 
-  pub fn from<F: Float>(param_ref: ParamRef,
-                        param: &ProgParam<F>,
-                        synth_client: SynthClientMutex<f32>) -> Self {
+  pub fn from<F: Float>(
+    param_ref: ParamRef,
+    param: &ProgParam<F>,
+    synth_client: SynthClientMutex<f32>,
+  ) -> Self {
     Param {
       param_ref,
       name: Arc::new(param.id.to_string()),
