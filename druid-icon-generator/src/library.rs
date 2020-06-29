@@ -25,8 +25,8 @@ impl IconLibrary {
       .filter_map(move |entry: DirEntry| {
         let base_path = base_path.clone();
         let path = entry.path().to_path_buf();
-        path
-          .clone()
+        let path2 = path.clone();
+        path2
           .strip_prefix(base_path)
           .ok()
           .and_then(Path::parent)
@@ -36,7 +36,7 @@ impl IconLibrary {
               .to_os_string()
               .into_string()
               .ok()
-              .map(|name| IconFile {
+              .map(move |name| IconFile {
                 path,
                 module: module.to_path_buf(),
                 name,

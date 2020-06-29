@@ -32,7 +32,7 @@ impl Mode {
   pub fn from<F: Float>(value: F) -> Option<Self> {
     value
       .to_usize()
-      .and_then(|index| Self::MODES.get(index).map(|mode| mode.clone()))
+      .and_then(|index| Self::MODES.get(index).copied())
   }
 }
 
@@ -75,7 +75,7 @@ impl<F: Float> Processor<F> {
 
   fn set_mode(&mut self, mode: F) {
     Mode::from(mode.round()).iter().for_each(|mode| {
-      self.mode = mode.clone();
+      self.mode = *mode;
       match self.mode {
         Mode::PassThrough => {}
         Mode::VAOnePole(va_one_pole_mode) => self.va_one_pole.set_mode(va_one_pole_mode),

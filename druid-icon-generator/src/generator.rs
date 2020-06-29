@@ -45,6 +45,7 @@ impl Generator {
   ) -> Result<(), Box<dyn Error>> {
     let mut out = File::create(&self.base_path)?;
 
+    wln!(out, "#![allow(unused_attributes)]");
     wln!(out, "#![rustfmt::skip]");
     wln!(out, "");
     wln!(out, "///");

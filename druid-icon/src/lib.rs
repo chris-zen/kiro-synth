@@ -67,7 +67,7 @@ impl From<&IconStaticData> for IconData {
     let paths = static_data
       .paths
       .iter()
-      .map(|static_path| IconPath::from(static_path))
+      .map(IconPath::from)
       .collect::<Vec<IconPath>>();
 
     IconData {

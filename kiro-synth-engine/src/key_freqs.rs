@@ -1,4 +1,6 @@
+#![allow(unused_attributes)]
 #![rustfmt::skip]
+#![allow(clippy::all)]
 
 pub const KEY_FREQ: [f32; 128] = [
      8.176,      8.662,      9.177,      9.723,     10.301,     10.913,     11.562,     12.250,     12.978,     13.750,     14.568,     15.434,

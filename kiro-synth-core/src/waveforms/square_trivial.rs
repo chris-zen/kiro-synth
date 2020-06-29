@@ -25,7 +25,6 @@ impl<F: Float> SquareTrivial<F> {
   pub fn with_pulse_width(self, pulse_width: F) -> Self {
     SquareTrivial {
       pulse_width,
-      ..self
     }
   }
 }

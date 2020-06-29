@@ -27,7 +27,7 @@ impl TriangleTrivial {
   }
 
   pub fn with_shape(self, shape: Shape) -> Self {
-    TriangleTrivial { shape, ..self }
+    TriangleTrivial { shape }
   }
 }
 

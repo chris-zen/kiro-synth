@@ -17,8 +17,7 @@ impl ParabolicSine for f32 {
 
   fn parabolic_sine(&self) -> Self {
     let y = Self::B * *self + Self::C * *self * self.abs();
-    let y = Self::P * (y * y.abs() - y) + y;
-    y
+    Self::P * (y * y.abs() - y) + y
   }
 }
 
@@ -29,7 +28,6 @@ impl ParabolicSine for f64 {
 
   fn parabolic_sine(&self) -> Self {
     let y = Self::B * *self + Self::C * *self * self.abs();
-    let y = Self::P * (y * y.abs() - y) + y;
-    y
+    Self::P * (y * y.abs() - y) + y
   }
 }
