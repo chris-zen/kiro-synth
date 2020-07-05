@@ -32,12 +32,12 @@ NOTE: You have to connect your MIDI keyboard before starting the synth. Also it 
 - [x] The modulation matrix can be tuned from the UI
 - [x] UI feedback for the modulations
 - [x] UI feedback for the number of voices
-- [ ] UI feedback for the output levels
-- [ ] Patch management from configuration
-- [ ] Patch management from the UI
+- [x] UI feedback for the output levels
 - [ ] Fix modulation parameters value ranges
 - [ ] Fix LFO phase parameter
 - [ ] Add note expression as modulation sources (velocity, pitch, modwheel, after touch)
+- [ ] Patch management from configuration
+- [ ] Patch management from the UI
 - [ ] Improve the program with more blocks (add one more EG and LFO)
 - [ ] Improve the program graph to include global oscillators parameters (octave, semitones, cents, drift, filter output)
 - [ ] Improve the program graph to allow FM synthesis using the oscillators
