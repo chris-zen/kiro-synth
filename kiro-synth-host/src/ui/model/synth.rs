@@ -5,13 +5,40 @@ use kiro_synth_core::float::Float;
 use kiro_synth_engine::program::{ParamRef, Program, SourceRef};
 
 use crate::synth::program::kiro::KiroModule;
-use crate::synth::SynthClientMutex;
+use crate::synth::{SynthAudioLevels, SynthClientMutex};
 
 use crate::ui::model::{Dca, EnvGen, Filter, Lfo, Modulations, Osc, Param};
+
+#[derive(Debug, Clone, Data)]
+pub struct AudioLevel {
+  pub peak: f64,
+  pub level: f64,
+}
+
+impl Default for AudioLevel {
+  fn default() -> Self {
+    AudioLevel {
+      peak: f64::NEG_INFINITY,
+      level: f64::NEG_INFINITY,
+    }
+  }
+}
+
+impl AudioLevel {
+  pub fn new(level: &SynthAudioLevels) -> Self {
+    AudioLevel {
+      peak: level.peak as f64,
+      level: level.level as f64,
+    }
+  }
+}
 
 #[derive(Debug, Clone, Data, Lens)]
 pub struct Synth {
   pub active_voices: usize,
+
+  pub left_level: AudioLevel,
+  pub right_level: AudioLevel,
 
   pub osc: Vector<Osc>,
   pub osc_index: usize,
@@ -43,6 +70,9 @@ impl Synth {
 
     Synth {
       active_voices: 0,
+
+      left_level: AudioLevel::default(),
+      right_level: AudioLevel::default(),
 
       osc: vector![
         Osc::new(program, &params.osc1, synth_client.clone()),
@@ -165,6 +195,8 @@ impl<'a> Synth {
   pub fn update_feedback(&mut self) {
     if let Some(feedback) = self.synth_client.get_feedback().unwrap_or(None) {
       self.active_voices = feedback.num_active_voices;
+      self.left_level = AudioLevel::new(&feedback.left_levels);
+      self.right_level = AudioLevel::new(&feedback.right_levels);
       self.for_each_modulated_param(|param| {
         let param_index: usize = param.param_ref.into();
         let modulation = feedback.modulations[param_index];

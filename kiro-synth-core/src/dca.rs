@@ -1,5 +1,5 @@
 use crate::float::Float;
-use crate::funcs::signal_polarity::bipolar_to_unipolar;
+use crate::funcs::decibels::Decibels;
 
 #[derive(Debug)]
 pub struct DCA<F: Float> {
@@ -37,8 +37,8 @@ impl<F: Float> DCA<F> {
   }
 
   /// value in decibels
-  pub fn set_amplitude_db(&mut self, value: F) {
-    self.amplitude = F::val(10.0).powf(value / F::val(20.0));
+  pub fn set_amplitude_db(&mut self, decibels: F) {
+    self.amplitude = Decibels::new(decibels).to_amplitude();
     self.gain_invalidated = true;
   }
 
@@ -48,10 +48,10 @@ impl<F: Float> DCA<F> {
     self.gain_invalidated = true;
   }
 
-  /// value is bipolar in decibels
-  pub fn set_amp_mod_db(&mut self, bipolar_value: F) {
-    let value = bipolar_to_unipolar(bipolar_value);
-    self.amp_mod = F::val(10.0).powf(value / F::val(20.0));
+  /// amount in decibels
+  pub fn set_amp_mod_db(&mut self, decibels: F) {
+    // I don't think this makes any sense here: let value = bipolar_to_unipolar(decibels);
+    self.amp_mod = Decibels::new(decibels).to_amplitude();
     self.gain_invalidated = true;
   }
 
@@ -92,6 +92,7 @@ impl<F: Float> DCA<F> {
       };
 
       self.gain = self.velocity * self.amplitude * self.amp_mod * eg_mod;
+      // println!("gain = {:?}, {:?}, {:?}, {:?}, {:?}", self.gain, self.velocity, self.amplitude, self.amp_mod, eg_mod);
     }
   }
 
@@ -106,6 +107,7 @@ impl<F: Float> DCA<F> {
 
       self.pan_left = pan_left.max(F::zero()).min(F::one());
       self.pan_right = pan_right.max(F::zero()).min(F::one());
+      // println!("pan = {:?}, {:?}", self.pan_left, self.pan_right);
     }
   }
 }

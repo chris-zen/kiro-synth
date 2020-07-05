@@ -1,10 +1,11 @@
+use std::ops::{Index, IndexMut};
+
 use generic_array::{ArrayLength, GenericArray};
-use heapless::consts;
-use typenum::marker_traits::Unsigned;
+use generic_array::typenum::marker_traits::Unsigned;
+use generic_array::typenum::consts;
 
 use crate::float::Float;
 use crate::program::{MaxParams, ParamRef, SourceRef};
-use std::ops::{Index, IndexMut};
 
 pub type MaxModulations = consts::U1024;
 type ModulationsPool<F> = Pool<Modulation<F>, MaxModulations>;

@@ -6,7 +6,7 @@ use num_traits::ToPrimitive;
 
 use crate::funcs::parabolic_sine::ParabolicSine;
 
-pub trait Float: num_traits::Float + ParabolicSine + Copy + Debug {
+pub trait Float: num_traits::Float + ParabolicSine + Copy + Default + Debug {
   const PI: Self;
 
   fn val<T: ToPrimitive>(v: T) -> Self {

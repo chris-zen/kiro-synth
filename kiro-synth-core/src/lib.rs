@@ -8,3 +8,4 @@ pub mod float;
 pub mod funcs;
 pub mod oscillators;
 pub mod waveforms;
+pub mod meters;

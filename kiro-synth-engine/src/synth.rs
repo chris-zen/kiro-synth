@@ -12,7 +12,7 @@ use crate::voice::Voice;
 pub type MaxVoices = consts::U32;
 
 pub struct Synth<'a, F: Float> {
-  _sample_rate: F,
+  sample_rate: F,
   events: Consumer<Event<F>>,
   program: Program<'a, F>,
   globals: SynthGlobals<F>,
@@ -36,7 +36,7 @@ impl<'a, F: Float> Synth<'a, F> {
     }
 
     Synth {
-      _sample_rate: sample_rate,
+      sample_rate,
       events,
       program,
       globals,
@@ -44,6 +44,10 @@ impl<'a, F: Float> Synth<'a, F> {
       active_voices: Vec::new(),
       free_voices,
     }
+  }
+
+  pub fn get_sample_rate(&self) -> F {
+    self.sample_rate
   }
 
   pub fn get_program(&self) -> &Program<'a, F> {

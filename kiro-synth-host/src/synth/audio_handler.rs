@@ -1,25 +1,51 @@
 use generic_array::GenericArray;
 use ringbuf::Producer;
 
+use kiro_synth_core::meters::PeakMeter;
 use kiro_synth_engine::program::MaxParams;
 use kiro_synth_engine::synth::Synth;
 
 use crate::audio::AudioHandler;
 
 #[derive(Debug, Clone)]
+pub struct SynthAudioLevels {
+  pub peak: f32,
+  pub level: f32,
+}
+
+impl Default for SynthAudioLevels {
+  fn default() -> Self {
+    SynthAudioLevels {
+      peak: 0.0,
+      level: 0.0,
+    }
+  }
+}
+
+#[derive(Debug, Clone)]
 pub struct SynthFeedback {
   pub num_active_voices: usize,
   pub modulations: GenericArray<f32, MaxParams>,
+  pub left_levels: SynthAudioLevels,
+  pub right_levels: SynthAudioLevels,
 }
 
 pub struct SynthAudioHandler<'a> {
   synth: Synth<'a, f32>,
   feedback: Producer<SynthFeedback>,
+  left_level: PeakMeter<f32>,
+  right_level: PeakMeter<f32>,
 }
 
 impl<'a> SynthAudioHandler<'a> {
   pub fn new(synth: Synth<'a, f32>, feedback: Producer<SynthFeedback>) -> Self {
-    SynthAudioHandler { synth, feedback }
+    let sample_rate = synth.get_sample_rate();
+    SynthAudioHandler {
+      synth,
+      feedback,
+      left_level: PeakMeter::new(sample_rate, 0.7, 24.0),
+      right_level: PeakMeter::new(sample_rate, 0.7, 24.0),
+    }
   }
 }
 
@@ -29,7 +55,10 @@ impl<'a> AudioHandler for SynthAudioHandler<'a> {
   }
 
   fn next(&mut self) -> (f32, f32) {
-    self.synth.process()
+    let (left, right) = self.synth.process();
+    self.left_level.process(left);
+    self.right_level.process(right);
+    (left, right)
   }
 
   fn finalize(&mut self) {
@@ -48,6 +77,14 @@ impl<'a> AudioHandler for SynthAudioHandler<'a> {
     let feedback = SynthFeedback {
       num_active_voices,
       modulations,
+      left_levels: SynthAudioLevels {
+        peak: self.left_level.get_peak(),
+        level: self.left_level.get_level(),
+      },
+      right_levels: SynthAudioLevels {
+        peak: self.right_level.get_peak(),
+        level: self.right_level.get_level(),
+      },
     };
     self.feedback.push(feedback).unwrap_or_default();
   }

@@ -6,20 +6,22 @@ pub mod widgets;
 
 use std::sync::{Arc, Mutex};
 
-use druid::{theme, AppLauncher, Color, Data, Env, LocalizedString, WindowDesc};
+use druid::{theme, AppLauncher, Color, Data, Env, WindowDesc};
 
 use kiro_synth_core::float::Float;
 
 use crate::synth::SynthClient;
 
 pub use model::Synth;
+use widgets::knob;
 
 pub fn start<F: Float + 'static>(synth_model: Synth, synth_client: Arc<Mutex<SynthClient<F>>>) {
   let data = synth_model.clone();
 
   let window = WindowDesc::new(move || view::build(&synth_model, synth_client.clone()))
-    .title(LocalizedString::new("custom-widget-demo-window-title").with_placeholder("Kiro Synth"))
-    .window_size((500.0, 514.0));
+    .title("Kiro Synth")
+    .window_size((500.0, 514.0))
+    .resizable(false);
 
   AppLauncher::with_window(window)
     .configure_env(setup_theme)
@@ -44,20 +46,17 @@ fn setup_theme<T: Data>(env: &mut Env, _data: &T) {
   widgets::knob::theme::init(env);
 
   env.set(theme::WINDOW_BACKGROUND_COLOR, GREY_46);
+
   env.set(theme::TEXT_SIZE_NORMAL, 11.0);
   env.set(theme::LABEL_COLOR, GREY_214);
-  env.set(widgets::knob::theme::KNOB_VALUE_FG_COLOR, KNOB_VALUE);
-  env.set(widgets::knob::theme::KNOB_VALUE_BG_COLOR, GREY_83);
+
+  env.set(knob::theme::KNOB_VALUE_FG_COLOR, KNOB_VALUE);
+  env.set(knob::theme::KNOB_VALUE_BG_COLOR, GREY_83);
+  env.set(knob::theme::KNOB_MODULATION_VALUE_FG_COLOR, KNOB_MODULATION);
+  env.set(knob::theme::KNOB_MODULATION_VALUE_BG_COLOR, GREY_54);
+  env.set(knob::theme::KNOB_MODULATION_TOTAL_AMOUNT_COLOR, KNOB_CONFIG);
   env.set(
-    widgets::knob::theme::KNOB_MODULATION_VALUE_FG_COLOR,
-    KNOB_MODULATION,
-  );
-  env.set(
-    widgets::knob::theme::KNOB_MODULATION_VALUE_BG_COLOR,
-    GREY_54,
-  );
-  env.set(
-    widgets::knob::theme::KNOB_MODULATION_TOTAL_AMOUNT_COLOR,
+    knob::theme::KNOB_MODULATION_CONFIG_AMOUNT_COLOR,
     KNOB_CONFIG,
   );
 }

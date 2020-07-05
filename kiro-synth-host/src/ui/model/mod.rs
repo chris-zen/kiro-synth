@@ -16,7 +16,7 @@ pub use lfo::{Lfo, LfoFromSynth};
 pub use modulations::Modulations;
 pub use oscillators::{Osc, OscFromSynth};
 pub use param::{KnobDataFromParam, Param};
-pub use synth::Synth;
+pub use synth::{AudioLevel, Synth};
 
 pub struct ZeroIndex;
 

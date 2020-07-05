@@ -102,7 +102,7 @@ impl KiroModule {
       eg1: EnvGenParams {
         attack: program.param("eg1-attack", values::adsr(0.02)),
         decay: program.param("eg1-decay", values::adsr(0.1)),
-        sustain: program.param("eg1-sustain", values::adsr(0.9)),
+        sustain: program.param("eg1-sustain", values::adsr(1.0)),
         release: program.param("eg1-release", values::adsr(1.5)),
         mode: program.param("eg1-mode", values::eg_mode()),
         legato: program.param("eg1-legato", values::boolean(false)),
@@ -111,7 +111,10 @@ impl KiroModule {
       },
 
       osc1: OscParams {
-        shape: program.param("osc1-shape", values::enumeration(num_osc_shapes)),
+        shape: program.param(
+          "osc1-shape",
+          values::enumeration(num_osc_shapes).with_initial_value(F::val(2)),
+        ),
         amplitude: program.param("osc1-amplitude", values::amplitude()),
         octaves: program.param("osc1-octaves", values::octave()),
         semitones: program.param("osc1-semitones", values::semitones()),
@@ -122,9 +125,12 @@ impl KiroModule {
         shape: program.param("osc2-shape", values::enumeration(num_osc_shapes)),
         amplitude: program.param(
           "osc2-amplitude",
-          values::amplitude().with_initial_value(F::zero()),
+          values::amplitude().with_initial_value(F::val(0.25)),
         ),
-        octaves: program.param("osc2-octaves", values::octave()),
+        octaves: program.param(
+          "osc2-octaves",
+          values::octave().with_initial_value(F::val(-1)),
+        ),
         semitones: program.param("osc2-semitones", values::semitones()),
         cents: program.param("osc2-cents", values::cents()),
       },
@@ -152,13 +158,19 @@ impl KiroModule {
       },
 
       filter1: FilterParams {
-        mode: program.param("filt1-mode", values::enumeration(num_filters)),
+        mode: program.param(
+          "filt1-mode",
+          values::enumeration(num_filters).with_initial_value(F::val(3)),
+        ),
         freq: program.param("filt1-freq", values::filt_freq()),
         q: program.param("filt1-q", values::filt_q()),
       },
 
       dca: DcaParams {
-        amplitude: program.param("dca-amplitude-db", values::amplitude_db()),
+        amplitude: program.param(
+          "dca-amplitude-db",
+          values::amplitude_db().with_initial_value(F::val(-3.0)),
+        ),
         pan: program.param("dca-pan", values::pan()),
       },
     };
@@ -210,7 +222,7 @@ impl KiroModule {
 
     program.modulation(&params.filter1.freq, sources.lfo1, F::val(800));
     program.modulation(&params.filter1.freq, sources.eg1_normal, F::val(700));
-    program.modulation(&params.filter1.q, sources.lfo2, F::val(0.5));
+    program.modulation(&params.filter1.q, sources.lfo2, F::val(0.09));
     program.modulation(&params.osc1.amplitude, sources.lfo2, F::val(0.1));
     program.modulation(&params.dca.pan, sources.lfo1, F::val(0.1));
 

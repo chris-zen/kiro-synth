@@ -1,3 +1,4 @@
+pub mod decibels;
 pub mod concave_transforms;
 pub mod interpolation;
 pub mod parabolic_sine;
