@@ -38,6 +38,7 @@ NOTE: You have to connect your MIDI keyboard before starting the synth. Also it 
 - [ ] Add note expression as modulation sources (velocity, pitch, modwheel, after touch)
 - [ ] Patch management from configuration
 - [ ] Patch management from the UI
+- [ ] Internal signals explorer (oscilloscope, spectrum analyzer, Peak/RMS level meter)
 - [ ] Improve the program with more blocks (add one more EG and LFO)
 - [ ] Improve the program graph to include global oscillators parameters (octave, semitones, cents, drift, filter output)
 - [ ] Improve the program graph to allow FM synthesis using the oscillators
