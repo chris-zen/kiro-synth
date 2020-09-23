@@ -1,7 +1,7 @@
 use crate::float::Float;
 use crate::funcs::decibels::Decibels;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct DCA<F: Float> {
   amplitude: F,
   velocity: F,

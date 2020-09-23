@@ -37,6 +37,7 @@ impl<F: Float + Default, N: ArrayLength<F>> RmsOnline<F, N> {
 
 #[cfg(test)]
 mod test {
+  #![allow(clippy::float_cmp)]
 
   use super::RmsOnline;
   use generic_array::{typenum::consts, GenericArray};

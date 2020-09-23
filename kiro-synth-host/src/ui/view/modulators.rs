@@ -12,7 +12,7 @@ use crate::ui::view::{build_knob_enum, build_knob_value, build_switcher, build_t
 pub struct ModulatorsView;
 
 impl ModulatorsView {
-  pub fn new<F: Float + 'static>(
+  pub fn build<F: Float + 'static>(
     synth_model: &Synth,
     synth_client: Arc<Mutex<SynthClient<F>>>,
   ) -> impl Widget<Synth> {
@@ -64,7 +64,7 @@ fn build_eg_view() -> impl Widget<EnvGen> {
 fn build_lfo_view<F: Float + 'static>(
   synth_client: Arc<Mutex<SynthClient<F>>>,
 ) -> impl Widget<Lfo> {
-  let shape_client = synth_client.clone();
+  let shape_client = synth_client;
   let shape_fn = move |index: usize| {
     shape_client
       .lock()

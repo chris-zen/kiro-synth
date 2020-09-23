@@ -2,7 +2,7 @@ use kiro_synth_core::float::Float;
 
 use crate::waveforms::{LfoWaveforms, OscWaveforms};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct SynthGlobals<F: Float> {
   pub osc_waveforms: OscWaveforms<F>,
   pub lfo_waveforms: LfoWaveforms<F>,

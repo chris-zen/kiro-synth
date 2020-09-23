@@ -12,14 +12,15 @@ use crate::float::Float;
 
 type MaxWaveforms = consts::U8;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct OscWaveforms<F: Float>(Vec<(&'static str, OscWaveform<F>), MaxWaveforms>);
 
 impl<F: Float> OscWaveforms<F> {
   pub fn new() -> Self {
     let mut waveforms: Vec<(&'static str, OscWaveform<F>), MaxWaveforms> = heapless::Vec::new();
-    drop(
-      waveforms.extend_from_slice(&[
+
+    waveforms
+      .extend_from_slice(&[
         ("sin", OscWaveform::SineParabolic(SineParabolic)),
         ("tri", OscWaveform::TriangleDpw2x(TriangleDpw2x::default())),
         (
@@ -30,13 +31,18 @@ impl<F: Float> OscWaveforms<F> {
               .with_correction(saw_blep::Correction::EightPointBlepWithInterpolation),
           ),
         ),
-      ]),
-    );
+      ])
+      .ok();
+
     OscWaveforms(waveforms)
   }
 
   pub fn len(&self) -> usize {
     self.0.len()
+  }
+
+  pub fn is_empty(&self) -> bool {
+    self.0.is_empty()
   }
 
   pub fn name(&self, index: usize) -> &'static str {
@@ -48,25 +54,31 @@ impl<F: Float> OscWaveforms<F> {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct LfoWaveforms<F: Float>(Vec<(&'static str, OscWaveform<F>), MaxWaveforms>);
 
 impl<F: Float> LfoWaveforms<F> {
   pub fn new() -> Self {
     let mut waveforms: Vec<(&'static str, OscWaveform<F>), MaxWaveforms> = heapless::Vec::new();
-    drop(waveforms.extend_from_slice(&[
-      ("sin", OscWaveform::SineParabolic(SineParabolic)),
-      (
-        "tri",
-        OscWaveform::TriangleTrivial(TriangleTrivial::default()),
-      ),
-      ("saw", OscWaveform::SawTrivial(SawTrivial::default())),
-    ]));
+    waveforms
+      .extend_from_slice(&[
+        ("sin", OscWaveform::SineParabolic(SineParabolic)),
+        (
+          "tri",
+          OscWaveform::TriangleTrivial(TriangleTrivial::default()),
+        ),
+        ("saw", OscWaveform::SawTrivial(SawTrivial::default())),
+      ])
+      .ok();
     LfoWaveforms(waveforms)
   }
 
   pub fn len(&self) -> usize {
     self.0.len()
+  }
+
+  pub fn is_empty(&self) -> bool {
+    self.0.is_empty()
   }
 
   pub fn name(&self, index: usize) -> &'static str {

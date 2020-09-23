@@ -12,7 +12,7 @@ use crate::ui::view::{build_knob_enum, build_knob_value, build_switcher, build_t
 pub struct OscillatorsView;
 
 impl OscillatorsView {
-  pub fn new<F: Float + 'static>(
+  pub fn build<F: Float + 'static>(
     synth_model: &Synth,
     synth_client: Arc<Mutex<SynthClient<F>>>,
   ) -> impl Widget<Synth> {
@@ -32,7 +32,7 @@ impl OscillatorsView {
 fn build_osc_view<F: Float + 'static>(
   synth_client: Arc<Mutex<SynthClient<F>>>,
 ) -> impl Widget<Osc> {
-  let shape_client = synth_client.clone();
+  let shape_client = synth_client;
   let shape_fn = move |index: usize| {
     shape_client
       .lock()

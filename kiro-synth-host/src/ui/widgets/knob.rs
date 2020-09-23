@@ -1,3 +1,5 @@
+#![allow(clippy::float_cmp)]
+
 use core::f64::consts::{FRAC_PI_2, PI};
 
 use crate::ui::widgets::knob::theme::{
@@ -193,6 +195,7 @@ where
     Self::START_ANGLE + (Self::END_ANGLE - Self::START_ANGLE) * (value - min) / range
   }
 
+  #[allow(clippy::too_many_arguments)]
   fn paint_arc(
     paint_ctx: &mut PaintCtx,
     center: Point,

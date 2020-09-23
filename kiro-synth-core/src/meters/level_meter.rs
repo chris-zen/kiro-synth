@@ -43,12 +43,10 @@ impl<F: Float> PeakMeter<F> {
     if value >= self.peak {
       self.peak = value;
       self.remaining_hold_samples = self.initial_hold_samples;
+    } else if self.remaining_hold_samples == 0 {
+      self.peak = self.peak - self.decay_per_sample;
     } else {
-      if self.remaining_hold_samples == 0 {
-        self.peak = self.peak - self.decay_per_sample;
-      } else {
-        self.remaining_hold_samples -= 1;
-      }
+      self.remaining_hold_samples -= 1;
     }
 
     if value >= self.level {
@@ -73,11 +71,10 @@ impl<F: Float> PeakMeter<F> {
 
 #[cfg(test)]
 mod test {
+  #![allow(clippy::float_cmp)]
 
   use super::PeakMeter;
-  use crate::meters::rms_online::RmsOnline;
   use assert_approx_eq::assert_approx_eq;
-  use generic_array::typenum::consts;
 
   #[test]
   fn test_new() {

@@ -37,7 +37,7 @@ impl Lfo {
       shape: Param::new(program, &params.shape, synth_client.clone()),
       rate: Param::new(program, &params.rate, synth_client.clone()),
       phase: Param::new(program, &params.phase, synth_client.clone()),
-      depth: Param::new(program, &params.depth, synth_client.clone()),
+      depth: Param::new(program, &params.depth, synth_client),
     }
   }
 

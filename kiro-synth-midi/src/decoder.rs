@@ -549,7 +549,7 @@ mod tests {
     F: FnMut(MockedCallbacks, Decoder),
   {
     let callbacks_state = Rc::new(RefCell::new(MockedCallbacksState::new()));
-    let callbacks = MockedCallbacks::new(callbacks_state.clone());
+    let callbacks = MockedCallbacks::new(callbacks_state);
     let decoder = Decoder::new(sysex_buffer);
     (f)(callbacks, decoder)
   }

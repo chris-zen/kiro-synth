@@ -69,7 +69,7 @@ impl CoreMidiDriver {
     Sources.into_iter().for_each(|source| {
       let display_name = source
         .display_name()
-        .unwrap_or("Unknown source".to_string());
+        .unwrap_or_else(|| "Unknown source".to_string());
       println!("Connecting source '{}'", display_name);
       match input_port.connect_source(&source) {
         Ok(_) => (),
@@ -93,9 +93,9 @@ impl CoreMidiDriver {
     //    println!("{:?}", packet_list);
     for packet in packet_list.iter() {
       let timestamp = packet.timestamp();
-      let mut source = packet.data().iter().map(|v| *v);
+      let mut source = packet.data().iter().copied();
       let mut callbacks = MidiDecoderCallbacks { timestamp, handler };
-      drop(decoder.decode(&mut source, &mut callbacks));
+      decoder.decode(&mut source, &mut callbacks).ok();
     }
   }
 }

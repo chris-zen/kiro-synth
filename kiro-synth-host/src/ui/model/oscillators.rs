@@ -39,7 +39,7 @@ impl Osc {
       octaves: Param::new(program, &params.octaves, synth_client.clone()).with_origin(0.0),
       semitones: Param::new(program, &params.semitones, synth_client.clone()).with_origin(0.0),
       cents: Param::new(program, &params.cents, synth_client.clone()).with_origin(0.0),
-      amplitude: Param::new(program, &params.amplitude, synth_client.clone()),
+      amplitude: Param::new(program, &params.amplitude, synth_client),
     }
   }
 

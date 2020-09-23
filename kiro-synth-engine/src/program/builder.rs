@@ -10,6 +10,7 @@ use crate::program::{
 };
 use crate::signal::Signal;
 
+#[derive(Default)]
 pub struct ProgramBuilder<'a, F: Float> {
   signal_refs: SignalRefs,
   voice: VoiceBlock,

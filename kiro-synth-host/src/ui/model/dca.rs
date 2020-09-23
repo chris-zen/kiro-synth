@@ -21,7 +21,7 @@ impl Dca {
   ) -> Self {
     Dca {
       amplitude: Param::new(program, &params.amplitude, synth_client.clone()),
-      pan: Param::new(program, &params.pan, synth_client.clone()).with_origin(0.0),
+      pan: Param::new(program, &params.pan, synth_client).with_origin(0.0),
     }
   }
 

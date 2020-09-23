@@ -46,7 +46,7 @@ impl AudioDriver {
 
     let mut config: StreamConfig = device
       .default_output_config()
-      .map_err(|source| AudioError::NoDefaultStreamConfig(source))?
+      .map_err(AudioError::NoDefaultStreamConfig)?
       .into();
 
     let channels = config.channels as usize;
@@ -64,9 +64,11 @@ impl AudioDriver {
           if channels > 1 {
             sample[1] = right;
           }
-          for i in 2..channels {
-            sample[i] = 0.0f32;
-          }
+          sample
+            .iter_mut()
+            .take(channels)
+            .skip(2)
+            .for_each(|s| *s = 0.0f32);
         }
         handler.finalize();
       },
@@ -75,7 +77,7 @@ impl AudioDriver {
       },
     )?;
 
-    stream.play().map_err(|err| AudioError::PlayStream(err))?;
+    stream.play().map_err(AudioError::PlayStream)?;
 
     Ok(AudioDriver {
       _device: device,

@@ -45,7 +45,7 @@ impl EnvGen {
       mode: Param::new(program, &params.mode, synth_client.clone()),
       legato: Param::new(program, &params.legato, synth_client.clone()),
       reset_to_zero: Param::new(program, &params.reset_to_zero, synth_client.clone()),
-      dca_intensity: Param::new(program, &params.dca_mod, synth_client.clone()),
+      dca_intensity: Param::new(program, &params.dca_mod, synth_client),
     }
   }
 

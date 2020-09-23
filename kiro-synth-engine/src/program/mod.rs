@@ -83,7 +83,7 @@ pub enum Block<F: Float> {
   Out { left: SignalRef, right: SignalRef },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct VoiceBlock {
   pub key: SignalRef,
   pub velocity: SignalRef,

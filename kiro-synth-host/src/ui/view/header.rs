@@ -20,7 +20,7 @@ const LEVEL_RED_FG: Color = Color::rgb8(200, 55, 55);
 pub struct HeaderView;
 
 impl HeaderView {
-  pub fn new() -> impl Widget<Synth> {
+  pub fn build() -> impl Widget<Synth> {
     let icon = Icon::new(&icons::LOGO_KIRO_SYNTH)
       .fill_strategy(FillStrat::ScaleDown)
       .fix_width(108.0)

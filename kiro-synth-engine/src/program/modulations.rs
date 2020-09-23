@@ -256,6 +256,8 @@ impl<T: Default, N: ArrayLength<Node<T>>> IndexMut<usize> for Pool<T, N> {
 
 #[cfg(test)]
 mod tests {
+  #![allow(clippy::float_cmp)]
+
   use crate::program::modulations::Modulation;
   use crate::program::SourceRef;
 

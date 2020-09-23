@@ -98,7 +98,7 @@ impl Synth {
 
       modulations: Modulations::new(program, module, synth_client.clone()),
 
-      synth_client: synth_client.clone(),
+      synth_client,
     }
     .with_init_modulations_config()
   }

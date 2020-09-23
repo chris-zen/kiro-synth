@@ -106,9 +106,8 @@ impl<W: Widget<Synth>> Controller<Synth, W> for TimerFeedbackController {
     data: &Synth,
     env: &Env,
   ) {
-    match event {
-      LifeCycle::WidgetAdded => self.timer_token = Some(ctx.request_timer(Self::UPDATE_PERIOD)),
-      _ => {}
+    if let LifeCycle::WidgetAdded = event {
+      self.timer_token = Some(ctx.request_timer(Self::UPDATE_PERIOD))
     }
     child.lifecycle(ctx, event, data, env);
   }
@@ -121,36 +120,36 @@ pub fn build<F: Float + 'static>(
   let height = 114.0;
   let devices = Flex::column()
     .with_child(
-      OscillatorsView::new(synth_model, synth_client.clone())
+      OscillatorsView::build(synth_model, synth_client.clone())
         .fix_height(height)
         .padding(4.0),
     )
     .with_child(
       Flex::row()
         .with_flex_child(
-          FiltersView::new(synth_model)
+          FiltersView::build(synth_model)
             .fix_height(height)
             .padding(4.0),
           1.0,
         )
-        .with_child(DcaView::new(synth_model).fix_height(height).padding(4.0))
+        .with_child(DcaView::build(synth_model).fix_height(height).padding(4.0))
         .must_fill_main_axis(true),
     )
     .with_child(
-      ModulatorsView::new(synth_model, synth_client.clone())
+      ModulatorsView::build(synth_model, synth_client)
         .fix_height(height * 2.0)
         .padding(4.0),
     )
     .cross_axis_alignment(CrossAxisAlignment::Start);
 
-  let modulations = ModulationsView::new();
+  let modulations = ModulationsView::build();
 
   let main_panel = Flex::row()
     .with_child(devices.fix_width(330.0))
     .with_flex_child(modulations, 1.0)
     .cross_axis_alignment(CrossAxisAlignment::Start);
 
-  let header = HeaderView::new();
+  let header = HeaderView::build();
 
   Flex::column()
     .with_child(header)

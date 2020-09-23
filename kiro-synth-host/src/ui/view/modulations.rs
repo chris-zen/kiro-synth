@@ -88,7 +88,7 @@ impl<W: Widget<Synth>> Controller<Synth, W> for ModulationController<Synth> {
 pub struct ModulationsView;
 
 impl ModulationsView {
-  pub fn new() -> impl Widget<Synth> {
+  pub fn build() -> impl Widget<Synth> {
     let views = vec![View::GroupBySource, View::GroupByParam];
     let tabs = build_static_tabs(views, Self::build_tab).lens(Modulations::view);
 
@@ -197,7 +197,7 @@ impl ModulationsView {
   }
 
   fn build_modulation_knobs() -> impl Widget<Group> {
-    List::new(|| Self::build_modulation_knob()).lens(lens::Id.map(
+    List::new(Self::build_modulation_knob).lens(lens::Id.map(
       |data: &Group| data.modulations.clone(),
       |data: &mut Group, list_data: Vector<Modulation>| data.modulations = list_data,
     ))
@@ -259,9 +259,12 @@ impl ModulationsView {
 
     let modulation_id = |data: &Modulation| (data.source_ref, data.param_ref);
 
-    let hot_color = |is_hot: bool, _: &Modulation, env: &Env| match is_hot {
-      true => env.get(LABEL_COLOR),
-      false => GREY_83,
+    let hot_color = |is_hot: bool, _: &Modulation, env: &Env| {
+      if is_hot {
+        env.get(LABEL_COLOR)
+      } else {
+        GREY_83
+      }
     };
 
     let remove = Icon::new(&icons::MODULATION_REMOVE)

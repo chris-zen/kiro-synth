@@ -7,7 +7,7 @@ use crate::ui::view::{build_knob_value, build_switcher, build_tabs};
 pub struct DcaView;
 
 impl DcaView {
-  pub fn new(synth_model: &Synth) -> impl Widget<Synth> {
+  pub fn build(synth_model: &Synth) -> impl Widget<Synth> {
     let eg_len = synth_model.eg.len();
     let tabs = build_tabs(eg_len, |_index| "DCA".to_string()).lens(ZeroIndex);
 

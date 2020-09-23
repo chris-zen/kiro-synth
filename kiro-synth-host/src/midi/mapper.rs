@@ -127,13 +127,15 @@ impl<F: Float> MidiMapper<F> {
       controller: midi_controller,
       transform,
     };
-    drop(self.controller_mappings.push(mapping));
-    drop(
-      self
-        .controller_to_param
-        .insert(midi_controller, mapping_index),
-    );
-    drop(self.param_to_controller.insert(param_ref, mapping_index));
+    self.controller_mappings.push(mapping).ok();
+    self
+      .controller_to_param
+      .insert(midi_controller, mapping_index)
+      .ok();
+    self
+      .param_to_controller
+      .insert(param_ref, mapping_index)
+      .ok();
   }
 
   fn get_controller_mapping(&self, controller: MidiController) -> Option<&ControllerMapping<F>> {

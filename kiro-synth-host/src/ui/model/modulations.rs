@@ -221,7 +221,7 @@ impl Modulations {
       config_source: None,
       sources,
       params,
-      synth_client: synth_client.clone(),
+      synth_client,
     }
   }
 

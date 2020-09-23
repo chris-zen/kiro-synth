@@ -32,7 +32,7 @@ impl<'a, F: Float> Synth<'a, F> {
     let mut free_voices: Vec<usize, MaxVoices> = Vec::new();
     for index in 0..MaxVoices::to_usize() {
       drop(voices.push(Voice::new(sample_rate, &program)));
-      drop(free_voices.push(MaxVoices::to_usize() - index - 1));
+      free_voices.push(MaxVoices::to_usize() - index - 1).unwrap();
     }
 
     Synth {
@@ -116,8 +116,8 @@ impl<'a, F: Float> Synth<'a, F> {
 
   fn note_on(&mut self, key: u8, velocity: F) {
     if let Some(index) = self.allocate_voice(key, velocity) {
-      drop(self.active_voices.push(index));
-      self.voices[index].note_on(&mut self.program, key, velocity);
+      self.active_voices.push(index).unwrap();
+      self.voices[index].note_on(&self.program, key, velocity);
       println!("{:?}", self.active_voices);
     }
   }
@@ -152,7 +152,7 @@ impl<'a, F: Float> Synth<'a, F> {
 
       if voice.is_off(&self.program) {
         self.active_voices.swap_remove(active_voice_index);
-        drop(self.free_voices.push(voice_index));
+        self.free_voices.push(voice_index).unwrap();
         freed_voices = true;
       } else {
         active_voice_index += 1;

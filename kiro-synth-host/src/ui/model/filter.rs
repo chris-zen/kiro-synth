@@ -35,7 +35,7 @@ impl Filter {
     Filter {
       mode: Param::new(program, &params.mode, synth_client.clone()),
       freq: Param::new(program, &params.freq, synth_client.clone()),
-      q: Param::new(program, &params.q, synth_client.clone()),
+      q: Param::new(program, &params.q, synth_client),
     }
   }
 

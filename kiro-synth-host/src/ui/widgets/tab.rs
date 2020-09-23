@@ -198,7 +198,7 @@ impl<T: Data> Widget<T> for Tab<T> {
 
     let border_width = self
       .border_width
-      .or(env.try_get(TAB_BORDER_WIDTH))
+      .or_else(|| env.try_get(TAB_BORDER_WIDTH))
       .unwrap_or(0.0);
 
     let inner_bc = bc.shrink((2.0 * border_width, 2.0 * border_width));
@@ -224,7 +224,7 @@ impl<T: Data> Widget<T> for Tab<T> {
 
     let corner_radius = self
       .corner_radius
-      .or(env.try_get(TAB_CORNER_RADIUS))
+      .or_else(|| env.try_get(TAB_CORNER_RADIUS))
       .unwrap_or(0.0);
 
     let mut path = BezPath::new();
@@ -263,17 +263,15 @@ impl<T: Data> Widget<T> for Tab<T> {
             TAB_UNSELECTED_BACKGROUND_COLOR,
           )
         };
-        let mut env_background = env
-          .try_get(env_key)
-          .map(|color| BackgroundBrush::Color(color));
-        if let Some(background) = widget_background.or(env_background.as_mut()) {
+        let mut env_background = env.try_get(env_key).map(BackgroundBrush::Color);
+        if let Some(background) = widget_background.or_else(|| env_background.as_mut()) {
           background.paint(paint_ctx, data, env);
         }
         Ok(())
       })
       .and_then(|_status| paint_ctx.restore())
       .and_then(|_| {
-        let border_width = self.border_width.or(env.try_get(TAB_BORDER_WIDTH));
+        let border_width = self.border_width.or_else(|| env.try_get(TAB_BORDER_WIDTH));
 
         if let Some(border_width) = border_width {
           let (current_border_color, env_key) = if self.selected {
@@ -290,7 +288,8 @@ impl<T: Data> Widget<T> for Tab<T> {
             )
           };
 
-          if let Some(border_color) = current_border_color.or(env.try_get(env_key).as_ref()) {
+          let env_color = env.try_get(env_key);
+          if let Some(border_color) = current_border_color.or_else(|| env_color.as_ref()) {
             paint_ctx.stroke(&path, border_color, border_width);
           }
         }
