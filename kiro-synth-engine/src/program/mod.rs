@@ -12,8 +12,8 @@ use crate::float::Float;
 use crate::signal::Signal;
 
 use blocks::*;
-use modulations::Modulations;
 pub use builder::ProgramBuilder;
+use modulations::Modulations;
 pub use references::*;
 
 pub type MaxSignals = consts::U256;

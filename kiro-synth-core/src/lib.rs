@@ -6,6 +6,6 @@ pub mod envgen;
 pub mod filters;
 pub mod float;
 pub mod funcs;
+pub mod meters;
 pub mod oscillators;
 pub mod waveforms;
-pub mod meters;

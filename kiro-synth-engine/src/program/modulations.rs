@@ -1,8 +1,8 @@
 use std::ops::{Index, IndexMut};
 
-use generic_array::{ArrayLength, GenericArray};
-use generic_array::typenum::marker_traits::Unsigned;
 use generic_array::typenum::consts;
+use generic_array::typenum::marker_traits::Unsigned;
+use generic_array::{ArrayLength, GenericArray};
 
 use crate::float::Float;
 use crate::program::{MaxParams, ParamRef, SourceRef};

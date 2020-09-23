@@ -1,7 +1,6 @@
 use crate::float::Float;
 use crate::funcs::decibels::Decibels;
 
-
 pub struct PeakMeter<F> {
   max_peak: F,
   peak: F,
@@ -44,20 +43,17 @@ impl<F: Float> PeakMeter<F> {
     if value >= self.peak {
       self.peak = value;
       self.remaining_hold_samples = self.initial_hold_samples;
-    }
-    else {
+    } else {
       if self.remaining_hold_samples == 0 {
         self.peak = self.peak - self.decay_per_sample;
-      }
-      else {
+      } else {
         self.remaining_hold_samples -= 1;
       }
     }
 
     if value >= self.level {
       self.level = value;
-    }
-    else {
+    } else {
       self.level = self.level - self.decay_per_sample;
     }
   }
@@ -79,9 +75,9 @@ impl<F: Float> PeakMeter<F> {
 mod test {
 
   use super::PeakMeter;
-  use generic_array::typenum::consts;
-  use assert_approx_eq::assert_approx_eq;
   use crate::meters::rms_online::RmsOnline;
+  use assert_approx_eq::assert_approx_eq;
+  use generic_array::typenum::consts;
 
   #[test]
   fn test_new() {

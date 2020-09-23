@@ -2,7 +2,6 @@ use generic_array::{ArrayLength, GenericArray};
 
 use crate::float::Float;
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct RmsOnline<F, N: ArrayLength<F>> {
   pub squares: GenericArray<F, N>,
@@ -19,7 +18,6 @@ impl<F: Float, N: ArrayLength<F>> Default for RmsOnline<F, N> {
 }
 
 impl<F: Float + Default, N: ArrayLength<F>> RmsOnline<F, N> {
-
   pub fn reset(&mut self) {
     self.squares = GenericArray::default();
     self.head = 0;
@@ -48,10 +46,13 @@ mod test {
   #[test]
   fn test_default() {
     let rms = RmsOnline::<f32, consts::U4>::default();
-    assert_eq!(rms, RmsOnline {
-      squares: GenericArray::default(),
-      head: 0,
-    });
+    assert_eq!(
+      rms,
+      RmsOnline {
+        squares: GenericArray::default(),
+        head: 0,
+      }
+    );
   }
 
   #[test]

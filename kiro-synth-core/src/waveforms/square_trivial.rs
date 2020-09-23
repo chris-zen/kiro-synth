@@ -23,9 +23,7 @@ impl<F: Float> SquareTrivial<F> {
 
   /// pulse width between [0.0, 1.0)
   pub fn with_pulse_width(self, pulse_width: F) -> Self {
-    SquareTrivial {
-      pulse_width,
-    }
+    SquareTrivial { pulse_width }
   }
 }
 

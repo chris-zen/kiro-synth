@@ -20,7 +20,7 @@ pub fn start<F: Float + 'static>(synth_model: Synth, synth_client: Arc<Mutex<Syn
 
   let window = WindowDesc::new(move || view::build(&synth_model, synth_client.clone()))
     .title("Kiro Synth")
-    .window_size((500.0, 514.0))
+    .window_size((550.0, 514.0))
     .resizable(false);
 
   AppLauncher::with_window(window)
