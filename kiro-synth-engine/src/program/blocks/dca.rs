@@ -1,5 +1,5 @@
-use kiro_synth_core::dca::DCA;
-use kiro_synth_core::float::Float;
+use kiro_synth_dsp::dca::DCA;
+use kiro_synth_dsp::float::Float;
 
 use crate::program::{Program, SignalRef};
 use crate::signal::SignalBus;

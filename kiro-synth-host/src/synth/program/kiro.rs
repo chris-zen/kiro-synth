@@ -1,4 +1,4 @@
-use kiro_synth_core::float::Float;
+use kiro_synth_dsp::float::Float;
 use kiro_synth_engine::program::blocks::{dca, envgen, filter, lfo, osc};
 use kiro_synth_engine::program::{
   Block, ParamBlock, Program, ProgramBuilder, SignalRef, SourceRef,

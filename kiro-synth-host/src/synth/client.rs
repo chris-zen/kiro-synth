@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use ringbuf::{Consumer, Producer};
 
-use kiro_synth_core::float::Float;
+use kiro_synth_dsp::float::Float;
 use kiro_synth_engine::event::{Event, Message};
 use kiro_synth_engine::globals::SynthGlobals;
 use kiro_synth_engine::program::{ParamRef, SourceRef};

@@ -1,7 +1,7 @@
 use generic_array::GenericArray;
 use ringbuf::Producer;
 
-use kiro_synth_core::meters::PeakMeter;
+use kiro_synth_dsp::meters::PeakMeter;
 use kiro_synth_engine::program::MaxParams;
 use kiro_synth_engine::synth::Synth;
 

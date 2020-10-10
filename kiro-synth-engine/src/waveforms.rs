@@ -1,12 +1,12 @@
 use heapless::consts;
 use heapless::Vec;
 
-use kiro_synth_core::oscillators::osc_waveform::OscWaveform;
-use kiro_synth_core::waveforms::saw_blep::{self, SawBlep};
-use kiro_synth_core::waveforms::saw_trivial::SawTrivial;
-use kiro_synth_core::waveforms::sine_parabolic::SineParabolic;
-use kiro_synth_core::waveforms::triangle_dpw2x::TriangleDpw2x;
-use kiro_synth_core::waveforms::triangle_trivial::TriangleTrivial;
+use kiro_synth_dsp::oscillators::osc_waveform::OscWaveform;
+use kiro_synth_dsp::waveforms::saw_blep::{self, SawBlep};
+use kiro_synth_dsp::waveforms::saw_trivial::SawTrivial;
+use kiro_synth_dsp::waveforms::sine_parabolic::SineParabolic;
+use kiro_synth_dsp::waveforms::triangle_dpw2x::TriangleDpw2x;
+use kiro_synth_dsp::waveforms::triangle_trivial::TriangleTrivial;
 
 use crate::float::Float;
 

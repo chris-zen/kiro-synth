@@ -3,7 +3,7 @@ members = [
   "druid-icon",
   "druid-icon-generator",
   "kiro-midi-core",
-  "kiro-synth-core",
+  "kiro-synth-dsp",
   "kiro-synth-engine",
   "kiro-synth-host",
 ]

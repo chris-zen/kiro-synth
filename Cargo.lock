@@ -1108,7 +1108,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kiro-synth-core"
+name = "kiro-synth-dsp"
 version = "0.1.0"
 dependencies = [
  "assert_approx_eq",
@@ -1125,7 +1125,7 @@ dependencies = [
  "hash32",
  "hash32-derive",
  "heapless",
- "kiro-synth-core",
+ "kiro-synth-dsp",
  "libm",
  "num-traits",
  "ringbuf",
@@ -1146,7 +1146,7 @@ dependencies = [
  "generic-array 0.14.2",
  "heapless",
  "kiro-midi-core",
- "kiro-synth-core",
+ "kiro-synth-dsp",
  "kiro-synth-engine",
  "kurbo",
  "num-traits",

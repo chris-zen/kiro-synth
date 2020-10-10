@@ -4,7 +4,7 @@ use druid::widget::WidgetExt;
 use druid::widget::{CrossAxisAlignment, Flex};
 use druid::Widget;
 
-use kiro_synth_core::float::Float;
+use kiro_synth_dsp::float::Float;
 
 use crate::synth::SynthClient;
 use crate::ui::data::synth::Synth;

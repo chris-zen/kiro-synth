@@ -1,6 +1,6 @@
 use druid::{Data, Lens};
 
-use kiro_synth_core::float::Float;
+use kiro_synth_dsp::float::Float;
 use kiro_synth_engine::program::Program;
 
 use crate::synth::program::params::EnvGenParams;

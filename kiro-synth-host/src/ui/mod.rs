@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 
 use druid::{theme, AppLauncher, Color, Data, Env, WindowDesc};
 
-use kiro_synth_core::float::Float;
+use kiro_synth_dsp::float::Float;
 
 use crate::synth::SynthClient;
 

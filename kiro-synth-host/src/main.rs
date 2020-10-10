@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 use anyhow::Result;
 use ringbuf::RingBuffer;
 
-use kiro_synth_core::float::Float;
+use kiro_synth_dsp::float::Float;
 use kiro_synth_engine::event::Event;
 use kiro_synth_engine::globals::SynthGlobals;
 use kiro_synth_engine::program::Program;

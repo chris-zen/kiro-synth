@@ -1,5 +1,5 @@
-use kiro_synth_core::oscillators::osc_waveform::OscWaveform;
-use kiro_synth_core::oscillators::pitched_oscillator::PitchedOscillator;
+use kiro_synth_dsp::oscillators::osc_waveform::OscWaveform;
+use kiro_synth_dsp::oscillators::pitched_oscillator::PitchedOscillator;
 
 use crate::float::Float;
 use crate::globals::SynthGlobals;

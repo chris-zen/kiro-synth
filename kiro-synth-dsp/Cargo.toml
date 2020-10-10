@@ -1,5 +1,5 @@
 [package]
-name = "kiro-synth-core"
+name = "kiro-synth-dsp"
 version = "0.1.0"
 authors = ["Christian Perez Llamas"]
 edition = "2018"

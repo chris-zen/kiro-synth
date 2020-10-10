@@ -1,11 +1,11 @@
-use kiro_synth_core::filters::freq_control::FreqControl;
-use kiro_synth_core::filters::oberheim_sem::{self, OberheimSEM};
-use kiro_synth_core::filters::va_one_pole::{self, VAOnePoleFilter};
-use kiro_synth_core::float::Float;
+use kiro_synth_dsp::filters::freq_control::FreqControl;
+use kiro_synth_dsp::filters::oberheim_sem::{self, OberheimSEM};
+use kiro_synth_dsp::filters::va_one_pole::{self, VAOnePoleFilter};
+use kiro_synth_dsp::float::Float;
 
 use crate::program::{Program, SignalRef};
 use crate::signal::SignalBus;
-use kiro_synth_core::filters::q_control::QControl;
+use kiro_synth_dsp::filters::q_control::QControl;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Mode {

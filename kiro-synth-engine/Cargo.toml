@@ -15,4 +15,4 @@ generic-array = "0.14.2"
 hash32 = "0.1.1"
 hash32-derive = "0.1.0"
 
-kiro-synth-core = { path = "../kiro-synth-core" }
+kiro-synth-dsp = { path = "../kiro-synth-dsp" }

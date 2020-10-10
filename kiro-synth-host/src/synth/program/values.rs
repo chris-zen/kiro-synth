@@ -1,5 +1,5 @@
-use kiro_synth_core::filters::freq_control::FreqControl;
-use kiro_synth_core::float::Float;
+use kiro_synth_dsp::filters::freq_control::FreqControl;
+use kiro_synth_dsp::float::Float;
 use kiro_synth_engine::program::ParamValues;
 use num_traits::ToPrimitive;
 

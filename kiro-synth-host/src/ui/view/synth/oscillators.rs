@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use druid::widget::{Flex, WidgetExt};
 use druid::{Env, Widget};
 
-use kiro_synth_core::float::Float;
+use kiro_synth_dsp::float::Float;
 
 use crate::synth::SynthClient;
 use crate::ui::data::synth::{Osc, OscFromSynth, Synth};

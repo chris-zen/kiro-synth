@@ -1,4 +1,4 @@
-use kiro_synth_core::oscillators::lfo::Lfo;
+use kiro_synth_dsp::oscillators::lfo::Lfo;
 
 use crate::float::Float;
 use crate::globals::SynthGlobals;

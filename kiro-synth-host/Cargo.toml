@@ -33,7 +33,7 @@ cpal = { git = "https://github.com/RustAudio/cpal", branch = "master" }
 druid = { version = "^0.6", features = ["im"] }
 
 kiro-midi-core = { path = "../kiro-midi-core" }
-kiro-synth-core = { path = "../kiro-synth-core" }
+kiro-synth-dsp = { path = "../kiro-synth-dsp" }
 kiro-synth-engine = { path = "../kiro-synth-engine" }
 
 druid-icon = { path = "../druid-icon" }

@@ -15,4 +15,4 @@ pub mod program;
 pub mod synth;
 pub mod waveforms;
 
-pub use kiro_synth_core::float;
+pub use kiro_synth_dsp::float;

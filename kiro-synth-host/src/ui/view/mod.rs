@@ -7,7 +7,7 @@ mod helpers;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use kiro_synth_core::float::Float;
+use kiro_synth_dsp::float::Float;
 
 use druid::widget::{
   Controller, CrossAxisAlignment, Flex, Label, ViewSwitcher, WidgetExt,
