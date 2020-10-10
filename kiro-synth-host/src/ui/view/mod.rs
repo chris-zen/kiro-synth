@@ -1,26 +1,22 @@
 mod effects;
 mod header;
+mod helpers;
 pub mod modulations;
 mod synth;
-mod helpers;
 
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use kiro_synth_dsp::float::Float;
 
-use druid::widget::{
-  Controller, CrossAxisAlignment, Flex, Label, ViewSwitcher, WidgetExt,
-};
-use druid::{
-  Env, Event, EventCtx, LifeCycle, LifeCycleCtx, TimerToken, Widget,
-};
+use druid::widget::{Controller, CrossAxisAlignment, Flex, Label, ViewSwitcher, WidgetExt};
+use druid::{Env, Event, EventCtx, LifeCycle, LifeCycleCtx, TimerToken, Widget};
 
 use crate::synth::SynthClient;
+use crate::ui::data::header::SelectedView;
 use crate::ui::data::AppData;
 use crate::ui::view::header::HeaderView;
 use crate::ui::view::modulations::{ModulationController, ModulationsView};
-use crate::ui::data::header::SelectedView;
 
 pub use helpers::*;
 
@@ -113,13 +109,12 @@ pub fn build<F: Float + 'static>(
 
   let body = ViewSwitcher::new(
     |data: &AppData, _env: &Env| data.header.selected_view,
-    move |view: &SelectedView, data: &AppData, _env: &Env| {
-      match view {
-        SelectedView::Presets => build_presets_view(),
-        SelectedView::Synth => build_synth_view(&data, synth_client.clone()),
-        SelectedView::Effects => build_effects_view(),
-      }
-    });
+    move |view: &SelectedView, data: &AppData, _env: &Env| match view {
+      SelectedView::Presets => build_presets_view(),
+      SelectedView::Synth => build_synth_view(&data, synth_client.clone()),
+      SelectedView::Effects => build_effects_view(),
+    },
+  );
 
   Flex::column()
     .with_child(header)
@@ -132,37 +127,39 @@ pub fn build<F: Float + 'static>(
 
 fn build_presets_view() -> Box<dyn Widget<AppData>> {
   Flex::row()
-      .with_child(Label::new("TODO: Presets"))
-      .with_flex_spacer(1.0)
-      .cross_axis_alignment(CrossAxisAlignment::Start)
-      .boxed()
+    .with_child(Label::new("TODO: Presets"))
+    .with_flex_spacer(1.0)
+    .cross_axis_alignment(CrossAxisAlignment::Start)
+    .boxed()
 }
 
-fn build_synth_view<F: Float + 'static>(data: &&AppData, synth_client: Arc<Mutex<SynthClient<F>>>) -> Box<dyn Widget<AppData>> {
-  let synth = synth::build(&data.synth, synth_client)
-      .lens(AppData::synth);
+fn build_synth_view<F: Float + 'static>(
+  data: &&AppData,
+  synth_client: Arc<Mutex<SynthClient<F>>>,
+) -> Box<dyn Widget<AppData>> {
+  let synth = synth::build(&data.synth, synth_client).lens(AppData::synth);
 
   let modulations = ModulationsView::build()
-      .lens(AppData::modulations)
-      .controller(ModulationController::new());
+    .lens(AppData::modulations)
+    .controller(ModulationController::new());
 
   Flex::row()
-      .with_child(synth.fix_width(330.0))
-      .with_flex_child(modulations, 1.0)
-      .cross_axis_alignment(CrossAxisAlignment::Start)
-      .boxed()
+    .with_child(synth.fix_width(330.0))
+    .with_flex_child(modulations, 1.0)
+    .cross_axis_alignment(CrossAxisAlignment::Start)
+    .boxed()
 }
 
 fn build_effects_view() -> Box<dyn Widget<AppData>> {
   let effects = Label::new("TODO: Effects");
 
   let modulations = ModulationsView::build()
-      .lens(AppData::modulations)
-      .controller(ModulationController::new());
+    .lens(AppData::modulations)
+    .controller(ModulationController::new());
 
   Flex::row()
-      .with_child(effects.fix_width(330.0))
-      .with_flex_child(modulations, 1.0)
-      .cross_axis_alignment(CrossAxisAlignment::Start)
-      .boxed()
+    .with_child(effects.fix_width(330.0))
+    .with_flex_child(modulations, 1.0)
+    .cross_axis_alignment(CrossAxisAlignment::Start)
+    .boxed()
 }

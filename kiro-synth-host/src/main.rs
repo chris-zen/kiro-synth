@@ -8,12 +8,12 @@ use std::sync::{Arc, Mutex};
 use anyhow::Result;
 use ringbuf::RingBuffer;
 
+use kiro_midi_core::messages::Message as MidiMessage;
 use kiro_synth_dsp::float::Float;
 use kiro_synth_engine::event::Event;
 use kiro_synth_engine::globals::SynthGlobals;
 use kiro_synth_engine::program::Program;
 use kiro_synth_engine::synth::Synth;
-use kiro_midi_core::messages::Message as MidiMessage;
 
 use crate::audio::AudioDriver;
 use crate::midi::drivers::{MidiDriver, MidiHandler};

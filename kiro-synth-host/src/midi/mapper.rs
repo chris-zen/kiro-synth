@@ -1,10 +1,10 @@
 use heapless::consts;
 use heapless::{FnvIndexMap, Vec};
 
+use kiro_midi_core::types::{U14, U7};
 use kiro_synth_dsp::float::Float;
 use kiro_synth_engine::event::{Event, Message as SynthMessage};
 use kiro_synth_engine::program::{Param, ParamRef};
-use kiro_midi_core::types::{U14, U7};
 
 type MaxMappings = consts::U128;
 type MidiController = U7;

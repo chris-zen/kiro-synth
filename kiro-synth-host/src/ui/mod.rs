@@ -1,6 +1,6 @@
 pub mod controllers;
-mod icons;
 pub mod data;
+mod icons;
 mod view;
 pub mod widgets;
 

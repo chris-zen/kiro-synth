@@ -16,9 +16,9 @@ use druid_icon::Icon;
 use kiro_synth_engine::program::{ParamRef, SourceRef};
 
 use crate::ui::controllers::{HotChangedController, IconColorController};
-use crate::ui::icons;
 use crate::ui::data::modulations::{ConfigMode, Group, Modulation, Modulations, Reference, View};
 use crate::ui::data::AppData;
+use crate::ui::icons;
 use crate::ui::view::build_static_tabs;
 use crate::ui::widgets::knob::{Knob, KnobData};
 use crate::ui::{GREY_74, GREY_83, KNOB_CONFIG};

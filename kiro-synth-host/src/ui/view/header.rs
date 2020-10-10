@@ -1,8 +1,11 @@
 use typenum::marker_traits::Unsigned;
 
 use druid::kurbo::{BezPath, Rect, Size};
-use druid::widget::{Container, FillStrat, Flex, Label, Painter, SizedBox, WidgetExt, Padding};
-use druid::{Color, Env, PaintCtx, RenderContext, Widget, WidgetPod, EventCtx, LifeCycle, LifeCycleCtx, BoxConstraints, LayoutCtx, Event, UpdateCtx};
+use druid::widget::{Container, FillStrat, Flex, Label, Padding, Painter, SizedBox, WidgetExt};
+use druid::{
+  BoxConstraints, Color, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
+  RenderContext, UpdateCtx, Widget, WidgetPod,
+};
 
 use druid_icon::Icon;
 use kiro_synth_engine::synth::MaxVoices;
@@ -45,12 +48,12 @@ impl HeaderView {
 
   fn view_selectors() -> impl Widget<Header> {
     Flex::row()
-        .with_child(SelectionButton::new(SelectedView::Presets))
-        .with_spacer(8.0)
-        .with_child(SelectionButton::new(SelectedView::Synth))
-        .with_spacer(8.0)
-        .with_child(SelectionButton::new(SelectedView::Effects))
-        .lens(Header::selected_view)
+      .with_child(SelectionButton::new(SelectedView::Presets))
+      .with_spacer(8.0)
+      .with_child(SelectionButton::new(SelectedView::Synth))
+      .with_spacer(8.0)
+      .with_child(SelectionButton::new(SelectedView::Effects))
+      .lens(Header::selected_view)
   }
 
   fn voices() -> impl Widget<Header> {
@@ -197,13 +200,11 @@ impl SelectionButton {
 
   pub fn new(view: SelectedView) -> Self {
     let title = view.title();
-    let label = Label::new(title)
-        .with_text_size(14.0)
-        .padding((12.0, 6.0));
+    let label = Label::new(title).with_text_size(14.0).padding((12.0, 6.0));
 
     SelectionButton {
       view,
-      child: WidgetPod::new(label)
+      child: WidgetPod::new(label),
     }
   }
 }
@@ -231,22 +232,42 @@ impl Widget<SelectedView> for SelectionButton {
     }
   }
 
-  fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &SelectedView, env: &Env) {
+  fn lifecycle(
+    &mut self,
+    ctx: &mut LifeCycleCtx,
+    event: &LifeCycle,
+    data: &SelectedView,
+    env: &Env,
+  ) {
     if let LifeCycle::HotChanged(_) = event {
-       ctx.request_paint();
+      ctx.request_paint();
     }
     self.child.lifecycle(ctx, event, data, env);
   }
 
-  fn update(&mut self, ctx: &mut UpdateCtx, _old_data: &SelectedView, data: &SelectedView, env: &Env) {
+  fn update(
+    &mut self,
+    ctx: &mut UpdateCtx,
+    _old_data: &SelectedView,
+    data: &SelectedView,
+    env: &Env,
+  ) {
     self.child.update(ctx, data, env);
   }
 
-  fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, data: &SelectedView, env: &Env) -> Size {
+  fn layout(
+    &mut self,
+    ctx: &mut LayoutCtx,
+    bc: &BoxConstraints,
+    data: &SelectedView,
+    env: &Env,
+  ) -> Size {
     bc.debug_check("SelectionButton");
 
     let child_size = self.child.layout(ctx, bc, data, env);
-    self.child.set_layout_rect(ctx, data, env, child_size.to_rect());
+    self
+      .child
+      .set_layout_rect(ctx, data, env, child_size.to_rect());
     child_size
   }
 
@@ -254,10 +275,10 @@ impl Widget<SelectedView> for SelectionButton {
     if self.view == *data || ctx.is_hot() {
       let border_width = Self::BORDER_WIDTH;
       let border_rect = ctx
-          .size()
-          .to_rect()
-          .inset(border_width / -2.0)
-          .to_rounded_rect(4.0);
+        .size()
+        .to_rect()
+        .inset(border_width / -2.0)
+        .to_rounded_rect(4.0);
       let color = env.get(LABEL_COLOR);
       ctx.stroke(border_rect, &color, border_width)
     }
