@@ -1,5 +1,5 @@
 [package]
-name = "kiro-synth-midi"
+name = "kiro-midi-core"
 version = "0.1.0"
 authors = ["Christian Perez Llamas"]
 edition = "2018"

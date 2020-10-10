@@ -1101,6 +1101,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "kiro-midi-core"
+version = "0.1.0"
+dependencies = [
+ "heapless",
+]
+
+[[package]]
 name = "kiro-synth-core"
 version = "0.1.0"
 dependencies = [
@@ -1138,22 +1145,15 @@ dependencies = [
  "druid-icon-generator",
  "generic-array 0.14.2",
  "heapless",
+ "kiro-midi-core",
  "kiro-synth-core",
  "kiro-synth-engine",
- "kiro-synth-midi",
  "kurbo",
  "num-traits",
  "regex",
  "ringbuf",
  "thiserror",
  "typenum",
-]
-
-[[package]]
-name = "kiro-synth-midi"
-version = "0.1.0"
-dependencies = [
- "heapless",
 ]
 
 [[package]]

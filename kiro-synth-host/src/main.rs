@@ -13,7 +13,7 @@ use kiro_synth_engine::event::Event;
 use kiro_synth_engine::globals::SynthGlobals;
 use kiro_synth_engine::program::Program;
 use kiro_synth_engine::synth::Synth;
-use kiro_synth_midi::messages::Message as MidiMessage;
+use kiro_midi_core::messages::Message as MidiMessage;
 
 use crate::audio::AudioDriver;
 use crate::midi::drivers::{MidiDriver, MidiHandler};

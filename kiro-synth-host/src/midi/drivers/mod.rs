@@ -8,7 +8,7 @@ pub use crate::midi::drivers::coremidi::{
   CoreMidiDriver as MidiDriver, CoreMidiError as MidiErrorSource,
 };
 
-use kiro_synth_midi::messages::Message;
+use kiro_midi_core::messages::Message;
 
 #[derive(Error, Debug)]
 pub enum MidiError {

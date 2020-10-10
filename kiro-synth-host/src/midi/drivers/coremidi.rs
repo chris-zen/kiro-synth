@@ -3,8 +3,8 @@ use thiserror::Error;
 
 use coremidi::{Client, InputPort, PacketList, Sources};
 
-use kiro_synth_midi::decoder::{CallbackResult, Decoder, DecoderCallbacks};
-use kiro_synth_midi::messages::Message;
+use kiro_midi_core::decoder::{CallbackResult, Decoder, DecoderCallbacks};
+use kiro_midi_core::messages::Message;
 
 use crate::midi::drivers::{MidiError, MidiHandler};
 

@@ -2,12 +2,10 @@
 members = [
   "druid-icon",
   "druid-icon-generator",
+  "kiro-midi-core",
   "kiro-synth-core",
   "kiro-synth-engine",
-  "kiro-synth-midi",
   "kiro-synth-host",
-#  "kiro-synth-nrf52",
-#  "nrf52840-mdk"
 ]
 
 exclude = [
