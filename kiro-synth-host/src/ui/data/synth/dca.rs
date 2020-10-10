@@ -5,7 +5,7 @@ use kiro_synth_engine::program::Program;
 
 use crate::synth::program::params::DcaParams;
 use crate::synth::SynthClientMutex;
-use crate::ui::model::Param;
+use crate::ui::data::Param;
 
 #[derive(Debug, Clone, Data, Lens)]
 pub struct Dca {

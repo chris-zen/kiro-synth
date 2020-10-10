@@ -1,16 +1,16 @@
 use typenum::marker_traits::Unsigned;
 
 use druid::kurbo::{BezPath, Rect, Size};
-use druid::widget::{Container, FillStrat, Flex, Label, Painter, SizedBox, WidgetExt};
-use druid::{Color, Env, PaintCtx, RenderContext, Widget};
-
-use kiro_synth_engine::synth::MaxVoices;
+use druid::widget::{Container, FillStrat, Flex, Label, Painter, SizedBox, WidgetExt, Padding};
+use druid::{Color, Env, PaintCtx, RenderContext, Widget, WidgetPod, EventCtx, LifeCycle, LifeCycleCtx, BoxConstraints, LayoutCtx, Event, UpdateCtx};
 
 use druid_icon::Icon;
+use kiro_synth_engine::synth::MaxVoices;
 
-use crate::ui::model::{AudioLevel, Synth};
+use crate::ui::data::header::{AudioLevel, Header, SelectedView};
 use crate::ui::widgets::knob::theme::KNOB_MODULATION_VALUE_FG_COLOR;
 use crate::ui::{icons, GREY_46, GREY_65};
+use druid::theme::LABEL_COLOR;
 
 const LEVEL_GREEN_BG: Color = Color::rgb8(23, 40, 11);
 const LEVEL_RED_BG: Color = Color::rgb8(40, 11, 11);
@@ -20,7 +20,7 @@ const LEVEL_RED_FG: Color = Color::rgb8(200, 55, 55);
 pub struct HeaderView;
 
 impl HeaderView {
-  pub fn build() -> impl Widget<Synth> {
+  pub fn build() -> impl Widget<Header> {
     let icon = Icon::new(&icons::LOGO_KIRO_SYNTH)
       .fill_strategy(FillStrat::ScaleDown)
       .fix_width(108.0)
@@ -30,6 +30,8 @@ impl HeaderView {
     Container::new(
       Flex::row()
         .with_child(icon)
+        .with_spacer(32.0)
+        .with_child(Self::view_selectors())
         .with_flex_spacer(1.0)
         .with_child(Self::voices())
         .with_spacer(12.0)
@@ -41,14 +43,24 @@ impl HeaderView {
     .padding(4.0)
   }
 
-  fn voices() -> impl Widget<Synth> {
+  fn view_selectors() -> impl Widget<Header> {
+    Flex::row()
+        .with_child(SelectionButton::new(SelectedView::Presets))
+        .with_spacer(8.0)
+        .with_child(SelectionButton::new(SelectedView::Synth))
+        .with_spacer(8.0)
+        .with_child(SelectionButton::new(SelectedView::Effects))
+        .lens(Header::selected_view)
+  }
+
+  fn voices() -> impl Widget<Header> {
     let value_fn = |data: &usize, _: &Env| format!("{}", data);
 
     let num_voices = Label::new(value_fn)
       .center()
       .fix_size(44.0, 14.0)
       .background(Painter::new(Self::paint_voices))
-      .lens(Synth::active_voices);
+      .lens(Header::active_voices);
 
     Flex::column()
       .with_child(Label::new("VOICES").fix_height(14.0))
@@ -67,15 +79,15 @@ impl HeaderView {
     ctx.fill(rect, &color);
   }
 
-  fn audio_levels() -> impl Widget<Synth> {
+  fn audio_levels() -> impl Widget<Header> {
     let scale = Icon::new(&icons::LEVEL_METER_SCALE)
       .fill_strategy(FillStrat::ScaleDown)
       .fix_size(64.0, 12.0);
 
     Flex::column()
       .with_child(scale)
-      .with_child(Self::audio_level().lens(Synth::left_level))
-      .with_child(Self::audio_level().lens(Synth::right_level))
+      .with_child(Self::audio_level().lens(Header::left_level))
+      .with_child(Self::audio_level().lens(Header::right_level))
   }
 
   fn audio_level() -> impl Widget<AudioLevel> {
@@ -172,5 +184,83 @@ impl<'a> LevelShapeBuilder<'a> {
     path.move_to((pos, Self::MARGIN));
     path.line_to((pos, self.size.height - 2.0 * Self::MARGIN));
     path
+  }
+}
+
+struct SelectionButton {
+  view: SelectedView,
+  child: WidgetPod<SelectedView, Padding<SelectedView>>,
+}
+
+impl SelectionButton {
+  const BORDER_WIDTH: f64 = 1.0;
+
+  pub fn new(view: SelectedView) -> Self {
+    let title = view.title();
+    let label = Label::new(title)
+        .with_text_size(14.0)
+        .padding((12.0, 6.0));
+
+    SelectionButton {
+      view,
+      child: WidgetPod::new(label)
+    }
+  }
+}
+
+impl Widget<SelectedView> for SelectionButton {
+  fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut SelectedView, env: &Env) {
+    self.child.event(ctx, event, data, env);
+    if !ctx.is_handled() {
+      match event {
+        Event::MouseDown(_) => {
+          ctx.set_active(true);
+          ctx.request_paint();
+        }
+        Event::MouseUp(_) => {
+          if ctx.is_active() {
+            ctx.set_active(false);
+            ctx.request_paint();
+            if ctx.is_hot() {
+              *data = self.view.clone();
+            }
+          }
+        }
+        _ => (),
+      }
+    }
+  }
+
+  fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &SelectedView, env: &Env) {
+    if let LifeCycle::HotChanged(_) = event {
+       ctx.request_paint();
+    }
+    self.child.lifecycle(ctx, event, data, env);
+  }
+
+  fn update(&mut self, ctx: &mut UpdateCtx, _old_data: &SelectedView, data: &SelectedView, env: &Env) {
+    self.child.update(ctx, data, env);
+  }
+
+  fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, data: &SelectedView, env: &Env) -> Size {
+    bc.debug_check("SelectionButton");
+
+    let child_size = self.child.layout(ctx, bc, data, env);
+    self.child.set_layout_rect(ctx, data, env, child_size.to_rect());
+    child_size
+  }
+
+  fn paint(&mut self, ctx: &mut PaintCtx, data: &SelectedView, env: &Env) {
+    if self.view == *data || ctx.is_hot() {
+      let border_width = Self::BORDER_WIDTH;
+      let border_rect = ctx
+          .size()
+          .to_rect()
+          .inset(border_width / -2.0)
+          .to_rounded_rect(4.0);
+      let color = env.get(LABEL_COLOR);
+      ctx.stroke(border_rect, &color, border_width)
+    }
+    self.child.paint(ctx, data, env);
   }
 }

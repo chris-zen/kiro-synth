@@ -6,18 +6,18 @@ use druid::{Env, Widget};
 use kiro_synth_core::float::Float;
 
 use crate::synth::SynthClient;
-use crate::ui::model::{EgFromSynth, EnvGen, Lfo, LfoFromSynth, Synth};
+use crate::ui::data::synth::{EgFromSynth, EnvGen, Lfo, LfoFromSynth, Synth};
 use crate::ui::view::{build_knob_enum, build_knob_value, build_switcher, build_tabs};
 
 pub struct ModulatorsView;
 
 impl ModulatorsView {
   pub fn build<F: Float + 'static>(
-    synth_model: &Synth,
+    synth_data: &Synth,
     synth_client: Arc<Mutex<SynthClient<F>>>,
   ) -> impl Widget<Synth> {
-    let eg_len = synth_model.eg.len();
-    let tabs_len = eg_len + synth_model.lfo.len();
+    let eg_len = synth_data.eg.len();
+    let tabs_len = eg_len + synth_data.lfo.len();
     let tab_title = move |index| {
       if index < eg_len {
         format!("EG{}", index + 1)

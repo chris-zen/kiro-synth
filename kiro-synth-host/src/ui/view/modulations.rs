@@ -17,8 +17,8 @@ use kiro_synth_engine::program::{ParamRef, SourceRef};
 
 use crate::ui::controllers::{HotChangedController, IconColorController};
 use crate::ui::icons;
-use crate::ui::model::modulations::{ConfigMode, Group, Modulation, Modulations, Reference, View};
-use crate::ui::model::Synth;
+use crate::ui::data::modulations::{ConfigMode, Group, Modulation, Modulations, Reference, View};
+use crate::ui::data::AppData;
 use crate::ui::view::build_static_tabs;
 use crate::ui::widgets::knob::{Knob, KnobData};
 use crate::ui::{GREY_74, GREY_83, KNOB_CONFIG};
@@ -46,13 +46,13 @@ impl<T: Data> ModulationController<T> {
   }
 }
 
-impl<W: Widget<Synth>> Controller<Synth, W> for ModulationController<Synth> {
+impl<W: Widget<AppData>> Controller<AppData, W> for ModulationController<AppData> {
   fn event(
     &mut self,
     child: &mut W,
     ctx: &mut EventCtx,
     event: &Event,
-    data: &mut Synth,
+    data: &mut AppData,
     env: &Env,
   ) {
     match event {
@@ -88,7 +88,7 @@ impl<W: Widget<Synth>> Controller<Synth, W> for ModulationController<Synth> {
 pub struct ModulationsView;
 
 impl ModulationsView {
-  pub fn build() -> impl Widget<Synth> {
+  pub fn build() -> impl Widget<Modulations> {
     let views = vec![View::GroupBySource, View::GroupByParam];
     let tabs = build_static_tabs(views, Self::build_tab).lens(Modulations::view);
 
@@ -110,8 +110,6 @@ impl ModulationsView {
       .with_child(tabs.padding((4.0, 4.0, 0.0, 0.0)))
       .with_flex_child(body, 1.0)
       .cross_axis_alignment(CrossAxisAlignment::Start)
-      .lens(Synth::modulations)
-      .controller(ModulationController::new())
   }
 
   fn build_tab(_index: usize, data: &View) -> impl Widget<View> {

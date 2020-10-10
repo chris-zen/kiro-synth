@@ -5,7 +5,7 @@ use kiro_synth_engine::program::Program;
 
 use crate::synth::program::params::LfoParams;
 use crate::synth::SynthClientMutex;
-use crate::ui::model::{Param, Synth};
+use crate::ui::data::{Param, Synth};
 
 pub struct LfoFromSynth;
 

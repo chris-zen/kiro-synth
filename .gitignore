@@ -88,3 +88,6 @@ target/
 kiro-synth-nrf52
 nrf52840*
 openocd.*
+
+
+.DS_Store

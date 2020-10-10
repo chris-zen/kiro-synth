@@ -12,7 +12,7 @@ use kiro_synth_engine::program::{ParamRef, Program, SourceRef};
 
 use crate::synth::program::kiro::KiroModule;
 use crate::synth::SynthClientMutex;
-use crate::ui::model::Param;
+use crate::ui::data::Param;
 
 #[derive(Debug, Clone, Copy, PartialEq, Data)]
 pub enum View {

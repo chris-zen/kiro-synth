@@ -1,6 +1,6 @@
 pub mod controllers;
 mod icons;
-mod model;
+pub mod data;
 mod view;
 pub mod widgets;
 
@@ -12,21 +12,19 @@ use kiro_synth_core::float::Float;
 
 use crate::synth::SynthClient;
 
-pub use model::Synth;
+pub use data::AppData;
 use widgets::knob;
 
-pub fn start<F: Float + 'static>(synth_model: Synth, synth_client: Arc<Mutex<SynthClient<F>>>) {
-  let data = synth_model.clone();
-
-  let window = WindowDesc::new(move || view::build(&synth_model, synth_client.clone()))
+pub fn start<F: Float + 'static>(app_data: AppData, synth_client: Arc<Mutex<SynthClient<F>>>) {
+  let window = WindowDesc::new(move || view::build(synth_client.clone()))
     .title("Kiro Synth")
-    .window_size((550.0, 514.0))
+    .window_size((600.0, 514.0))
     .resizable(false);
 
   AppLauncher::with_window(window)
     .configure_env(setup_theme)
     .use_simple_logger()
-    .launch(data)
+    .launch(app_data)
     .expect("UI launch failed");
 }
 

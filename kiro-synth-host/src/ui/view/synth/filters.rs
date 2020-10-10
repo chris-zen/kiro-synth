@@ -1,14 +1,14 @@
 use druid::widget::{Flex, WidgetExt};
 use druid::{Env, Widget};
 
-use crate::ui::model::{Filter, FilterFromSynth, Synth};
+use crate::ui::data::synth::{Filter, FilterFromSynth, Synth};
 use crate::ui::view::{build_knob_value, build_switcher, build_tabs};
 
 pub struct FiltersView;
 
 impl FiltersView {
-  pub fn build(synth_model: &Synth) -> impl Widget<Synth> {
-    let filter_len = synth_model.filter.len();
+  pub fn build(synth_data: &Synth) -> impl Widget<Synth> {
+    let filter_len = synth_data.filter.len();
     let tabs =
       build_tabs(filter_len, |index| format!("FILTER{}", index + 1)).lens(Synth::filter_index);
 

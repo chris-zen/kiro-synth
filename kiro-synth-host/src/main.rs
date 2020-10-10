@@ -20,7 +20,7 @@ use crate::midi::drivers::{MidiDriver, MidiHandler};
 use crate::midi::mapper::MidiMapper;
 use crate::synth::program::kiro::KiroModule;
 use crate::synth::{SynthAudioHandler, SynthClient, SynthClientMutex, SynthFeedback};
-use crate::ui::Synth as SynthData;
+use crate::ui::data::AppData;
 
 const SAMPLE_RATE: u32 = 44100;
 
@@ -62,7 +62,7 @@ fn main() -> Result<()> {
   // UI DATA
 
   let synth_client_mutex = SynthClientMutex::new(synth_client.clone());
-  let synth_data = SynthData::new(&program, &module, synth_client_mutex);
+  let app_data = AppData::new(&program, &module, synth_client_mutex).with_init_modulations_config();
 
   // MIDI
 
@@ -81,7 +81,7 @@ fn main() -> Result<()> {
 
   // UI
 
-  ui::start(synth_data, synth_client);
+  ui::start(app_data, synth_client);
 
   Ok(())
 }

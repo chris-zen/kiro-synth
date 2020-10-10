@@ -1,35 +1,28 @@
-mod dca;
-mod filters;
+mod effects;
 mod header;
-mod modulations;
-mod modulators;
-mod oscillators;
+pub mod modulations;
+mod synth;
+mod helpers;
 
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use kiro_synth_core::float::Float;
 
 use druid::widget::{
-  Container, Controller, CrossAxisAlignment, Flex, Label, ViewSwitcher, WidgetExt,
+  Controller, CrossAxisAlignment, Flex, Label, ViewSwitcher, WidgetExt,
 };
 use druid::{
-  Command, Data, Env, Event, EventCtx, LifeCycle, LifeCycleCtx, TimerToken, UpdateCtx, Widget,
+  Env, Event, EventCtx, LifeCycle, LifeCycleCtx, TimerToken, Widget,
 };
 
 use crate::synth::SynthClient;
-use crate::ui::model::{KnobDataFromParam, Param, Synth};
+use crate::ui::data::AppData;
 use crate::ui::view::header::HeaderView;
-use crate::ui::view::modulations::UPDATE_MODULATIONS_CONFIG;
-use crate::ui::widgets::knob::{Knob, KnobData};
-use crate::ui::widgets::tab::Tab;
-use crate::ui::{GREY_65, GREY_74, GREY_83};
+use crate::ui::view::modulations::{ModulationController, ModulationsView};
+use crate::ui::data::header::SelectedView;
 
-use dca::DcaView;
-use filters::FiltersView;
-use modulations::ModulationsView;
-use modulators::ModulatorsView;
-use oscillators::OscillatorsView;
-use std::time::Duration;
+pub use helpers::*;
 
 // use druid::Selector;
 //
@@ -43,8 +36,8 @@ use std::time::Duration;
 //   }
 // }
 //
-// impl<W: Widget<Synth>> Controller<Synth, W> for AnimFeedbackController {
-//   fn event(&mut self, child: &mut W, ctx: &mut EventCtx, event: &Event, data: &mut Synth, env: &Env) {
+// impl<W: Widget<App>> Controller<App, W> for AnimFeedbackController {
+//   fn event(&mut self, child: &mut W, ctx: &mut EventCtx, event: &Event, data: &mut App, env: &Env) {
 //     match event {
 //       Event::Command(command) if command.is(Self::UPDATE_FEEDBACK) => {
 //         data.update_feedback();
@@ -54,7 +47,7 @@ use std::time::Duration;
 //     }
 //   }
 //
-//   fn lifecycle(&mut self, child: &mut W, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &Synth, env: &Env) {
+//   fn lifecycle(&mut self, child: &mut W, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &App, env: &Env) {
 //     match event {
 //       LifeCycle::WidgetAdded => ctx.request_anim_frame(),
 //       LifeCycle::AnimFrame(_) => {
@@ -79,13 +72,13 @@ impl TimerFeedbackController {
   }
 }
 
-impl<W: Widget<Synth>> Controller<Synth, W> for TimerFeedbackController {
+impl<W: Widget<AppData>> Controller<AppData, W> for TimerFeedbackController {
   fn event(
     &mut self,
     child: &mut W,
     ctx: &mut EventCtx,
     event: &Event,
-    data: &mut Synth,
+    data: &mut AppData,
     env: &Env,
   ) {
     match event {
@@ -103,7 +96,7 @@ impl<W: Widget<Synth>> Controller<Synth, W> for TimerFeedbackController {
     child: &mut W,
     ctx: &mut LifeCycleCtx,
     event: &LifeCycle,
-    data: &Synth,
+    data: &AppData,
     env: &Env,
   ) {
     if let LifeCycle::WidgetAdded = event {
@@ -114,166 +107,62 @@ impl<W: Widget<Synth>> Controller<Synth, W> for TimerFeedbackController {
 }
 
 pub fn build<F: Float + 'static>(
-  synth_model: &Synth,
   synth_client: Arc<Mutex<SynthClient<F>>>,
-) -> impl Widget<Synth> {
-  let height = 114.0;
-  let devices = Flex::column()
-    .with_child(
-      OscillatorsView::build(synth_model, synth_client.clone())
-        .fix_height(height)
-        .padding(4.0),
-    )
-    .with_child(
-      Flex::row()
-        .with_flex_child(
-          FiltersView::build(synth_model)
-            .fix_height(height)
-            .padding(4.0),
-          1.0,
-        )
-        .with_child(DcaView::build(synth_model).fix_height(height).padding(4.0))
-        .must_fill_main_axis(true),
-    )
-    .with_child(
-      ModulatorsView::build(synth_model, synth_client)
-        .fix_height(height * 2.0)
-        .padding(4.0),
-    )
-    .cross_axis_alignment(CrossAxisAlignment::Start);
+) -> impl Widget<AppData> + 'static {
+  let header = HeaderView::build().lens(AppData::header);
 
-  let modulations = ModulationsView::build();
-
-  let main_panel = Flex::row()
-    .with_child(devices.fix_width(330.0))
-    .with_flex_child(modulations, 1.0)
-    .cross_axis_alignment(CrossAxisAlignment::Start);
-
-  let header = HeaderView::build();
+  let body = ViewSwitcher::new(
+    |data: &AppData, _env: &Env| data.header.selected_view,
+    move |view: &SelectedView, data: &AppData, _env: &Env| {
+      match view {
+        SelectedView::Presets => build_presets_view(),
+        SelectedView::Synth => build_synth_view(&data, synth_client.clone()),
+        SelectedView::Effects => build_effects_view(),
+      }
+    });
 
   Flex::column()
     .with_child(header)
     .with_spacer(4.0)
-    .with_flex_child(main_panel, 1.0)
+    .with_flex_child(body, 1.0)
     .controller(TimerFeedbackController::new())
   // .debug_widget_id()
   // .debug_paint_layout()
 }
 
-pub fn build_static_tabs<T, W, F>(tabs_data: Vec<T>, child_builder: F) -> impl Widget<T>
-where
-  T: Data,
-  W: Widget<T> + 'static,
-  F: Fn(usize, &T) -> W,
-{
-  let mut tabs_row = Flex::row();
-  tabs_row.add_spacer(2.0);
-  for (index, tab_data) in tabs_data.iter().enumerate() {
-    let moved_tab_data = tab_data.clone();
-    let on_click = move |data: &mut T, _: &Env| *data = moved_tab_data.clone();
-    let moved_tab_data = tab_data.clone();
-    let is_selected = move |data: &T| data.same(&moved_tab_data);
-
-    let child = child_builder(index, tab_data);
-
-    let tab = Tab::new(child, on_click, is_selected)
-      .border_width(2.0)
-      .selected_border_color(GREY_83)
-      .unselected_border_color(GREY_65)
-      .hover_border_color(GREY_74)
-      .selected_background(GREY_83)
-      .unselected_background(GREY_65)
-      .hover_background(GREY_74)
-      .rounded(2.0);
-
-    tabs_row.add_child(tab);
-    tabs_row.add_spacer(4.0);
-  }
-  tabs_row
+fn build_presets_view() -> Box<dyn Widget<AppData>> {
+  Flex::row()
+      .with_child(Label::new("TODO: Presets"))
+      .with_flex_spacer(1.0)
+      .cross_axis_alignment(CrossAxisAlignment::Start)
+      .boxed()
 }
 
-pub fn build_tabs(n: usize, title: impl Fn(usize) -> String + 'static) -> impl Widget<usize> {
-  let tabs_data = (0..n).collect::<Vec<usize>>();
-  build_static_tabs(tabs_data, move |_index: usize, data: &usize| {
-    Label::<usize>::new(title(*data)).padding((6.0, 4.0, 4.0, 2.0))
-  })
+fn build_synth_view<F: Float + 'static>(data: &&AppData, synth_client: Arc<Mutex<SynthClient<F>>>) -> Box<dyn Widget<AppData>> {
+  let synth = synth::build(&data.synth, synth_client)
+      .lens(AppData::synth);
+
+  let modulations = ModulationsView::build()
+      .lens(AppData::modulations)
+      .controller(ModulationController::new());
+
+  Flex::row()
+      .with_child(synth.fix_width(330.0))
+      .with_flex_child(modulations, 1.0)
+      .cross_axis_alignment(CrossAxisAlignment::Start)
+      .boxed()
 }
 
-pub fn build_switcher<T, U, W>(
-  tabs: W,
-  child_picker: impl Fn(&T, &Env) -> U + 'static,
-  child_builder: impl Fn(&U, &T, &Env) -> Box<dyn Widget<T>> + 'static,
-) -> impl Widget<T>
-where
-  T: Data,
-  U: PartialEq + 'static,
-  W: Widget<T> + 'static,
-{
-  let switcher = ViewSwitcher::new(child_picker, child_builder).padding(6.0);
+fn build_effects_view() -> Box<dyn Widget<AppData>> {
+  let effects = Label::new("TODO: Effects");
 
-  let body = Container::new(switcher).rounded(2.0).border(GREY_83, 2.0);
+  let modulations = ModulationsView::build()
+      .lens(AppData::modulations)
+      .controller(ModulationController::new());
 
-  Flex::column()
-    .with_child(tabs)
-    .with_child(body)
-    .cross_axis_alignment(CrossAxisAlignment::Start)
-}
-
-pub fn build_knob_value(title: &'static str, unit: &'static str) -> impl Widget<Param> {
-  let value_fn = move |data: &KnobData<Param>| {
-    let step = data.step.max(0.001);
-    let precision = (-step.log10().ceil()).max(0.0).min(3.0) as usize;
-    let value = (data.value / step).round() * step;
-    format!("{:.*}{}", precision, value, unit)
-  };
-
-  build_knob(title, value_fn)
-}
-
-pub fn build_knob_enum(
-  title: &'static str,
-  value_fn: impl Fn(usize) -> String + 'static,
-) -> impl Widget<Param> {
-  build_knob(title, move |data: &KnobData<Param>| {
-    value_fn(data.value as usize)
-  })
-}
-
-pub fn build_knob(
-  title: &'static str,
-  value_fn: impl Fn(&KnobData<Param>) -> String + 'static,
-) -> impl Widget<Param> {
-  let callback = move |ctx: &mut UpdateCtx, data: &KnobData<Param>| {
-    match data.context.modulation.config_source {
-      Some(source_ref) => {
-        let param_ref = data.context.param_ref;
-        let config_amount = data.modulation.config_amount;
-        // println!("parm: callback: {:?} {:?} {:?}", source_ref, param_ref, config_amount);
-        let payload = (source_ref, param_ref, config_amount);
-        let command = Command::new(UPDATE_MODULATIONS_CONFIG, payload);
-        ctx.submit_command(command, None)
-      }
-      None => data
-        .context
-        .synth_client
-        .send_param_value(data.context.param_ref, data.value as f32)
-        .unwrap(),
-    }
-  };
-
-  let knob = Knob::new(callback)
-    .modulation_width(4.0)
-    .padding(2.0)
-    .center()
-    .fix_size(48.0, 48.0);
-
-  Flex::column()
-    .with_child(Label::new(title).center().fix_width(48.0))
-    .with_child(knob)
-    .with_child(
-      Label::new(move |data: &KnobData<Param>, _env: &Env| value_fn(data))
-        .center()
-        .fix_width(48.0),
-    )
-    .lens(KnobDataFromParam)
+  Flex::row()
+      .with_child(effects.fix_width(330.0))
+      .with_flex_child(modulations, 1.0)
+      .cross_axis_alignment(CrossAxisAlignment::Start)
+      .boxed()
 }

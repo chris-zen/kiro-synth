@@ -6,17 +6,17 @@ use druid::{Env, Widget};
 use kiro_synth_core::float::Float;
 
 use crate::synth::SynthClient;
-use crate::ui::model::{Osc, OscFromSynth, Synth};
+use crate::ui::data::synth::{Osc, OscFromSynth, Synth};
 use crate::ui::view::{build_knob_enum, build_knob_value, build_switcher, build_tabs};
 
 pub struct OscillatorsView;
 
 impl OscillatorsView {
   pub fn build<F: Float + 'static>(
-    synth_model: &Synth,
+    synth_data: &Synth,
     synth_client: Arc<Mutex<SynthClient<F>>>,
   ) -> impl Widget<Synth> {
-    let osc_len = synth_model.osc.len();
+    let osc_len = synth_data.osc.len();
     let tabs = build_tabs(osc_len, |index| format!("OSC{}", index + 1)).lens(Synth::osc_index);
 
     build_switcher(
