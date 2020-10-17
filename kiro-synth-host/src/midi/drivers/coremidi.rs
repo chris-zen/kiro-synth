@@ -93,7 +93,7 @@ impl CoreMidiDriver {
     //    println!("{:?}", packet_list);
     for packet in packet_list.iter() {
       let timestamp = packet.timestamp();
-      let mut source = packet.data().iter().copied();
+      let mut source = packet.data().iter();
       let mut callbacks = MidiDecoderCallbacks { timestamp, handler };
       decoder.decode(&mut source, &mut callbacks).ok();
     }

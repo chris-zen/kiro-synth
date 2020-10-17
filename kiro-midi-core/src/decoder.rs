@@ -96,13 +96,13 @@ impl<'a> Decoder<'a> {
     }
   }
 
-  pub fn decode<Source, Callbacks>(
+  pub fn decode<'b, Source, Callbacks>(
     &mut self,
     source: &mut Source,
     callbacks: &mut Callbacks,
   ) -> Result<()>
   where
-    Source: Iterator<Item = u8>,
+    Source: Iterator<Item = &'b u8>,
     Callbacks: DecoderCallbacks,
   {
     while !self.state.finished() {
@@ -114,13 +114,13 @@ impl<'a> Decoder<'a> {
     Ok(())
   }
 
-  fn decode_step<Source, Callbacks>(
+  fn decode_step<'b, Source, Callbacks>(
     &mut self,
     source: &mut Source,
     callbacks: &mut Callbacks,
   ) -> Result<()>
   where
-    Source: Iterator<Item = u8>,
+    Source: Iterator<Item = &'b u8>,
     Callbacks: DecoderCallbacks,
   {
     let mut state = self.state;
@@ -142,7 +142,10 @@ impl<'a> Decoder<'a> {
     Ok(())
   }
 
-  fn decode_start<Source: Iterator<Item = u8>>(&mut self, source: &mut Source) -> Result<()> {
+  fn decode_start<'b, Source: Iterator<Item = &'b u8>>(
+    &mut self,
+    source: &mut Source,
+  ) -> Result<()> {
     self.state = match self.read_next(source) {
       Ok(status) => Self::next_state_for_status(status),
       Err(Error::MissingData) => Ok(State::Finished),
@@ -151,7 +154,7 @@ impl<'a> Decoder<'a> {
     Ok(())
   }
 
-  fn decode_partial<Source, Callbacks>(
+  fn decode_partial<'b, Source, Callbacks>(
     &mut self,
     source: &mut Source,
     callbacks: &mut Callbacks,
@@ -160,7 +163,7 @@ impl<'a> Decoder<'a> {
     required: usize,
   ) -> Result<()>
   where
-    Source: Iterator<Item = u8>,
+    Source: Iterator<Item = &'b u8>,
     Callbacks: DecoderCallbacks,
   {
     let limit = required.min(self.data_buffer.len());
@@ -205,14 +208,14 @@ impl<'a> Decoder<'a> {
     }
   }
 
-  fn decode_sysex<Source, Callbacks>(
+  fn decode_sysex<'b, Source, Callbacks>(
     &mut self,
     source: &mut Source,
     callbacks: &mut Callbacks,
     mut len: usize,
   ) -> Result<()>
   where
-    Source: Iterator<Item = u8>,
+    Source: Iterator<Item = &'b u8>,
     Callbacks: DecoderCallbacks,
   {
     while len < self.data_buffer.len()
@@ -255,13 +258,13 @@ impl<'a> Decoder<'a> {
     }
   }
 
-  fn decode_interleaved_realtime_messages<Source, Callbacks>(
+  fn decode_interleaved_realtime_messages<'b, Source, Callbacks>(
     &mut self,
     source: &mut Source,
     callbacks: &mut Callbacks,
   ) -> Result<()>
   where
-    Source: Iterator<Item = u8>,
+    Source: Iterator<Item = &'b u8>,
     Callbacks: DecoderCallbacks,
   {
     while self.next_is_status(source) {
@@ -275,23 +278,32 @@ impl<'a> Decoder<'a> {
     Ok(())
   }
 
-  pub fn source_is_empty<Source: Iterator<Item = u8>>(&mut self, source: &mut Source) -> bool {
+  pub fn source_is_empty<'b, Source: Iterator<Item = &'b u8>>(
+    &mut self,
+    source: &mut Source,
+  ) -> bool {
     self.peek_next(source).is_none()
   }
 
-  pub fn next_is_status<Source: Iterator<Item = u8>>(&mut self, source: &mut Source) -> bool {
+  pub fn next_is_status<'b, Source: Iterator<Item = &'b u8>>(
+    &mut self,
+    source: &mut Source,
+  ) -> bool {
     self.peek_next(source).map(is_midi_status).unwrap_or(false)
   }
 
-  pub fn read_next<Source: Iterator<Item = u8>>(&mut self, source: &mut Source) -> Result<u8> {
+  pub fn read_next<'b, Source: Iterator<Item = &'b u8>>(
+    &mut self,
+    source: &mut Source,
+  ) -> Result<u8> {
     let maybe_byte = self.peek_next(source);
-    self.source_buffer = source.next();
+    self.source_buffer = source.next().cloned();
     maybe_byte.ok_or(Error::MissingData)
   }
 
-  fn peek_next<Source: Iterator<Item = u8>>(&mut self, source: &mut Source) -> Option<u8> {
+  fn peek_next<'b, Source: Iterator<Item = &'b u8>>(&mut self, source: &mut Source) -> Option<u8> {
     if self.source_buffer.is_none() {
-      self.source_buffer = source.next();
+      self.source_buffer = source.next().cloned();
     }
     self.source_buffer
   }
@@ -555,7 +567,7 @@ mod tests {
   }
 
   fn decodes_successfully(source: Vec<u8>, expected: Vec<Message>) {
-    let mut source = source.into_iter();
+    let mut source = source.iter();
     decoder_with_mocked_callbacks(&mut [0u8; 2], |mut callbacks, mut decoder| {
       assert_eq!(decoder.decode(&mut source, &mut callbacks), Ok(()));
       assert_eq!(callbacks.state().messages, expected);
@@ -565,7 +577,8 @@ mod tests {
   #[test]
   fn decode_empty_vec() {
     decoder_with_mocked_callbacks(&mut [], |mut callbacks, mut decoder| {
-      let mut source = Vec::<u8>::new().into_iter();
+      let data = Vec::<u8>::new();
+      let mut source = data.iter();
       assert_eq!(decoder.decode(&mut source, &mut callbacks), Ok(()));
       assert_eq!(callbacks.state().num_events, 0);
     });
@@ -574,7 +587,8 @@ mod tests {
   #[test]
   fn reserved_status() {
     decoder_with_mocked_callbacks(&mut [0u8; 2], |mut callbacks, mut decoder| {
-      let mut source = vec![0b1111_0100, 0b1111_0101, 0b1111_1001, 0b1111_1101].into_iter();
+      let data = vec![0b1111_0100, 0b1111_0101, 0b1111_1001, 0b1111_1101];
+      let mut source = data.iter();
 
       assert_eq!(
         decoder.decode(&mut source, &mut callbacks),
@@ -598,7 +612,8 @@ mod tests {
   #[test]
   fn unexpected_status() {
     decoder_with_mocked_callbacks(&mut [0u8; 2], |mut callbacks, mut decoder| {
-      let mut source = vec![0b1000_0000, 64, 0b1000_0001, 0b1000_0010, 12].into_iter();
+      let data = vec![0b1000_0000, 64, 0b1000_0001, 0b1000_0010, 12];
+      let mut source = data.iter();
 
       assert_eq!(
         decoder.decode(&mut source, &mut callbacks),
@@ -668,7 +683,7 @@ mod tests {
   #[test]
   fn unexpected_channel_mode() {
     decoder_with_mocked_callbacks(&mut [0u8; 2], |mut callbacks, mut decoder| {
-      let mut source = vec![
+      let data = vec![
         0b1011_0101u8,
         120,
         1,
@@ -687,8 +702,8 @@ mod tests {
         0b1011_0101u8,
         127,
         1,
-      ]
-      .into_iter();
+      ];
+      let mut source = data.iter();
 
       assert_eq!(
         decoder.decode(&mut source, &mut callbacks),
@@ -823,7 +838,8 @@ mod tests {
   #[test]
   fn decode_reserved() {
     decoder_with_mocked_callbacks(&mut [], |mut callbacks, mut decoder| {
-      let mut source = vec![0b1111_0100u8, 0b1111_0101, 0b1111_1001, 0b1111_1101].into_iter();
+      let data = vec![0b1111_0100u8, 0b1111_0101, 0b1111_1001, 0b1111_1101];
+      let mut source = data.iter();
 
       assert_eq!(
         decoder.decode(&mut source, &mut callbacks),
@@ -864,9 +880,9 @@ mod tests {
   #[test]
   fn sysex_buffer_overflow() {
     decoder_with_mocked_callbacks(&mut [0u8; 2], |mut callbacks, mut decoder| {
-      let mut source = vec![0b1111_0000u8, 1, 2, 3, 4, 0b1111_0111].into_iter();
+      let data = vec![0b1111_0000u8, 1, 2, 3, 4, 0b1111_0111];
       assert_eq!(
-        decoder.decode(&mut source, &mut callbacks),
+        decoder.decode(&mut data.iter(), &mut callbacks),
         Err(Error::DataBufferOverflow)
       );
     });
@@ -875,9 +891,9 @@ mod tests {
   #[test]
   fn decode_sysex_continuous() {
     decoder_with_mocked_callbacks(&mut [0u8; 4], |mut callbacks, mut decoder| {
-      let mut source = vec![0b1111_0000u8, 1, 2, 3, 4, 0b1111_0111].into_iter();
+      let data = vec![0b1111_0000u8, 1, 2, 3, 4, 0b1111_0111];
 
-      assert_eq!(decoder.decode(&mut source, &mut callbacks), Ok(()));
+      assert_eq!(decoder.decode(&mut data.iter(), &mut callbacks), Ok(()));
       assert_eq!(callbacks.state().sysex, vec![1u8, 2, 3, 4]);
     });
   }
@@ -885,7 +901,7 @@ mod tests {
   #[test]
   fn decode_sysex_interleaved() {
     decoder_with_mocked_callbacks(&mut [0u8; 4], |mut callbacks, mut decoder| {
-      let mut source = vec![
+      let data = vec![
         0b1111_0000u8,
         0b1111_1000u8,
         1,
@@ -896,10 +912,9 @@ mod tests {
         4,
         0b1111_1100,
         0b1111_0111,
-      ]
-      .into_iter();
+      ];
 
-      assert_eq!(decoder.decode(&mut source, &mut callbacks), Ok(()));
+      assert_eq!(decoder.decode(&mut data.iter(), &mut callbacks), Ok(()));
       assert_eq!(
         callbacks.state().messages,
         vec![
@@ -916,7 +931,7 @@ mod tests {
   #[test]
   fn decode_sysex_interleaved_split() {
     decoder_with_mocked_callbacks(&mut [0u8; 4], |mut callbacks, mut decoder| {
-      let mut sources = vec![
+      let dataset = vec![
         0b1111_0000u8,
         0b1111_1000u8,
         1,
@@ -926,51 +941,20 @@ mod tests {
         3,
         4,
         0b1111_1100,
-        0b1111_0111,
       ]
       .into_iter()
-      .map(|value| vec![value].into_iter());
+      .map(|value| vec![value])
+      .collect::<Vec<Vec<u8>>>();
 
-      assert_eq!(
-        decoder.decode(&mut sources.next().unwrap(), &mut callbacks),
-        Err(Error::MissingData)
-      );
-      assert_eq!(
-        decoder.decode(&mut sources.next().unwrap(), &mut callbacks),
-        Err(Error::MissingData)
-      );
-      assert_eq!(
-        decoder.decode(&mut sources.next().unwrap(), &mut callbacks),
-        Err(Error::MissingData)
-      );
-      assert_eq!(
-        decoder.decode(&mut sources.next().unwrap(), &mut callbacks),
-        Err(Error::MissingData)
-      );
-      assert_eq!(
-        decoder.decode(&mut sources.next().unwrap(), &mut callbacks),
-        Err(Error::MissingData)
-      );
-      assert_eq!(
-        decoder.decode(&mut sources.next().unwrap(), &mut callbacks),
-        Err(Error::MissingData)
-      );
-      assert_eq!(
-        decoder.decode(&mut sources.next().unwrap(), &mut callbacks),
-        Err(Error::MissingData)
-      );
-      assert_eq!(
-        decoder.decode(&mut sources.next().unwrap(), &mut callbacks),
-        Err(Error::MissingData)
-      );
-      assert_eq!(
-        decoder.decode(&mut sources.next().unwrap(), &mut callbacks),
-        Err(Error::MissingData)
-      );
-      assert_eq!(
-        decoder.decode(&mut sources.next().unwrap(), &mut callbacks),
-        Ok(())
-      );
+      dataset.iter().take(9).for_each(|data| {
+        assert_eq!(
+          decoder.decode(&mut data.iter(), &mut callbacks),
+          Err(Error::MissingData)
+        );
+      });
+
+      let source = vec![0b1111_0111];
+      assert_eq!(decoder.decode(&mut source.iter(), &mut callbacks), Ok(()));
 
       assert_eq!(
         callbacks.state().messages,
@@ -988,8 +972,8 @@ mod tests {
   #[test]
   fn decode_stop() {
     decoder_with_mocked_callbacks(&mut [0u8; 2], |mut callbacks, mut decoder| {
-      let mut source = vec![0b1000_0000, 64, 0b1111_1000u8, 12, 0b1111_1010u8].into_iter();
-
+      let data = vec![0b1000_0000, 64, 0b1111_1000u8, 12, 0b1111_1010u8];
+      let mut source = data.iter();
       callbacks.state_mut().max_events = 1;
 
       assert_eq!(decoder.decode(&mut source, &mut callbacks), Err(Stopped));
