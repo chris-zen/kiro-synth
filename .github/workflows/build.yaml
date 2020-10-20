@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         rust: [stable]
-        os: [macOS-latest] # we could add ubuntu-latest & windows-latest but don't need it for the moment
+        os: [macOS-latest] # we could add windows-latest but don't need it for the moment
     steps:
       - name: Setup Rust
         uses: hecrj/setup-rust-action@master
@@ -28,6 +28,35 @@ jobs:
           args: cargo-make
       - name: Checkout
         uses: actions/checkout@v1
+      - name: Run cargo fmt
+        run: cargo make format
+      - name: Run cargo clippy
+        run: cargo make clippy
+      - name: Run tests
+        run: cargo make test
+  ubuntu-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Rust
+        uses: hecrj/setup-rust-action@master
+        with:
+          rust-version: stable
+          components: rustfmt, clippy
+      - name: Install cargo-make
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-make
+      - name: Update apt
+        run: sudo apt update
+      - name: Install druid dependencies
+        run: sudo apt-get install libgtk-3-dev
+      - name: Install alsa
+        run: sudo apt-get install libasound2-dev
+      - name: Install libjack
+        run: sudo apt-get install libjack-jackd2-dev libjack-jackd2-0
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: Run cargo fmt
         run: cargo make format
       - name: Run cargo clippy

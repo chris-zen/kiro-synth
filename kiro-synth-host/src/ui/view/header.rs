@@ -223,7 +223,7 @@ impl Widget<SelectedView> for SelectionButton {
             ctx.set_active(false);
             ctx.request_paint();
             if ctx.is_hot() {
-              *data = self.view.clone();
+              *data = self.view;
             }
           }
         }

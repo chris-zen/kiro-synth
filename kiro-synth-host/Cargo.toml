@@ -25,9 +25,6 @@ heapless = "0.5.2"
 typenum = "1.11.2"
 generic-array = "0.14.2"
 
-cpal = { git = "https://github.com/RustAudio/cpal", branch = "master" }
-#cpal = "0.11.0"
-
 #druid = { git = "https://github.com/xi-editor/druid", branch = "master", features = ["im"] }
 #druid = { path = "../../druid-orig/druid", features = ["im"] }
 druid = { version = "^0.6", features = ["im"] }
@@ -40,3 +37,11 @@ druid-icon = { path = "../druid-icon" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 coremidi = "0.3.1"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+cpal = { git = "https://github.com/RustAudio/cpal", branch = "master", features = ["jack"] }
+jack = "0.6.5"
+
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+cpal = { git = "https://github.com/RustAudio/cpal", branch = "master" }
+

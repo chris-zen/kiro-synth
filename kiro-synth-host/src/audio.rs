@@ -37,6 +37,10 @@ impl AudioDriver {
     sample_rate: u32,
     mut handler: Handler,
   ) -> Result<Self> {
+    #[cfg(target_os = "linux")]
+    let host = cpal::host_from_id(cpal::HostId::Jack)?;
+
+    #[cfg(not(target_os = "linux"))]
     let host = cpal::default_host();
 
     let device = host
@@ -64,11 +68,13 @@ impl AudioDriver {
           if channels > 1 {
             sample[1] = right;
           }
-          sample
-            .iter_mut()
-            .take(channels)
-            .skip(2)
-            .for_each(|s| *s = 0.0f32);
+          if channels > 2 {
+            sample
+              .iter_mut()
+              .take(channels)
+              .skip(2)
+              .for_each(|s| *s = 0.0f32);
+          }
         }
         handler.finalize();
       },

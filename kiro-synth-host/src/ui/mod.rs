@@ -16,7 +16,7 @@ pub use data::AppData;
 use widgets::knob;
 
 pub fn start<F: Float + 'static>(app_data: AppData, synth_client: Arc<Mutex<SynthClient<F>>>) {
-  let window = WindowDesc::new(move || view::build(synth_client.clone()))
+  let window = WindowDesc::new(move || view::build(synth_client))
     .title("Kiro Synth")
     .window_size((600.0, 514.0))
     .resizable(false);

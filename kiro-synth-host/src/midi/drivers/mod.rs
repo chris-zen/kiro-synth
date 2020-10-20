@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use kiro_midi_core::messages::Message;
+
 #[cfg(target_os = "macos")]
 mod coremidi;
 
@@ -8,7 +10,13 @@ pub use crate::midi::drivers::coremidi::{
   CoreMidiDriver as MidiDriver, CoreMidiError as MidiErrorSource,
 };
 
-use kiro_midi_core::messages::Message;
+#[cfg(target_os = "linux")]
+mod jackmidi;
+
+#[cfg(target_os = "linux")]
+pub use crate::midi::drivers::jackmidi::{
+  JackMidiDriver as MidiDriver, JackMidiError as MidiErrorSource,
+};
 
 #[derive(Error, Debug)]
 pub enum MidiError {

@@ -8,12 +8,13 @@ fn main() {
 
   let icons = IconLibrary::new("art/icons")
     .iter()
-    .filter_map(|icon_file| {
+    .filter_map(|IconFile { path, name, module }| {
       icon_name_regex
-        .captures(icon_file.name.clone().as_str())
+        .captures(name.as_str())
         .map(|captures| IconFile {
           name: captures.get(1).unwrap().as_str().to_string(),
-          ..icon_file
+          path,
+          module,
         })
     })
     .filter_map(|icon_file| {
