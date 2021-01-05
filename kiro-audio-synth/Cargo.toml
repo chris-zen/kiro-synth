@@ -1,0 +1,17 @@
+[package]
+name = "kiro-audio-synth"
+version = "0.1.0"
+authors = ["Christian Perez Llamas"]
+edition = "2018"
+
+[build-dependencies]
+
+
+[dependencies]
+thiserror = "1.0.9"
+anyhow = "1.0.26"
+
+kiro-synth-dsp = { path = "../kiro-synth-dsp" }
+kiro-audio-graph = { path = "../kiro-audio-graph" }
+kiro-audio-driver = { path = "../kiro-audio-driver" }
+kiro-audio-engine = { path = "../kiro-audio-engine" }

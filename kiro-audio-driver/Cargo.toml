@@ -1,0 +1,11 @@
+[package]
+name = "kiro-audio-driver"
+version = "0.1.0"
+authors = ["Christian Perez Llamas"]
+edition = "2018"
+
+[dependencies]
+thiserror = "^1.0"
+anyhow = "^1.0"
+ringbuf = "0.2.2"
+cpal = "^0.12"

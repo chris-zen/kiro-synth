@@ -2,6 +2,10 @@
 members = [
   "druid-icon",
   "druid-icon-generator",
+  "kiro-audio-driver",
+  "kiro-audio-graph",
+  "kiro-audio-engine",
+  "kiro-audio-synth",
   "kiro-midi-core",
   "kiro-synth-dsp",
   "kiro-synth-engine",
@@ -9,4 +13,8 @@ members = [
 ]
 
 exclude = [
+    "incubator/kiro-audio-dsp",
+    "incubator/kiro-audio-lens",
+    "incubator/kiro-audio-engine-safe",
+    "incubator/kiro-audio-synth-safe",
 ]
