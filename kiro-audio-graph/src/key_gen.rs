@@ -1,9 +1,8 @@
-use std::marker::PhantomData;
-use std::fmt::{Display, Formatter, Debug};
 use std::any::type_name;
-use std::hash::{Hash, Hasher};
 use std::cmp::Ordering;
-
+use std::fmt::{Debug, Display, Formatter};
+use std::hash::{Hash, Hasher};
+use std::marker::PhantomData;
 
 pub struct Key<T: ?Sized>(u64, PhantomData<T>);
 
@@ -61,7 +60,7 @@ impl<T> Display for Key<T> {
 
 unsafe impl<T> Send for Key<T> {}
 
-
+#[derive(Debug)]
 pub struct KeyGen<T> {
   next_value: u64,
   _phantom: PhantomData<T>,

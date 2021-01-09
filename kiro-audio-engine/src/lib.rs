@@ -3,19 +3,18 @@ mod config;
 pub mod controller; // TODO make it private
 mod messages;
 pub mod param_value; // TODO make it private
-mod processor; // TODO make it private
-pub mod renderer; // TODO make it private
+pub mod processor;
+pub mod renderer;
 
 use ringbuf::RingBuffer;
 
 use crate::buffers::Buffer;
 pub use crate::config::EngineConfig;
-pub use crate::controller::plan::ParamSource;
 pub use crate::controller::Controller;
 pub use crate::param_value::ParamValue;
+pub use crate::processor::context::ProcessorContext;
 pub use crate::processor::Processor;
 pub use crate::processor::ProcessorFactory;
-pub use crate::renderer::ops::processor::ProcessorContext;
 pub use crate::renderer::Renderer;
 
 pub type BufferBox = Box<Buffer>;

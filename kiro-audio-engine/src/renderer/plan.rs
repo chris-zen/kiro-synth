@@ -1,12 +1,13 @@
 use crate::controller::owned_data::Ref;
+use crate::processor::context::ProcessorContext;
+use crate::processor::ports::audio::AudioRenderPort;
+use crate::processor::ports::Input;
 use crate::processor::ProcessorBox;
-use crate::renderer::ops::processor::ProcessorContext;
-use crate::renderer::port::{Input, RenderPort};
 
 #[derive(Debug, Clone)]
 pub enum RenderOp {
   // RenderInput(RenderPort<Output>),
-  RenderOutput(RenderPort<Input>),
+  RenderOutput(AudioRenderPort<Input>),
   RenderProcessor(Ref<ProcessorBox>, ProcessorContext),
   // WaitProcessor(usize),
 }

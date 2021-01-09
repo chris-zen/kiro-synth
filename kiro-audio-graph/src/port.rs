@@ -1,11 +1,10 @@
 use std::marker::PhantomData;
 
-use crate::key_store::{KeyStoreWithId, HasId};
-use crate::param::ParamDescriptor;
 use crate::audio::AudioDescriptor;
+use crate::connection::{AudioSignal, Destination, MidiSignal, Source};
+use crate::key_store::{HasId, KeyStoreWithId};
 use crate::midi::MidiDescriptor;
-use crate::connection::{AudioSignal, MidiSignal, Source, Destination};
-
+use crate::param::ParamDescriptor;
 
 pub type AudioInPort = InputPort<AudioDescriptor, Source<AudioSignal>>;
 pub type AudioInPortStore = KeyStoreWithId<AudioInPort>;
@@ -22,6 +21,7 @@ pub type MidiInPortStore = KeyStoreWithId<MidiInPort>;
 pub type MidiOutPort = OutputPort<MidiDescriptor, Destination<MidiSignal>>;
 pub type MidiOutPortStore = KeyStoreWithId<MidiOutPort>;
 
+#[derive(Debug)]
 pub struct InputPort<D, C> {
   pub(crate) descriptor: D,
   pub(crate) connection: Option<C>,
@@ -50,9 +50,10 @@ impl<D: HasId, C> HasId for InputPort<D, C> {
   }
 }
 
+#[derive(Debug)]
 pub struct OutputPort<D, C> {
   pub(crate) descriptor: D,
-  _phantom: PhantomData<C>
+  _phantom: PhantomData<C>,
 }
 
 impl<D, C> OutputPort<D, C> {

@@ -1,10 +1,10 @@
 use derive_more::Display;
 
 use crate::audio::AudioDescriptor;
+use crate::graph::Node;
 use crate::key_gen::Key;
 use crate::midi::MidiDescriptor;
 use crate::param::ParamDescriptor;
-use crate::graph::Node;
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, Display)]
 pub struct NodeRef {
@@ -36,15 +36,15 @@ pub enum DynamicPorts {
 
 #[derive(Debug, Clone)]
 pub struct NodeDescriptor {
-  pub(crate) class: String,
-  pub(crate) static_audio_inputs: Vec<AudioDescriptor>,
-  pub(crate) dynamic_audio_inputs: DynamicPorts,
-  pub(crate) static_audio_outputs: Vec<AudioDescriptor>,
-  pub(crate) dynamic_audio_outputs: DynamicPorts,
-  pub(crate) static_parameters: Vec<ParamDescriptor>,
-  pub(crate) dynamic_parameters: DynamicPorts,
-  pub(crate) static_midi_inputs: Vec<MidiDescriptor>,
-  pub(crate) static_midi_outputs: Vec<MidiDescriptor>,
+  pub class: String,
+  pub static_audio_inputs: Vec<AudioDescriptor>,
+  pub dynamic_audio_inputs: DynamicPorts,
+  pub static_audio_outputs: Vec<AudioDescriptor>,
+  pub dynamic_audio_outputs: DynamicPorts,
+  pub static_parameters: Vec<ParamDescriptor>,
+  pub dynamic_parameters: DynamicPorts,
+  pub static_midi_inputs: Vec<MidiDescriptor>,
+  pub static_midi_outputs: Vec<MidiDescriptor>,
 }
 
 impl NodeDescriptor {

@@ -79,7 +79,7 @@ impl Processor for AnalogOsc {
     let mut amplitude = context.parameter(0).iter();
 
     let output = context.audio_output(0).channel_mut(0);
-    for (index, sample) in output.as_mut_slice().iter_mut().enumerate() {
+    for (_index, sample) in output.as_mut_slice().iter_mut().enumerate() {
       let amp = amplitude.next();
       if amplitude.updated() {
         amp.iter().for_each(|value| self.osc.set_amplitude(*value));

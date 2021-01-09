@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter};
 /// Adapted from vst::util::atomic_float
 /// https://github.com/RustAudio/vst-rs/blob/master/src/util/atomic_float.rs
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -26,5 +27,11 @@ impl ParamValue {
 impl Clone for ParamValue {
   fn clone(&self) -> Self {
     ParamValue::new(self.get())
+  }
+}
+
+impl Debug for ParamValue {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    f.write_fmt(format_args!("{}", self.get()))
   }
 }

@@ -1,22 +1,17 @@
 use std::marker::PhantomData;
+use std::ops::Deref;
 
 use crate::buffers::Buffer;
 use crate::controller::owned_data::Ref;
-use std::ops::Deref;
+use crate::processor::ports::{Input, Output};
 
 #[derive(Debug, Clone)]
-pub struct Input;
-
-#[derive(Debug, Clone)]
-pub struct Output;
-
-#[derive(Debug, Clone)]
-pub struct RenderPort<IO> {
+pub struct AudioRenderPort<IO> {
   channels: Vec<Ref<Buffer>>,
   _mode: PhantomData<IO>,
 }
 
-impl<IO> RenderPort<IO> {
+impl<IO> AudioRenderPort<IO> {
   pub fn new(channels: Vec<Ref<Buffer>>) -> Self {
     Self {
       channels,
@@ -29,13 +24,13 @@ impl<IO> RenderPort<IO> {
   }
 }
 
-impl RenderPort<Input> {
+impl AudioRenderPort<Input> {
   pub fn channel(&self, index: usize) -> &Buffer {
     self.channels[index].deref()
   }
 }
 
-impl RenderPort<Output> {
+impl AudioRenderPort<Output> {
   pub fn channel_mut(&self, index: usize) -> &mut Buffer {
     self.channels[index].get_mut()
   }

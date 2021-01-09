@@ -1,10 +1,10 @@
+use kiro_audio_graph::key_gen::KeyGen;
+use kiro_audio_graph::Key;
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
-use kiro_audio_graph::Key;
-use kiro_audio_graph::key_gen::KeyGen;
 
 pub struct Ref<T: ?Sized> {
   pub(crate) key: Key<T>,
@@ -52,7 +52,6 @@ impl<T> DerefMut for Ref<T> {
 
 // unsafe impl<T> Sync for Ref<T> {}
 
-
 pub struct OwnedData<T> {
   key_gen: KeyGen<T>,
   data: HashMap<Key<T>, Arc<UnsafeCell<T>>>,
@@ -66,7 +65,11 @@ impl<T> OwnedData<T> {
     }
   }
 
-  pub fn keys<'a>(&'a self) -> impl Iterator<Item=Key<T>> + 'a {
+  pub fn len(&self) -> usize {
+    self.data.len()
+  }
+
+  pub fn keys<'a>(&'a self) -> impl Iterator<Item = Key<T>> + 'a {
     self.data.keys().cloned()
   }
 

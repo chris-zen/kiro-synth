@@ -1,6 +1,11 @@
-use crate::renderer::ops::processor::ProcessorContext;
-use kiro_audio_graph::NodeDescriptor;
+pub mod context;
+pub mod ports;
+
 use std::fmt::Formatter;
+
+use kiro_audio_graph::NodeDescriptor;
+
+use crate::processor::context::ProcessorContext;
 
 pub type ProcessorBox = Box<dyn Processor + 'static>;
 

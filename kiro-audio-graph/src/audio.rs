@@ -1,7 +1,7 @@
 use crate::key_gen::Key;
 use crate::key_store::HasId;
 use crate::node::NodeRef;
-use crate::port::{InputPort, AudioInPort, AudioOutPort};
+use crate::port::{AudioInPort, AudioOutPort};
 
 #[derive(Debug, Clone, Copy)]
 pub struct AudioInRef {

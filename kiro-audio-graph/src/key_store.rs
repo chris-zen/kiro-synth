@@ -6,7 +6,7 @@ pub trait HasId {
   fn id(&self) -> &str;
 }
 
-
+#[derive(Debug)]
 pub struct KeyStore<T> {
   key_gen: KeyGen<T>,
   data: HashMap<Key<T>, T>,
@@ -21,8 +21,8 @@ impl<T> KeyStore<T> {
   }
 
   pub fn from<I>(iter: I) -> Self
-    where
-        I: Iterator<Item = T>,
+  where
+    I: Iterator<Item = T>,
   {
     iter.fold(Self::new(), |mut store, item| {
       store.add(item);
@@ -67,6 +67,7 @@ impl<T> KeyStore<T> {
   // TODO remove an element
 }
 
+#[derive(Debug)]
 pub struct KeyStoreWithId<T> {
   key_store: KeyStore<T>,
   keys_by_id: HashMap<String, Key<T>>,
@@ -137,7 +138,10 @@ impl<T: HasId> KeyStoreWithId<T> {
 
   #[inline]
   pub fn iter(&self) -> impl Iterator<Item = (Key<T>, &T)> {
-    self.key_store.iter().map(|(key, value)| (key.clone(), value))
+    self
+      .key_store
+      .iter()
+      .map(|(key, value)| (key.clone(), value))
   }
 
   // TODO remove an element

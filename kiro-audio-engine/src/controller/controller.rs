@@ -1,39 +1,39 @@
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use ringbuf::{Consumer, Producer};
 use thiserror::Error;
 
 use kiro_audio_graph::connection::AudioSignal;
+use kiro_audio_graph::key_store::KeyStore;
+use kiro_audio_graph::port::{AudioInPort, AudioOutPort, ParamPort};
+use kiro_audio_graph::{Graph, NodeRef, Source};
 use kiro_audio_graph::{GraphTopology, Key, Node};
-use kiro_audio_graph::{Graph, GraphError, HasId, NodeRef, Source};
 
 use crate::buffers::Buffer;
-use crate::controller::handles::{BufferHandle, ParametersHandle, ProcessorHandle};
 use crate::controller::owned_data::{OwnedData, Ref};
-use crate::controller::plan::{ControllerPlan, Operation, ParamSource};
 use crate::controller::ProcParams;
 use crate::messages::Message;
-use crate::processor::{Processor, ProcessorBox, ProcessorFactory};
-use crate::renderer::ops::processor::{Parameter, ProcessorContext};
+use crate::processor::context::ProcessorContext;
+use crate::processor::ports::audio::AudioRenderPort;
+use crate::processor::ports::param::ParamRenderPort;
+use crate::processor::ports::{Input, Output};
+use crate::processor::{ProcessorBox, ProcessorFactory};
 use crate::renderer::plan::{RenderOp, RenderPlan};
-use crate::renderer::port::{Input, Output, RenderPort};
-use crate::{BufferBox, EngineConfig, ParamValue};
-use kiro_audio_graph::port::{AudioOutPort, AudioInPort};
-use kiro_audio_graph::key_store::KeyStore;
-use std::sync::Arc;
+use crate::{EngineConfig, ParamValue};
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum ControllerError {
   #[error("Processor not found: {0:?}")]
-  ProcessorNotFound(ProcessorHandle),
+  ProcessorNotFound(Key<ProcessorBox>),
 
   #[error("Parameters not found: {0:?}")]
-  ParametersNotFound(ParametersHandle),
+  ParametersNotFound(Key<ProcParams>),
 
   #[error("Buffer not found: {0:?}")]
-  BufferNotFound(BufferHandle),
+  BufferNotFound(Key<Buffer>),
 
   #[error("Node cache not found: {0:?}")]
   NodeCacheNotFound(NodeRef),
@@ -49,6 +49,18 @@ pub enum ControllerError {
 
   #[error("Failed to create a Processor for {0} with class {1}")]
   ProcessorCreationFailed(String, String),
+
+  #[error("Parameter key not found in the node cache for port {0:?}")]
+  ParamKeyNotFound(Key<ParamPort>),
+
+  #[error("Parameter value with key {0:?} not found")]
+  ParamValueNotFound(Key<Arc<ParamValue>>),
+
+  #[error("Parameter slice buffer not found for port {0:?}")]
+  SliceBufferNotFound(Key<ParamPort>),
+
+  #[error("Audio output buffer not found in the node cache for port {0:?}")]
+  AudioOutBufferNotFound(Key<AudioOutPort>),
 }
 
 // TODO figure out how to remove Sync for ControllerError
@@ -57,45 +69,56 @@ unsafe impl Sync for ControllerError {}
 pub type Result<T> = core::result::Result<T, ControllerError>;
 
 struct NodeCache {
-  node_ref: NodeRef,
   processor_key: Key<ProcessorBox>,
-  parameters_key: Key<ProcParams>,
-  allocated_audio_buffers: HashSet<Key<Buffer>>,
+  parameter_keys: HashMap<Key<ParamPort>, Key<Arc<ParamValue>>>,
   audio_output_buffers: HashMap<Key<AudioOutPort>, Vec<Ref<Buffer>>>,
+  allocated_buffers: HashSet<Key<Buffer>>,
   render_ops: Vec<RenderOp>,
 }
 
 impl NodeCache {
-  pub fn new(node_ref: NodeRef, processor_key: Key<ProcessorBox>, parameters_key: Key<ProcParams>) -> Self {
+  pub fn new(
+    processor_key: Key<ProcessorBox>,
+    parameter_keys: HashMap<Key<ParamPort>, Key<Arc<ParamValue>>>,
+  ) -> Self {
     Self {
-      node_ref,
       processor_key,
-      parameters_key,
-      allocated_audio_buffers: HashSet::new(),
+      parameter_keys,
       audio_output_buffers: HashMap::new(),
+      allocated_buffers: HashSet::new(),
       render_ops: Vec::new(),
     }
+  }
+
+  pub fn get_param_key(&self, port_key: Key<ParamPort>) -> Result<Key<Arc<ParamValue>>> {
+    self
+      .parameter_keys
+      .get(&port_key)
+      .cloned()
+      .ok_or(ControllerError::ParamKeyNotFound(port_key))
+  }
+
+  pub fn get_audio_output_buffer(&self, port_key: Key<AudioOutPort>) -> Result<&Vec<Ref<Buffer>>> {
+    self
+      .audio_output_buffers
+      .get(&port_key)
+      .ok_or(ControllerError::AudioOutBufferNotFound(port_key))
   }
 }
 
 struct UpdateContext {
-  node_counts: HashMap<NodeRef, usize>,
+  destination_counts: HashMap<NodeRef, usize>,
   free_buffers: HashSet<Key<Buffer>>,
 }
 
 impl UpdateContext {
-  pub fn new(topology: &GraphTopology, free_buffers: impl Iterator<Item=Key<Buffer>>) -> Self {
-    let node_counts = topology
-      .nodes
-      .iter()
-      .cloned()
-      .zip(topology.counts.iter().cloned())
-      .collect();
+  pub fn new(topology: &GraphTopology, free_buffers: impl Iterator<Item = Key<Buffer>>) -> Self {
+    let destination_counts = topology.destination_counts.clone();
 
     let free_buffers = free_buffers.collect();
 
     Self {
-      node_counts,
+      destination_counts,
       free_buffers,
     }
   }
@@ -115,18 +138,15 @@ pub struct Controller {
 
   config: EngineConfig,
 
+  parameters: KeyStore<Arc<ParamValue>>,
+
   processor_factories: HashMap<String, Rc<dyn ProcessorFactory>>,
-
-  parameters: OwnedData<ProcParams>,
-  _parameters: KeyStore<Arc<ParamValue>>,
   processors: OwnedData<ProcessorBox>,
-  buffers: OwnedData<Buffer>,
 
+  buffers: OwnedData<Buffer>,
   empty_buffer: Key<Buffer>,
 
   nodes: HashMap<NodeRef, NodeCache>,
-
-  plan: ControllerPlan,
 }
 
 impl Controller {
@@ -140,14 +160,12 @@ impl Controller {
       tx,
       rx,
       config,
+      parameters: KeyStore::new(),
       processor_factories: HashMap::new(),
       processors: OwnedData::new(),
-      parameters: OwnedData::new(),
-      _parameters: KeyStore::new(),
       buffers,
       empty_buffer,
       nodes: HashMap::new(),
-      plan: ControllerPlan::default(),
     }
   }
 
@@ -166,15 +184,19 @@ impl Controller {
   pub fn update_graph(&mut self, graph: &Graph) -> Result<()> {
     let mut render_plan = RenderPlan::default();
     let topology = graph.topology();
+    println!("{:#?}\n{:#?}", graph, topology);
 
-    let mut update_context = UpdateContext::new(&topology, self.buffers.keys());
+    let buffers = self
+      .buffers
+      .keys()
+      .filter(|buffer_key| *buffer_key != self.empty_buffer);
+
+    let mut update_context = UpdateContext::new(&topology, buffers);
+
     self.update_nodes(topology.nodes.as_slice(), graph, &mut update_context)?;
 
     for node_ref in topology.nodes {
-      let node_cache = self
-        .nodes
-        .get(&node_ref)
-        .ok_or(ControllerError::NodeCacheNotFound(node_ref))?;
+      let node_cache = self.get_node_cache(node_ref)?;
 
       render_plan
         .operations
@@ -230,9 +252,18 @@ impl Controller {
     })?;
     let processor_key = self.processors.add(processor);
 
-    let parameters_key = unimplemented!();
+    let parameter_keys = node
+      .params()
+      .iter()
+      .map(|(port_key, port)| {
+        let initial_value = port.descriptor().initial;
+        let param_value = Arc::new(ParamValue::new(initial_value));
+        let param_key = self.parameters.add(param_value);
+        (port_key, param_key)
+      })
+      .collect::<HashMap<Key<ParamPort>, Key<Arc<ParamValue>>>>();
 
-    Ok(NodeCache::new(node_ref, processor_key, parameters_key))
+    Ok(NodeCache::new(processor_key, parameter_keys))
   }
 
   /// Visit a node that has been invalidated and requires to regenerate the cache
@@ -242,26 +273,29 @@ impl Controller {
     graph: &Graph,
     context: &mut UpdateContext,
   ) -> Result<()> {
-    self.clear_node_cache(node_ref, context);
+    self.clear_node_cache(node_ref, context)?;
 
     let node = graph
       .get_node(node_ref)
       .map_err(|_| ControllerError::NodeNotFound(node_ref))?;
 
+    let param_value_buffers = self.allocate_param_value_buffers(node, context);
+    let param_render_ports = self.build_param_render_ports(node_ref, node, &param_value_buffers)?;
+
     let audio_output_buffers = self.allocate_audio_output_buffers(node, context);
     let audio_output_render_ports = self.build_audio_output_render_ports(&audio_output_buffers);
     let audio_input_render_ports = self.build_audio_input_render_ports(node)?;
-    let parameter_render_ports = self.build_parameter_render_ports(node);
 
-    self.release_input_buffers(node, context);
+    self.release_input_buffers(node, context)?;
 
     self.update_node_cache(
       node_ref,
+      param_value_buffers,
+      param_render_ports,
       audio_output_buffers,
       audio_output_render_ports,
       audio_input_render_ports,
-      parameter_render_ports,
-    );
+    )?;
 
     Ok(())
   }
@@ -269,20 +303,28 @@ impl Controller {
   fn update_node_cache(
     &mut self,
     node_ref: NodeRef,
+    param_value_buffers: HashMap<Key<ParamPort>, Ref<Buffer>>,
+    param_render_ports: Vec<ParamRenderPort>,
     audio_output_buffers: HashMap<Key<AudioOutPort>, Vec<Ref<Buffer>>>,
-    audio_output_render_ports: Vec<RenderPort<Output>>,
-    audio_input_render_ports: Vec<RenderPort<Input>>,
-    parameter_render_ports: Vec<Parameter>,
+    audio_output_render_ports: Vec<AudioRenderPort<Output>>,
+    audio_input_render_ports: Vec<AudioRenderPort<Input>>,
   ) -> Result<()> {
     let node_cache = self
       .nodes
       .get_mut(&node_ref)
       .ok_or(ControllerError::NodeCacheNotFound(node_ref))?;
 
-    node_cache.allocated_audio_buffers = audio_output_buffers
+    let allocated_param_buffers = param_value_buffers
       .iter()
-      .flat_map(|(port_key, buffers)| buffers)
-      .map(|buffer_ref| buffer_ref.key)
+      .map(|(_port_key, buffer)| buffer.key);
+
+    let allocated_audio_buffers = audio_output_buffers
+      .iter()
+      .flat_map(|(_port_key, buffers)| buffers)
+      .map(|buffer_ref| buffer_ref.key);
+
+    node_cache.allocated_buffers = allocated_param_buffers
+      .chain(allocated_audio_buffers)
       .collect::<HashSet<Key<Buffer>>>();
 
     node_cache.audio_output_buffers = audio_output_buffers;
@@ -290,14 +332,12 @@ impl Controller {
     let processor = self
       .processors
       .get(node_cache.processor_key)
-      .ok_or_else(|| {
-        ControllerError::ProcessorNotFound(ProcessorHandle(node_cache.processor_key))
-      })?;
+      .ok_or_else(|| ControllerError::ProcessorNotFound(node_cache.processor_key))?;
 
     let processor_context = ProcessorContext::new(
       audio_input_render_ports,
       audio_output_render_ports,
-      parameter_render_ports,
+      param_render_ports,
     );
 
     node_cache
@@ -308,13 +348,10 @@ impl Controller {
   }
 
   fn clear_node_cache(&mut self, node_ref: NodeRef, context: &mut UpdateContext) -> Result<()> {
-    let node_cache = self
-      .nodes
-      .get_mut(&node_ref)
-      .ok_or(ControllerError::NodeCacheNotFound(node_ref))?;
+    let node_cache = self.get_node_cache_mut(node_ref)?;
 
-    context.add_to_free_buffers(&node_cache.allocated_audio_buffers);
-    node_cache.allocated_audio_buffers.clear();
+    context.add_to_free_buffers(&node_cache.allocated_buffers);
+    node_cache.allocated_buffers.clear();
     node_cache.audio_output_buffers.clear();
     node_cache.render_ops.clear();
 
@@ -349,7 +386,7 @@ impl Controller {
   fn build_audio_output_render_ports(
     &self,
     buffers: &HashMap<Key<AudioOutPort>, Vec<Ref<Buffer>>>,
-  ) -> Vec<RenderPort<Output>> {
+  ) -> Vec<AudioRenderPort<Output>> {
     let mut port_keys = buffers.keys().cloned().collect::<Vec<Key<AudioOutPort>>>();
     port_keys.sort();
 
@@ -357,12 +394,12 @@ impl Controller {
       .into_iter()
       .map(|port_key| {
         let port_buffers = buffers.get(&port_key).unwrap();
-        RenderPort::new(port_buffers.clone())
+        AudioRenderPort::new(port_buffers.clone())
       })
       .collect()
   }
 
-  fn build_audio_input_render_ports(&mut self, node: &Node) -> Result<Vec<RenderPort<Input>>> {
+  fn build_audio_input_render_ports(&mut self, node: &Node) -> Result<Vec<AudioRenderPort<Input>>> {
     let mut port_keys = node
       .audio_inputs()
       .keys()
@@ -370,7 +407,7 @@ impl Controller {
       .collect::<Vec<Key<AudioInPort>>>();
     port_keys.sort();
 
-    let mut render_ports = Vec::<RenderPort<Input>>::new();
+    let mut render_ports = Vec::<AudioRenderPort<Input>>::new();
     for port_key in port_keys {
       let port = node.audio_inputs().get(port_key).unwrap();
 
@@ -385,37 +422,97 @@ impl Controller {
     Ok(render_ports)
   }
 
-  fn build_empty_audio_input_render_port(&self, channels: usize) -> Result<RenderPort<Input>> {
+  fn build_empty_audio_input_render_port(&self, channels: usize) -> Result<AudioRenderPort<Input>> {
     let empty_buffer = self.buffers.get(self.empty_buffer).unwrap();
     let buffers = (0..channels)
       .map(|_| empty_buffer.clone())
       .collect::<Vec<Ref<Buffer>>>();
-    Ok(RenderPort::new(buffers))
+    Ok(AudioRenderPort::new(buffers))
   }
 
   fn build_audio_input_render_port(
     &self,
     source: &Source<AudioSignal>,
-  ) -> Result<RenderPort<Input>> {
+  ) -> Result<AudioRenderPort<Input>> {
     // TODO find a better way to express that several things here should be defined at this point, then the unwraps are safe.
     match source {
-      Source::AudioOut { node_ref, key, .. } => {
-        let node_cache = self.nodes.get(node_ref).unwrap();
-        let buffers = node_cache
-          .audio_output_buffers
-          .get(&key.unwrap())
-          .unwrap()
-          .clone();
-        Ok(RenderPort::new(buffers))
+      Source::AudioOut {
+        node_ref, port_key, ..
+      } => {
+        let port_key = port_key.unwrap(); // This should have been defined during the connection
+        let node_cache = self.get_node_cache(*node_ref)?;
+        let buffers = node_cache.get_audio_output_buffer(port_key)?;
+        Ok(AudioRenderPort::new(buffers.clone()))
       }
-      Source::MidiOut { node_ref: _, key: _, .. } => {
+      Source::MidiOut {
+        node_ref: _,
+        port_key: _,
+        ..
+      } => {
         unimplemented!()
       }
     }
   }
 
-  fn build_parameter_render_ports(&self, _node: &Node) -> Vec<Parameter> {
-    unimplemented!()
+  fn allocate_param_value_buffers(
+    &mut self,
+    node: &Node,
+    context: &mut UpdateContext,
+  ) -> HashMap<Key<ParamPort>, Ref<Buffer>> {
+    node
+      .params()
+      .iter()
+      .filter_map(|(port_key, port)| {
+        let maybe_buffer = match port.connection() {
+          None => {
+            let buffer_key = self.allocate_buffer(context);
+            Some(self.buffers.get(buffer_key).unwrap())
+          }
+          Some(_source) => None,
+        };
+        maybe_buffer.map(|buffer| (port_key, buffer))
+      })
+      .collect()
+  }
+
+  fn build_param_render_ports(
+    &self,
+    node_ref: NodeRef,
+    node: &Node,
+    value_buffers: &HashMap<Key<ParamPort>, Ref<Buffer>>,
+  ) -> Result<Vec<ParamRenderPort>> {
+    let mut render_ports = Vec::<ParamRenderPort>::new();
+    for (port_key, port) in node.params().iter() {
+      match port.connection() {
+        None => {
+          let value = self
+            .get_node_cache(node_ref)
+            .and_then(|node_cache| node_cache.get_param_key(port_key))
+            .and_then(|param_key| self.get_param_value(param_key))?;
+
+          let slice_buffer = value_buffers
+            .get(&port_key)
+            .cloned()
+            .ok_or(ControllerError::SliceBufferNotFound(port_key))?;
+
+          render_ports.push(ParamRenderPort::value(value, slice_buffer));
+        }
+        Some(source) => match source {
+          Source::AudioOut {
+            node_ref, port_key, ..
+          } => {
+            let port_key = port_key.unwrap(); // This should have been defined during the connection
+            let node_cache = self.get_node_cache(*node_ref)?;
+            let buffers = node_cache.get_audio_output_buffer(port_key)?;
+            // TODO Users should be able to choose a different channel when connecting the audio output to a parameter
+            let buffer = buffers.get(0).unwrap(); // The connection should have tested that there is at least one channel
+            render_ports.push(ParamRenderPort::buffer(buffer.clone()));
+          }
+          Source::MidiOut { .. } => unreachable!(),
+        },
+      }
+    }
+    Ok(render_ports)
   }
 
   /// Visit a node that has not been invalidated
@@ -429,16 +526,12 @@ impl Controller {
       .get_node(node_ref)
       .map_err(|_| ControllerError::NodeNotFound(node_ref))?;
 
-    self.release_input_buffers(node, context);
+    self.release_input_buffers(node, context)?;
 
     // Mark output buffers as allocated
 
-    let node_cache = self
-      .nodes
-      .get(&node_ref)
-      .ok_or(ControllerError::NodeCacheNotFound(node_ref))?;
-
-    context.remove_from_free_buffers(&node_cache.allocated_audio_buffers);
+    let node_cache = self.get_node_cache(node_ref)?;
+    context.remove_from_free_buffers(&node_cache.allocated_buffers);
 
     Ok(())
   }
@@ -447,8 +540,9 @@ impl Controller {
   fn release_input_buffers(&mut self, node: &Node, context: &mut UpdateContext) -> Result<()> {
     for source_node_ref in node.sources() {
       let count = *context
-        .node_counts
+        .destination_counts
         .entry(source_node_ref)
+        // .and_modify(|e| if *e > 0 { *e = *e - 1 })
         .and_modify(|e| *e = *e - 1)
         .or_default();
       if count <= 0 {
@@ -457,8 +551,8 @@ impl Controller {
           .get_mut(&source_node_ref)
           .ok_or(ControllerError::NodeCacheNotFound(source_node_ref))?;
 
-        context.add_to_free_buffers(&source_node_cache.allocated_audio_buffers);
-        source_node_cache.allocated_audio_buffers.clear();
+        context.add_to_free_buffers(&source_node_cache.allocated_buffers);
+        source_node_cache.allocated_buffers.clear();
       }
     }
     Ok(())
@@ -483,135 +577,26 @@ impl Controller {
     }
   }
 
-  // ----------------------------------------------------------------------------------------------
-
-  pub fn add_buffer(&mut self, buffer: Buffer) -> BufferHandle {
-    BufferHandle(self.buffers.add(buffer))
-  }
-
-  pub fn add_parameters(&mut self, parameters: ProcParams) -> ParametersHandle {
-    ParametersHandle(self.parameters.add(parameters))
-  }
-
-  pub fn add_processor(&mut self, processor: impl Processor + 'static) -> ProcessorHandle {
-    ProcessorHandle(self.processors.add(Box::new(processor)))
-  }
-
-  pub fn get_render_plan(&mut self) -> &mut ControllerPlan {
-    &mut self.plan
-  }
-
-  pub fn send_render_plan(&mut self) -> Result<()> {
-    let render_plan = self.build_render_plan()?;
-    self.plan = ControllerPlan::default();
+  fn get_node_cache(&self, node_ref: NodeRef) -> Result<&NodeCache> {
     self
-      .tx
-      .push(Message::MoveRenderPlan(Box::new(render_plan)))
-      .map_err(|msg| {
-        drop(msg);
-        ControllerError::SendFailure
-      })
+      .nodes
+      .get(&node_ref)
+      .ok_or(ControllerError::NodeCacheNotFound(node_ref))
   }
 
-  fn build_render_plan(&mut self) -> Result<RenderPlan> {
-    let mut render_plan = RenderPlan::default();
-    for op in self.plan.operations.iter() {
-      match op {
-        Operation::RenderProcessor {
-          processor,
-          audio_inputs,
-          audio_outputs,
-          parameters,
-        } => {
-          let processor_ref = self
-            .processors
-            .get(*processor)
-            .ok_or(ControllerError::ProcessorNotFound(*processor))?;
-          let processor_context =
-            self.build_processor_context(audio_inputs, audio_outputs, parameters)?;
-          render_plan
-            .operations
-            .push(RenderOp::RenderProcessor(processor_ref, processor_context));
-        }
-        Operation::RenderOuput { audio_inputs } => {
-          let audio_input_port = self.build_render_port::<Input>(audio_inputs)?;
-          render_plan
-            .operations
-            .push(RenderOp::RenderOutput(audio_input_port));
-        }
-      }
-    }
-    Ok(render_plan)
+  fn get_node_cache_mut(&mut self, node_ref: NodeRef) -> Result<&mut NodeCache> {
+    self
+      .nodes
+      .get_mut(&node_ref)
+      .ok_or(ControllerError::NodeCacheNotFound(node_ref))
   }
 
-  fn build_processor_context(
-    &self,
-    audio_inputs: &Vec<Vec<BufferHandle>>,
-    audio_outputs: &Vec<Vec<BufferHandle>>,
-    parameters: &Vec<ParamSource>,
-  ) -> Result<ProcessorContext> {
-    let audio_input_ports = self.build_render_ports::<Input>(audio_inputs)?;
-    let audio_output_ports = self.build_render_ports::<Output>(audio_outputs)?;
-    let parameters = self.build_render_params(parameters)?;
-
-    Ok(ProcessorContext::new(
-      audio_input_ports,
-      audio_output_ports,
-      parameters,
-    ))
-  }
-
-  fn build_render_ports<IO>(
-    &self,
-    buffers: &Vec<Vec<BufferHandle>>,
-  ) -> Result<Vec<RenderPort<IO>>> {
-    buffers
-      .iter()
-      .try_fold(Vec::<RenderPort<IO>>::new(), |mut ports, handlers| {
-        let port = self.build_render_port(handlers)?;
-        ports.push(port);
-        Ok(ports)
-      })
-  }
-
-  fn build_render_port<IO>(&self, handlers: &Vec<BufferHandle>) -> Result<RenderPort<IO>> {
-    let mut channels = Vec::with_capacity(handlers.capacity());
-    for handle in handlers {
-      let channel = self
-        .buffers
-        .get(*handle)
-        .ok_or(ControllerError::BufferNotFound(*handle))?;
-      channels.push(channel);
-    }
-    Ok(RenderPort::<IO>::new(channels))
-  }
-
-  fn build_render_params(&self, parameters: &Vec<ParamSource>) -> Result<Vec<Parameter>> {
-    parameters
-      .iter()
-      .try_fold(Vec::<Parameter>::new(), |mut parameters, source| {
-        match source {
-          ParamSource::Value(parameters_handle, index, buffer_handle) => {
-            let params = self
-              .parameters
-              .get(*parameters_handle)
-              .ok_or(ControllerError::ParametersNotFound(*parameters_handle))?;
-            let buffer = self
-              .buffers
-              .get(*buffer_handle)
-              .ok_or(ControllerError::BufferNotFound(*buffer_handle))?;
-            parameters.push(Parameter::Value(params, *index, buffer));
-          }
-          ParamSource::Buffer(buffer_handle) => {
-            let buffer = self
-              .buffers
-              .get(*buffer_handle)
-              .ok_or(ControllerError::BufferNotFound(*buffer_handle))?;
-            parameters.push(Parameter::Buffer(buffer));
-          }
-        }
-        Ok(parameters)
-      })
+  fn get_param_value(&self, param_key: Key<Arc<ParamValue>>) -> Result<Arc<ParamValue>> {
+    self
+      .parameters
+      .get(param_key)
+      .cloned()
+      .ok_or(ControllerError::ParamValueNotFound(param_key))
   }
 
   pub fn process_messages(&mut self) {
@@ -626,5 +611,143 @@ impl Controller {
       },
       None,
     );
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use kiro_audio_graph::{AudioDescriptor, MidiDescriptor, NodeDescriptor, ParamDescriptor};
+  use ringbuf::RingBuffer;
+
+  struct TestProcessor(NodeDescriptor);
+
+  impl Processor for TestProcessor {
+    fn render(&mut self, context: &mut ProcessorContext) {
+      unimplemented!()
+    }
+  }
+
+  struct TestProcessorFactory;
+
+  impl ProcessorFactory for TestProcessorFactory {
+    fn supported_classes(&self) -> Vec<String> {
+      vec!["source-class".to_string(), "sink-class".to_string()]
+    }
+
+    fn create(&self, descriptor: &NodeDescriptor) -> Option<Box<dyn Processor>> {
+      Some(Box::new(TestProcessor(descriptor.clone())))
+    }
+  }
+
+  fn create_graph() -> anyhow::Result<(Graph, NodeRef, NodeRef, NodeRef)> {
+    let mut g = Graph::new();
+
+    let source_desc = NodeDescriptor::new("source-class")
+      .static_audio_outputs(vec![AudioDescriptor::new("OUT", 1)])
+      .static_midi_outputs(vec![MidiDescriptor::new("OUT")]);
+    let sink_desc = NodeDescriptor::new("sink-class")
+      .static_audio_inputs(vec![
+        AudioDescriptor::new("IN1", 1),
+        AudioDescriptor::new("IN2", 1),
+      ])
+      .static_parameters(vec![
+        ParamDescriptor::new("P1"),
+        ParamDescriptor::new("P2"),
+        ParamDescriptor::new("P3"),
+      ])
+      .static_midi_inputs(vec![MidiDescriptor::new("IN")]);
+
+    let n1 = g.add_node("N1", source_desc.clone())?;
+    let n2 = g.add_node("N2", source_desc.clone())?;
+    let n3 = g.add_node("N3", sink_desc.clone())?;
+
+    g.connect_audio(n1, g.audio_input(n3, "IN1")?)?;
+    g.connect_audio(n2, g.audio_input(n3, "IN2")?)?;
+    g.connect(n2, g.param(n3, "P1")?)?;
+
+    Ok((g, n1, n2, n3))
+  }
+
+  fn create_controller_without_processor_factory() -> anyhow::Result<Controller> {
+    let ring_buffer = RingBuffer::new(1);
+    let (tx, rx) = ring_buffer.split();
+    let config = EngineConfig::default();
+    Ok(Controller::new(tx, rx, config))
+  }
+
+  fn create_controller() -> anyhow::Result<Controller> {
+    let mut controller = create_controller_without_processor_factory()?;
+    controller.register_processor_factory(TestProcessorFactory);
+    Ok(controller)
+  }
+
+  #[test]
+  fn update_graph__processor_factory_not_found() -> anyhow::Result<()> {
+    let (mut g, _, _, _) = create_graph()?;
+    let mut ct = create_controller_without_processor_factory()?;
+
+    assert_eq!(
+      ct.update_graph(&g),
+      Err(ControllerError::ProcessorFactoryNotFound(
+        "Node[N2]".to_string(),
+        "source-class".to_string()
+      ))
+    );
+
+    Ok(())
+  }
+
+  #[test]
+  fn update_graph__success() -> anyhow::Result<()> {
+    let (mut g, n1, n2, n3) = create_graph()?;
+    let mut ct = create_controller()?;
+
+    ct.update_graph(&g)?;
+
+    assert_eq!(ct.parameters.len(), 3);
+    assert_eq!(ct.processors.len(), 3);
+    assert_eq!(ct.buffers.len(), 5); // empty + 2 outputs + 2 param slice
+
+    let nc1 = ct.nodes.get(&n1).unwrap();
+    assert_eq!(nc1.parameter_keys.len(), 0);
+    assert_eq!(
+      nc1.audio_output_buffers.values().cloned().flatten().count(),
+      1
+    );
+    assert_eq!(nc1.allocated_buffers.len(), 0);
+    assert_eq!(nc1.render_ops.len(), 1);
+    assert!(match nc1.render_ops.get(0).unwrap() {
+      RenderOp::RenderProcessor(_, _) => true,
+      _ => false,
+    });
+
+    let nc2 = ct.nodes.get(&n2).unwrap();
+    assert_eq!(nc2.parameter_keys.len(), 0);
+    assert_eq!(
+      nc2.audio_output_buffers.values().cloned().flatten().count(),
+      1
+    );
+    assert_eq!(nc2.allocated_buffers.len(), 0);
+    assert_eq!(nc2.render_ops.len(), 1);
+    assert!(match nc2.render_ops.get(0).unwrap() {
+      RenderOp::RenderProcessor(_, _) => true,
+      _ => false,
+    });
+
+    let nc3 = ct.nodes.get(&n3).unwrap();
+    assert_eq!(nc3.parameter_keys.len(), 3);
+    assert_eq!(
+      nc3.audio_output_buffers.values().cloned().flatten().count(),
+      0
+    );
+    assert_eq!(nc3.allocated_buffers.len(), 2);
+    assert_eq!(nc3.render_ops.len(), 1);
+    assert!(match nc3.render_ops.get(0).unwrap() {
+      RenderOp::RenderProcessor(_, _) => true,
+      _ => false,
+    });
+
+    Ok(())
   }
 }

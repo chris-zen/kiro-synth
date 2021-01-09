@@ -1,5 +1,6 @@
-use ringbuf::{Consumer, Producer};
 use std::ops::DerefMut;
+
+use ringbuf::{Consumer, Producer};
 
 use crate::messages::Message;
 use crate::renderer::plan::RenderOp;
