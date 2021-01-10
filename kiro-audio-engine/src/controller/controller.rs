@@ -6,10 +6,9 @@ use std::sync::Arc;
 use ringbuf::{Consumer, Producer};
 use thiserror::Error;
 
-use kiro_audio_graph::connection::AudioSignal;
 use kiro_audio_graph::key_store::KeyStore;
 use kiro_audio_graph::port::{AudioInPort, AudioOutPort, ParamPort};
-use kiro_audio_graph::{Graph, NodeRef, Source};
+use kiro_audio_graph::{Graph, NodeRef};
 use kiro_audio_graph::{GraphTopology, Key, Node};
 
 use crate::buffers::Buffer;
@@ -23,6 +22,7 @@ use crate::processor::ports::{Input, Output};
 use crate::processor::{ProcessorBox, ProcessorFactory};
 use crate::renderer::plan::{RenderOp, RenderPlan};
 use crate::{EngineConfig, ParamValue};
+use kiro_audio_graph::audio::AudioOutRef;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ControllerError {
@@ -413,7 +413,7 @@ impl Controller {
 
       let render_port = match port.connection() {
         None => self.build_empty_audio_input_render_port(port.descriptor().channels()),
-        Some(source) => self.build_audio_input_render_port(source),
+        Some(audio_out_ref) => self.build_audio_input_render_port(audio_out_ref),
       }?;
 
       render_ports.push(render_port);
@@ -432,26 +432,12 @@ impl Controller {
 
   fn build_audio_input_render_port(
     &self,
-    source: &Source<AudioSignal>,
+    audio_out_ref: &AudioOutRef,
   ) -> Result<AudioRenderPort<Input>> {
-    // TODO find a better way to express that several things here should be defined at this point, then the unwraps are safe.
-    match source {
-      Source::AudioOut {
-        node_ref, port_key, ..
-      } => {
-        let port_key = port_key.unwrap(); // This should have been defined during the connection
-        let node_cache = self.get_node_cache(*node_ref)?;
-        let buffers = node_cache.get_audio_output_buffer(port_key)?;
-        Ok(AudioRenderPort::new(buffers.clone()))
-      }
-      Source::MidiOut {
-        node_ref: _,
-        port_key: _,
-        ..
-      } => {
-        unimplemented!()
-      }
-    }
+    let node_cache = self.get_node_cache(audio_out_ref.node_ref)?;
+    let audio_port_key = audio_out_ref.audio_port_key;
+    let buffers = node_cache.get_audio_output_buffer(audio_port_key)?;
+    Ok(AudioRenderPort::new(buffers.clone()))
   }
 
   fn allocate_param_value_buffers(
@@ -497,19 +483,14 @@ impl Controller {
 
           render_ports.push(ParamRenderPort::value(value, slice_buffer));
         }
-        Some(source) => match source {
-          Source::AudioOut {
-            node_ref, port_key, ..
-          } => {
-            let port_key = port_key.unwrap(); // This should have been defined during the connection
-            let node_cache = self.get_node_cache(*node_ref)?;
-            let buffers = node_cache.get_audio_output_buffer(port_key)?;
-            // TODO Users should be able to choose a different channel when connecting the audio output to a parameter
-            let buffer = buffers.get(0).unwrap(); // The connection should have tested that there is at least one channel
-            render_ports.push(ParamRenderPort::buffer(buffer.clone()));
-          }
-          Source::MidiOut { .. } => unreachable!(),
-        },
+        Some(audio_out_ref) => {
+          let node_cache = self.get_node_cache(audio_out_ref.node_ref)?;
+          let audio_port_key = audio_out_ref.audio_port_key;
+          let buffers = node_cache.get_audio_output_buffer(audio_port_key)?;
+          // TODO Users should be able to choose a different channel when connecting the audio output to a parameter
+          let buffer = buffers.get(0).unwrap(); // The connection should have tested that there is at least one channel
+          render_ports.push(ParamRenderPort::buffer(buffer.clone()));
+        }
       }
     }
     Ok(render_ports)
@@ -542,7 +523,6 @@ impl Controller {
       let count = *context
         .destination_counts
         .entry(source_node_ref)
-        // .and_modify(|e| if *e > 0 { *e = *e - 1 })
         .and_modify(|e| *e = *e - 1)
         .or_default();
       if count <= 0 {

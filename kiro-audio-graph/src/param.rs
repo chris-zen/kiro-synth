@@ -6,14 +6,14 @@ use crate::port::ParamPort;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ParamRef {
   pub(crate) node_ref: NodeRef,
-  pub(crate) param_key: Key<ParamPort>,
+  pub(crate) param_port_key: Key<ParamPort>,
 }
 
 impl ParamRef {
-  pub fn new(node_ref: NodeRef, param_key: Key<ParamPort>) -> Self {
+  pub fn new(node_ref: NodeRef, param_port_key: Key<ParamPort>) -> Self {
     Self {
       node_ref,
-      param_key,
+      param_port_key,
     }
   }
 }

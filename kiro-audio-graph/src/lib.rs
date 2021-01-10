@@ -9,7 +9,7 @@ pub mod param;
 pub mod port;
 
 pub use audio::AudioDescriptor;
-pub use connection::{Destination, Source};
+pub use connection::{ConnectionDestination, ConnectionSource};
 pub use graph::{Graph, GraphError, GraphTopology, Node};
 pub use key_gen::Key;
 pub use key_store::HasId;

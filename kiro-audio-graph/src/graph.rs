@@ -2,14 +2,14 @@ use std::collections::{HashMap, HashSet};
 use std::vec::Vec;
 use thiserror::Error;
 
-use crate::audio::{AudioInRef, AudioOutRef};
-use crate::connection::{AudioSignal, Destination, MidiSignal, Source};
+use crate::audio::{AudioDescriptor, AudioInRef, AudioOutRef};
+use crate::connection::{AudioSignal, ConnectionDestination, ConnectionSource, MidiSignal};
 use crate::key_gen::Key;
 use crate::key_store::HasId;
 use crate::key_store::KeyStoreWithId;
-use crate::midi::{MidiInRef, MidiOutRef};
+use crate::midi::{MidiDescriptor, MidiInRef, MidiOutRef};
 use crate::node::{NodeDescriptor, NodeRef};
-use crate::param::ParamRef;
+use crate::param::{ParamDescriptor, ParamRef};
 use crate::port::{
   AudioInPort, AudioInPortStore, AudioOutPort, AudioOutPortStore, InputPort, MidiInPort,
   MidiInPortStore, MidiOutPort, MidiOutPortStore, OutputPort, ParamPort, ParamPortStore,
@@ -38,34 +38,40 @@ pub enum GraphError {
   #[error("MIDI port '{1}' not found for Node {0}")]
   MidiPortNotFound(NodeRef, String),
 
-  #[error("Invalid Source Node: {0}::{1}")]
+  #[error("Invalid Source Node: {0}/{1}")]
   InvalidSourceNode(String, String),
 
-  #[error("Invalid Audio Source Key: {0}::{1}[{2}]")]
-  InvalidAudioSourceKey(String, String, Key<AudioOutPort>),
+  #[error("No default MIDI Source available for Node {0}")]
+  NoDefaultMidiSourceAvailable(String),
 
-  #[error("Invalid MIDI Source Key: {0}::{1}[{2}]")]
-  InvalidMidiSourceKey(String, String, Key<MidiOutPort>),
-
-  #[error("No Source Default Port: {0}::{1}")]
-  NoSourceDefaultPort(String, String),
-
-  #[error("Invalid Destination Node: {0}::{1}")]
+  #[error("Invalid Destination Node: {0}/{1}")]
   InvalidDestinationNode(String, String),
 
-  #[error("Invalid Param Destination Key: {0}::{1}[{2}]")]
-  InvalidParamDestinationKey(String, String, Key<ParamPort>),
+  #[error("Invalid Audio Source Key: {0}/{1}")]
+  InvalidAudioSourceKey(String, Key<AudioOutPort>),
 
-  #[error("Invalid Audio Destination Key: {0}::{1}[{2}]")]
-  InvalidAudioDestinationKey(String, String, Key<AudioInPort>),
+  #[error("Invalid MIDI Source Key: {0}/{1}")]
+  InvalidMidiSourceKey(String, Key<MidiOutPort>),
 
-  #[error("Invalid MIDI Destination Key: {0}::{1}[{2}]")]
-  InvalidMidiDestinationKey(String, String, Key<MidiInPort>),
+  #[error("No default audio Source available for Node {0}")]
+  NoDefaultAudioSourceAvailable(String),
 
-  #[error("No Destination Default Port: {0}::{1}")]
-  NoDestinationDefaultPort(String, String),
+  #[error("No default audio Destination available for Node {0}")]
+  NoDefaultAudioDestiantionAvailable(String),
 
-  #[error("Destination already connected: {0}::{1}[{2}]")]
+  #[error("No default MIDI Source available for Node {0}")]
+  NoDefaultMidiDestinationAvailable(String),
+
+  #[error("Invalid Param Destination Key: {0}/{1}")]
+  InvalidParamDestinationKey(String, Key<ParamPort>),
+
+  #[error("Invalid Audio Destination Key: {0}/{1}")]
+  InvalidAudioDestinationKey(String, Key<AudioInPort>),
+
+  #[error("Invalid MIDI Destination Key: {0}/{1}")]
+  InvalidMidiDestinationKey(String, Key<MidiInPort>),
+
+  #[error("Destination already connected: {0}/{1}/{2}")]
   DestinationAlreadyConnected(String, String, String),
 }
 
@@ -205,6 +211,7 @@ impl GraphTopology {
 #[derive(Debug)]
 pub struct Graph {
   nodes: KeyStoreWithId<Node>,
+  params: HashMap<String, ParamRef>,
   audio_inputs: HashMap<String, AudioInRef>,
   audio_outputs: HashMap<String, AudioOutRef>,
   midi_inputs: HashMap<String, MidiInRef>,
@@ -215,6 +222,7 @@ impl Graph {
   pub fn new() -> Self {
     Self {
       nodes: KeyStoreWithId::new(),
+      params: HashMap::new(),
       audio_inputs: HashMap::new(),
       audio_outputs: HashMap::new(),
       midi_inputs: HashMap::new(),
@@ -334,8 +342,8 @@ impl Graph {
 
   pub fn connect<S, D, G>(&mut self, source: S, destination: D) -> Result<()>
   where
-    S: Into<Source<G>>,
-    D: Into<Destination<G>>,
+    S: Into<ConnectionSource<G>>,
+    D: Into<ConnectionDestination<G>>,
     G: Copy,
   {
     let source = self.ensure_valid_source(source.into())?;
@@ -349,66 +357,58 @@ impl Graph {
     destination_node.sources.insert(source.node_ref());
 
     match destination {
-      Destination::Param {
-        port_key: destination_key,
+      ConnectionDestination::Param {
+        param_port_key: destination_param_port_key,
         ..
       } => match source {
-        Source::AudioOut {
+        ConnectionSource::AudioOut {
           node_ref,
-          port_key: source_key,
+          audio_port_key: source_audio_port_key,
           ..
         } => {
-          let port = destination_node.params.get_mut(destination_key).unwrap();
-          port.connection = Some(Source::AudioOut {
-            node_ref,
-            port_key: source_key,
-            signal: AudioSignal,
-          })
+          let port = destination_node
+            .params
+            .get_mut(destination_param_port_key)
+            .unwrap();
+          port.connection = Some(AudioOutRef::new(node_ref, source_audio_port_key));
         }
         _ => unreachable!(),
       },
-      Destination::AudioIn {
-        port_key: destination_key,
+      ConnectionDestination::AudioIn {
+        audio_port_key: destination_audio_port_key,
         ..
       } => match source {
-        Source::AudioOut {
+        ConnectionSource::AudioOut {
           node_ref,
-          port_key: source_key,
+          audio_port_key: source_audio_port_key,
           ..
         } => {
           let port = destination_node
             .audio_inputs
-            .get_mut(destination_key.unwrap())
+            .get_mut(destination_audio_port_key)
             .unwrap();
-          port.connection = Some(Source::AudioOut {
-            node_ref,
-            port_key: source_key,
-            signal: AudioSignal,
-          })
+          port.connection = Some(AudioOutRef::new(node_ref, source_audio_port_key));
         }
         _ => unreachable!(),
       },
-      Destination::MidiIn {
-        port_key: destination_key,
+      ConnectionDestination::MidiIn {
+        midi_port_key: destination_midi_port_key,
         ..
       } => match source {
-        Source::MidiOut {
+        ConnectionSource::MidiOut {
           node_ref,
-          port_key: source_key,
+          midi_port_key: source_midi_port_key,
           ..
         } => {
           let port = destination_node
             .midi_inputs
-            .get_mut(destination_key.unwrap())
+            .get_mut(destination_midi_port_key)
             .unwrap();
-          port.connection = Some(Source::MidiOut {
-            node_ref,
-            port_key: source_key,
-            signal: MidiSignal,
-          })
+          port.connection = Some(MidiOutRef::new(node_ref, source_midi_port_key));
         }
         _ => unreachable!(),
       },
+      _ => unreachable!(),
     }
 
     Ok(())
@@ -416,21 +416,21 @@ impl Graph {
 
   pub fn connect_audio<S, D>(&mut self, source: S, destination: D) -> Result<()>
   where
-    S: Into<Source<AudioSignal>>,
-    D: Into<Destination<AudioSignal>>,
+    S: Into<ConnectionSource<AudioSignal>>,
+    D: Into<ConnectionDestination<AudioSignal>>,
   {
     self.connect(source, destination)
   }
 
   pub fn connect_midi<S, D>(&mut self, source: S, destination: D) -> Result<()>
   where
-    S: Into<Source<MidiSignal>>,
-    D: Into<Destination<MidiSignal>>,
+    S: Into<ConnectionSource<MidiSignal>>,
+    D: Into<ConnectionDestination<MidiSignal>>,
   {
     self.connect(source, destination)
   }
 
-  fn ensure_valid_source<G>(&self, source: Source<G>) -> Result<Source<G>>
+  fn ensure_valid_source<G>(&self, source: ConnectionSource<G>) -> Result<ConnectionSource<G>>
   where
     G: Copy,
   {
@@ -438,61 +438,39 @@ impl Graph {
       GraphError::InvalidSourceNode(source.node_ref().ref_string(), source.name().to_string())
     })?;
 
-    match source {
-      Source::AudioOut {
-        node_ref,
-        port_key: key,
-        signal,
-      } => {
-        let key = key
-          .or_else(|| node.audio_outputs.first_key())
-          .ok_or_else(|| {
-            GraphError::NoSourceDefaultPort(node.ref_string(), source.name().to_string())
-          })?;
+    let source = self.expand_default_source(source)?;
 
-        if node.audio_outputs.contains_key(key) {
-          Ok(Source::AudioOut {
-            node_ref,
-            port_key: Some(key),
-            signal,
-          })
+    match source {
+      ConnectionSource::AudioOut { audio_port_key, .. } => {
+        if node.audio_outputs.contains_key(audio_port_key) {
+          Ok(source)
         } else {
           Err(GraphError::InvalidAudioSourceKey(
             node.ref_string(),
-            source.name().to_string(),
-            key,
+            audio_port_key,
           ))
         }
       }
-      Source::MidiOut {
-        node_ref,
-        port_key: key,
-        signal,
-      } => {
-        let key = key
-          .or_else(|| node.midi_outputs.first_key())
-          .ok_or_else(|| {
-            GraphError::NoSourceDefaultPort(node.ref_string(), source.name().to_string())
-          })?;
-
-        if node.midi_outputs.contains_key(key) {
-          Ok(Source::MidiOut {
-            node_ref,
-            port_key: Some(key),
-            signal,
-          })
+      ConnectionSource::MidiOut { midi_port_key, .. } => {
+        if node.midi_outputs.contains_key(midi_port_key) {
+          Ok(source)
         } else {
           Err(GraphError::InvalidMidiSourceKey(
             node.ref_string(),
-            source.name().to_string(),
-            key,
+            midi_port_key,
           ))
         }
+      }
+      ConnectionSource::DefaultAudioOut { .. } | ConnectionSource::DefaultMidiOut { .. } => {
+        unreachable!()
       }
     }
   }
 
-  fn ensure_valid_destination<G>(&self, destination: Destination<G>) -> Result<Destination<G>>
+  fn ensure_valid_destination<G>(
+    &self,
+    destination: ConnectionDestination<G>,
+  ) -> Result<ConnectionDestination<G>>
   where
     G: Copy,
   {
@@ -503,45 +481,26 @@ impl Graph {
       )
     })?;
 
-    match destination {
-      Destination::Param {
-        node_ref,
-        port_key: key,
-        signal,
-      } => match node.params.get(key) {
-        Some(port) if port.connection.is_none() => Ok(Destination::Param {
-          node_ref,
-          port_key: key,
-          signal,
-        }),
-        Some(port) => Err(GraphError::DestinationAlreadyConnected(
-          node.ref_string(),
-          destination.name().to_string(),
-          port.id().to_string(),
-        )),
-        None => Err(GraphError::InvalidParamDestinationKey(
-          node.ref_string(),
-          destination.name().to_string(),
-          key,
-        )),
-      },
-      Destination::AudioIn {
-        node_ref,
-        port_key: key,
-        signal,
-      } => {
-        let key = key
-          .or_else(|| node.audio_inputs.first_key())
-          .ok_or_else(|| {
-            GraphError::NoDestinationDefaultPort(node.ref_string(), destination.name().to_string())
-          })?;
+    let destination = self.expand_default_destination(destination)?;
 
-        match node.audio_inputs.get(key) {
-          Some(port) if port.connection.is_none() => Ok(Destination::AudioIn {
-            node_ref,
-            port_key: Some(key),
-            signal,
-          }),
+    match destination {
+      ConnectionDestination::Param { param_port_key, .. } => {
+        match node.params.get(param_port_key) {
+          Some(port) if port.connection.is_none() => Ok(destination),
+          Some(port) => Err(GraphError::DestinationAlreadyConnected(
+            node.ref_string(),
+            destination.name().to_string(),
+            port.id().to_string(),
+          )),
+          None => Err(GraphError::InvalidParamDestinationKey(
+            node.ref_string(),
+            param_port_key,
+          )),
+        }
+      }
+      ConnectionDestination::AudioIn { audio_port_key, .. } => {
+        match node.audio_inputs.get(audio_port_key) {
+          Some(port) if port.connection.is_none() => Ok(destination),
           Some(port) => Err(GraphError::DestinationAlreadyConnected(
             node.ref_string(),
             destination.name().to_string(),
@@ -549,28 +508,13 @@ impl Graph {
           )),
           None => Err(GraphError::InvalidAudioDestinationKey(
             node.ref_string(),
-            destination.name().to_string(),
-            key,
+            audio_port_key,
           )),
         }
       }
-      Destination::MidiIn {
-        node_ref,
-        port_key: key,
-        signal,
-      } => {
-        let key = key
-          .or_else(|| node.midi_inputs.first_key())
-          .ok_or_else(|| {
-            GraphError::NoDestinationDefaultPort(node.ref_string(), destination.name().to_string())
-          })?;
-
-        match node.midi_inputs.get(key) {
-          Some(port) if port.connection.is_none() => Ok(Destination::MidiIn {
-            node_ref,
-            port_key: Some(key),
-            signal,
-          }),
+      ConnectionDestination::MidiIn { midi_port_key, .. } => {
+        match node.midi_inputs.get(midi_port_key) {
+          Some(port) if port.connection.is_none() => Ok(destination),
           Some(port) => Err(GraphError::DestinationAlreadyConnected(
             node.ref_string(),
             destination.name().to_string(),
@@ -578,61 +522,53 @@ impl Graph {
           )),
           None => Err(GraphError::InvalidMidiDestinationKey(
             node.ref_string(),
-            destination.name().to_string(),
-            key,
+            midi_port_key,
           )),
         }
       }
+      ConnectionDestination::DefaultAudioIn { .. }
+      | ConnectionDestination::DefaultMidiIn { .. } => unreachable!(),
     }
   }
 
-  pub fn bind_output<S, P, G>(&mut self, source: S, alias: P) -> Result<()>
+  fn expand_default_source<G>(&self, source: ConnectionSource<G>) -> Result<ConnectionSource<G>>
   where
-    S: Into<Source<G>>,
-    P: Into<String>,
+    G: Copy,
   {
-    let source = source.into();
     let node = self.get_node(source.node_ref()).map_err(|_| {
       GraphError::InvalidSourceNode(source.node_ref().ref_string(), source.name().to_string())
     })?;
 
     match source {
-      Source::AudioOut {
-        node_ref, port_key, ..
-      } => {
-        let port_key = port_key
-          .or_else(|| node.audio_outputs.first_key())
-          .ok_or_else(|| {
-            GraphError::NoSourceDefaultPort(node.ref_string(), source.name().to_string())
-          })?;
-        self
-          .audio_outputs
-          .insert(alias.into(), AudioOutRef::new(node_ref, port_key));
-      }
-      Source::MidiOut {
-        node_ref, port_key, ..
-      } => {
-        let port_key = port_key
-          .or_else(|| node.midi_outputs.first_key())
-          .ok_or_else(|| {
-            GraphError::NoSourceDefaultPort(node.ref_string(), source.name().to_string())
-          })?;
-        self
-          .midi_outputs
-          .insert(alias.into(), MidiOutRef::new(node_ref, port_key));
-      }
+      ConnectionSource::DefaultAudioOut { node_ref, signal } => node
+        .audio_outputs
+        .first_key()
+        .map(|port_key| ConnectionSource::AudioOut {
+          node_ref,
+          audio_port_key: port_key,
+          signal,
+        })
+        .ok_or(GraphError::NoDefaultAudioSourceAvailable(node.ref_string())),
+      ConnectionSource::DefaultMidiOut { node_ref, signal } => node
+        .midi_outputs
+        .first_key()
+        .map(|port_key| ConnectionSource::MidiOut {
+          node_ref,
+          midi_port_key: port_key,
+          signal,
+        })
+        .ok_or(GraphError::NoDefaultMidiSourceAvailable(node.ref_string())),
+      _ => Ok(source),
     }
-
-    Ok(())
   }
 
-  // TODO An input port can not be connected and bound at the same time
-  pub fn bind_input<D, P, G>(&mut self, destination: D, alias: P) -> Result<()>
+  fn expand_default_destination<G>(
+    &self,
+    destination: ConnectionDestination<G>,
+  ) -> Result<ConnectionDestination<G>>
   where
-    D: Into<Destination<G>>,
-    P: Into<String>,
+    G: Copy,
   {
-    let destination = destination.into();
     let node = self.get_node(destination.node_ref()).map_err(|_| {
       GraphError::InvalidDestinationNode(
         destination.node_ref().ref_string(),
@@ -641,32 +577,116 @@ impl Graph {
     })?;
 
     match destination {
-      Destination::Param { .. } => {
-        unimplemented!()
-      }
-      Destination::AudioIn {
-        node_ref, port_key, ..
+      ConnectionDestination::DefaultAudioIn { node_ref, signal } => node
+        .audio_inputs
+        .first_key()
+        .map(|audio_port_key| ConnectionDestination::AudioIn {
+          node_ref,
+          audio_port_key,
+          signal,
+        })
+        .ok_or(GraphError::NoDefaultAudioDestiantionAvailable(
+          node.ref_string(),
+        )),
+      ConnectionDestination::DefaultMidiIn { node_ref, signal } => node
+        .midi_inputs
+        .first_key()
+        .map(|midi_port_key| ConnectionDestination::MidiIn {
+          node_ref,
+          midi_port_key,
+          signal,
+        })
+        .ok_or(GraphError::NoDefaultMidiDestinationAvailable(
+          node.ref_string(),
+        )),
+      _ => Ok(destination),
+    }
+  }
+
+  // TODO An input port can not be connected and bound at the same time
+  pub fn bind_input<D, P, G>(&mut self, destination: D, alias: P) -> Result<()>
+  where
+    D: Into<ConnectionDestination<G>>,
+    P: Into<String>,
+    G: Copy,
+  {
+    let destination = destination.into();
+
+    self.get_node(destination.node_ref()).map_err(|_| {
+      GraphError::InvalidDestinationNode(
+        destination.node_ref().ref_string(),
+        destination.name().to_string(),
+      )
+    })?;
+
+    match destination {
+      ConnectionDestination::Param {
+        node_ref,
+        param_port_key,
+        ..
       } => {
-        let port_key = port_key
-          .or_else(|| node.audio_inputs.first_key())
-          .ok_or_else(|| {
-            GraphError::NoDestinationDefaultPort(node.ref_string(), destination.name().to_string())
-          })?;
+        self
+          .params
+          .insert(alias.into(), ParamRef::new(node_ref, param_port_key));
+      }
+      ConnectionDestination::AudioIn {
+        node_ref,
+        audio_port_key,
+        ..
+      } => {
         self
           .audio_inputs
-          .insert(alias.into(), AudioInRef::new(node_ref, port_key));
+          .insert(alias.into(), AudioInRef::new(node_ref, audio_port_key));
       }
-      Destination::MidiIn {
-        node_ref, port_key, ..
+      ConnectionDestination::MidiIn {
+        node_ref,
+        midi_port_key,
+        ..
       } => {
-        let port_key = port_key
-          .or_else(|| node.midi_inputs.first_key())
-          .ok_or_else(|| {
-            GraphError::NoDestinationDefaultPort(node.ref_string(), destination.name().to_string())
-          })?;
         self
           .midi_inputs
-          .insert(alias.into(), MidiInRef::new(node_ref, port_key));
+          .insert(alias.into(), MidiInRef::new(node_ref, midi_port_key));
+      }
+      ConnectionDestination::DefaultAudioIn { .. }
+      | ConnectionDestination::DefaultMidiIn { .. } => unreachable!(),
+    }
+
+    Ok(())
+  }
+
+  pub fn bind_output<S, P, G>(&mut self, source: S, alias: P) -> Result<()>
+  where
+    S: Into<ConnectionSource<G>>,
+    P: Into<String>,
+    G: Copy,
+  {
+    let source = self.expand_default_source(source.into())?;
+
+    self.get_node(source.node_ref()).map_err(|_| {
+      GraphError::InvalidSourceNode(source.node_ref().ref_string(), source.name().to_string())
+    })?;
+
+    match source {
+      ConnectionSource::AudioOut {
+        node_ref,
+        audio_port_key,
+        ..
+      } => {
+        self
+          .audio_outputs
+          .insert(alias.into(), AudioOutRef::new(node_ref, audio_port_key));
+      }
+      ConnectionSource::MidiOut {
+        node_ref,
+        midi_port_key,
+        ..
+      } => {
+        self
+          .midi_outputs
+          .insert(alias.into(), MidiOutRef::new(node_ref, midi_port_key));
+      }
+      ConnectionSource::DefaultAudioOut { .. } | ConnectionSource::DefaultMidiOut { .. } => {
+        unreachable!()
       }
     }
 
@@ -772,14 +792,7 @@ mod tests {
     let node = g.get_node(n2)?;
     assert_node_sources(node, vec![n1]);
     let port = node.audio_inputs.get(Key::new(0)).unwrap();
-    assert_eq!(
-      port.connection,
-      Some(Source::AudioOut {
-        node_ref: n1,
-        port_key: Some(Key::new(0)),
-        signal: AudioSignal
-      })
-    );
+    assert_eq!(port.connection, Some(AudioOutRef::new(n1, Key::new(0))));
 
     Ok(())
   }
@@ -791,15 +804,8 @@ mod tests {
     let destination = g.audio_input(n2, "IN")?;
     g.connect(n1, destination)?;
     let node = g.get_node(destination.node_ref)?;
-    let port = node.audio_inputs.get(destination.audio_key).unwrap();
-    assert_eq!(
-      port.connection,
-      Some(Source::AudioOut {
-        node_ref: n1,
-        port_key: Some(Key::new(0)),
-        signal: AudioSignal
-      })
-    );
+    let port = node.audio_inputs.get(destination.audio_port_key).unwrap();
+    assert_eq!(port.connection, Some(AudioOutRef::new(n1, Key::new(0))));
 
     Ok(())
   }
@@ -813,14 +819,10 @@ mod tests {
     g.connect(source, destination)?;
     let node = g.get_node(destination.node_ref)?;
     assert_node_sources(node, vec![n1]);
-    let port = node.audio_inputs.get(destination.audio_key).unwrap();
+    let port = node.audio_inputs.get(destination.audio_port_key).unwrap();
     assert_eq!(
       port.connection,
-      Some(Source::AudioOut {
-        node_ref: source.node_ref,
-        port_key: Some(source.audio_key),
-        signal: AudioSignal
-      })
+      Some(AudioOutRef::new(source.node_ref, source.audio_port_key))
     );
 
     Ok(())
@@ -834,15 +836,8 @@ mod tests {
     g.connect(n1, destination)?;
     let node = g.get_node(destination.node_ref)?;
     assert_node_sources(node, vec![n1]);
-    let port = node.params.get(destination.param_key).unwrap();
-    assert_eq!(
-      port.connection,
-      Some(Source::AudioOut {
-        node_ref: n1,
-        port_key: Some(Key::new(0)),
-        signal: AudioSignal
-      })
-    );
+    let port = node.params.get(destination.param_port_key).unwrap();
+    assert_eq!(port.connection, Some(AudioOutRef::new(n1, Key::new(0))));
 
     Ok(())
   }
@@ -856,14 +851,10 @@ mod tests {
     g.connect(source, destination)?;
     let node = g.get_node(destination.node_ref)?;
     assert_node_sources(node, vec![n1]);
-    let port = node.params.get(destination.param_key).unwrap();
+    let port = node.params.get(destination.param_port_key).unwrap();
     assert_eq!(
       port.connection,
-      Some(Source::AudioOut {
-        node_ref: source.node_ref,
-        port_key: Some(source.audio_key),
-        signal: AudioSignal
-      })
+      Some(AudioOutRef::new(source.node_ref, source.audio_port_key))
     );
 
     Ok(())
@@ -877,14 +868,7 @@ mod tests {
     let node = g.get_node(n2)?;
     assert_node_sources(node, vec![n1]);
     let port = node.midi_inputs.get(Key::new(0)).unwrap();
-    assert_eq!(
-      port.connection,
-      Some(Source::MidiOut {
-        node_ref: n1,
-        port_key: Some(Key::new(0)),
-        signal: MidiSignal
-      })
-    );
+    assert_eq!(port.connection, Some(MidiOutRef::new(n1, Key::new(0))));
 
     Ok(())
   }
@@ -897,15 +881,8 @@ mod tests {
     g.connect(n1, destination)?;
     let node = g.get_node(destination.node_ref)?;
     assert_node_sources(node, vec![n1]);
-    let port = node.midi_inputs.get(destination.midi_key).unwrap();
-    assert_eq!(
-      port.connection,
-      Some(Source::MidiOut {
-        node_ref: n1,
-        port_key: Some(Key::new(0)),
-        signal: MidiSignal
-      })
-    );
+    let port = node.midi_inputs.get(destination.midi_port_key).unwrap();
+    assert_eq!(port.connection, Some(MidiOutRef::new(n1, Key::new(0))));
 
     Ok(())
   }
@@ -919,14 +896,10 @@ mod tests {
     g.connect(source, destination)?;
     let node = g.get_node(destination.node_ref)?;
     assert_node_sources(node, vec![n1]);
-    let port = node.midi_inputs.get(destination.midi_key).unwrap();
+    let port = node.midi_inputs.get(destination.midi_port_key).unwrap();
     assert_eq!(
       port.connection,
-      Some(Source::MidiOut {
-        node_ref: source.node_ref,
-        port_key: Some(source.midi_key),
-        signal: MidiSignal
-      })
+      Some(MidiOutRef::new(source.node_ref, source.midi_port_key))
     );
 
     Ok(())
@@ -941,13 +914,34 @@ mod tests {
     let node = g.get_node(n2)?;
     assert_node_sources(node, vec![n1]);
     let port = node.midi_inputs.get(Key::new(0)).unwrap();
+    assert_eq!(port.connection, Some(MidiOutRef::new(n1, Key::new(0))));
+
+    Ok(())
+  }
+
+  #[test]
+  fn bind_input() -> anyhow::Result<()> {
+    let (mut g, _, n2) = create_graph_for_connections()?;
+
+    let source = g.audio_input(n2, "IN")?;
+    g.bind_input(source, "IN")?;
     assert_eq!(
-      port.connection,
-      Some(Source::MidiOut {
-        node_ref: n1,
-        port_key: Some(Key::new(0)),
-        signal: MidiSignal
-      })
+      g.audio_inputs.get("IN").cloned(),
+      Some(AudioInRef::new(n2, Key::new(0)))
+    );
+
+    Ok(())
+  }
+
+  #[test]
+  fn bind_output() -> anyhow::Result<()> {
+    let (mut g, n1, _) = create_graph_for_connections()?;
+
+    let source = g.audio_output(n1, "OUT")?;
+    g.bind_output(source, "OUT")?;
+    assert_eq!(
+      g.audio_outputs.get("OUT").cloned(),
+      Some(AudioOutRef::new(n1, Key::new(0)))
     );
 
     Ok(())
@@ -957,10 +951,12 @@ mod tests {
   fn topology() -> anyhow::Result<()> {
     let mut g = Graph::new();
 
-    let sink_desc = NodeDescriptor::new("Sink").static_audio_inputs(vec![
-      AudioDescriptor::new("in1", 1),
-      AudioDescriptor::new("in2", 1),
-    ]);
+    let sink_desc = NodeDescriptor::new("Sink")
+      .static_audio_inputs(vec![
+        AudioDescriptor::new("in1", 1),
+        AudioDescriptor::new("in2", 1),
+      ])
+      .static_audio_outputs(vec![AudioDescriptor::new("out", 1)]);
     let source_desc =
       NodeDescriptor::new("Source").static_audio_outputs(vec![AudioDescriptor::new("out", 1)]);
     let proc_desc = NodeDescriptor::new("Proc")
@@ -982,6 +978,8 @@ mod tests {
     g.connect(b, g.audio_input(a, "in1")?)?;
     g.connect_audio(f, c)?;
     g.connect(c, g.audio_input(a, "in2")?)?;
+
+    g.bind_output(g.audio_output(a, "out")?, "out")?;
 
     let topology = g.topology();
 

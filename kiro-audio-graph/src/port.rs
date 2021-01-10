@@ -1,24 +1,23 @@
 use std::marker::PhantomData;
 
-use crate::audio::AudioDescriptor;
-use crate::connection::{AudioSignal, Destination, MidiSignal, Source};
+use crate::audio::{AudioDescriptor, AudioInRef, AudioOutRef};
 use crate::key_store::{HasId, KeyStoreWithId};
-use crate::midi::MidiDescriptor;
+use crate::midi::{MidiDescriptor, MidiInRef, MidiOutRef};
 use crate::param::ParamDescriptor;
 
-pub type AudioInPort = InputPort<AudioDescriptor, Source<AudioSignal>>;
-pub type AudioInPortStore = KeyStoreWithId<AudioInPort>;
-
-pub type AudioOutPort = OutputPort<AudioDescriptor, Destination<AudioSignal>>;
-pub type AudioOutPortStore = KeyStoreWithId<AudioOutPort>;
-
-pub type ParamPort = InputPort<ParamDescriptor, Source<AudioSignal>>;
+pub type ParamPort = InputPort<ParamDescriptor, AudioOutRef>;
 pub type ParamPortStore = KeyStoreWithId<ParamPort>;
 
-pub type MidiInPort = InputPort<MidiDescriptor, Source<MidiSignal>>;
+pub type AudioInPort = InputPort<AudioDescriptor, AudioOutRef>;
+pub type AudioInPortStore = KeyStoreWithId<AudioInPort>;
+
+pub type AudioOutPort = OutputPort<AudioDescriptor, AudioInRef>;
+pub type AudioOutPortStore = KeyStoreWithId<AudioOutPort>;
+
+pub type MidiInPort = InputPort<MidiDescriptor, MidiOutRef>;
 pub type MidiInPortStore = KeyStoreWithId<MidiInPort>;
 
-pub type MidiOutPort = OutputPort<MidiDescriptor, Destination<MidiSignal>>;
+pub type MidiOutPort = OutputPort<MidiDescriptor, MidiInRef>;
 pub type MidiOutPortStore = KeyStoreWithId<MidiOutPort>;
 
 #[derive(Debug)]

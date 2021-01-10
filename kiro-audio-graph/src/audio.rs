@@ -3,32 +3,32 @@ use crate::key_store::HasId;
 use crate::node::NodeRef;
 use crate::port::{AudioInPort, AudioOutPort};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct AudioInRef {
-  pub(crate) node_ref: NodeRef,
-  pub(crate) audio_key: Key<AudioInPort>,
+  pub node_ref: NodeRef,
+  pub audio_port_key: Key<AudioInPort>,
 }
 
 impl AudioInRef {
-  pub fn new(node_ref: NodeRef, audio_key: Key<AudioInPort>) -> Self {
+  pub fn new(node_ref: NodeRef, audio_port_key: Key<AudioInPort>) -> Self {
     Self {
       node_ref,
-      audio_key,
+      audio_port_key,
     }
   }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct AudioOutRef {
-  pub(crate) node_ref: NodeRef,
-  pub(crate) audio_key: Key<AudioOutPort>,
+  pub node_ref: NodeRef,
+  pub audio_port_key: Key<AudioOutPort>,
 }
 
 impl AudioOutRef {
-  pub fn new(node_ref: NodeRef, audio_key: Key<AudioOutPort>) -> Self {
+  pub fn new(node_ref: NodeRef, audio_port_key: Key<AudioOutPort>) -> Self {
     Self {
       node_ref,
-      audio_key,
+      audio_port_key,
     }
   }
 }
