@@ -89,5 +89,6 @@ kiro-synth-nrf52
 nrf52840*
 openocd.*
 
+incubator/
 
 .DS_Store

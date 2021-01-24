@@ -12,7 +12,6 @@ use crate::buffers::Buffer;
 pub use crate::config::EngineConfig;
 pub use crate::controller::Controller;
 pub use crate::param_value::ParamValue;
-pub use crate::processor::context::ProcessorContext;
 pub use crate::processor::Processor;
 pub use crate::processor::ProcessorFactory;
 pub use crate::renderer::Renderer;

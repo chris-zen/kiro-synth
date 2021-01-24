@@ -51,10 +51,20 @@ impl<F: Float> PitchedOscillator<F> {
     self.phase_inc_invalidated = true;
   }
 
+  /// Get the pitch frequency
+  pub fn get_pitch_frequency(&self) -> F {
+    self.pitch_freq
+  }
+
   /// Set the shift for the octaves
   pub fn set_octaves(&mut self, octaves: F) {
     self.pitch_shift.set_octaves(octaves);
     self.phase_inc_invalidated = true;
+  }
+
+  /// Get the shift for the octaves
+  pub fn get_octaves(&self) -> F {
+    self.pitch_shift.get_octaves()
   }
 
   /// Set the semitones shift
@@ -63,10 +73,20 @@ impl<F: Float> PitchedOscillator<F> {
     self.phase_inc_invalidated = true;
   }
 
+  /// Get the semitones shift
+  pub fn get_semitones(&self) -> F {
+    self.pitch_shift.get_semitones()
+  }
+
   /// Set the shift for the cents
   pub fn set_cents(&mut self, cents: F) {
     self.pitch_shift.set_cents(cents);
     self.phase_inc_invalidated = true;
+  }
+
+  /// Get the shift for the cents
+  pub fn get_cents(&self) -> F {
+    self.pitch_shift.get_cents()
   }
 
   /// Set the pitch bend
@@ -75,10 +95,20 @@ impl<F: Float> PitchedOscillator<F> {
     self.phase_inc_invalidated = true;
   }
 
+  /// Get the pitch bend
+  pub fn get_pitch_bend(&self) -> F {
+    self.pitch_shift.get_pitch_bend()
+  }
+
   /// Set the frequency modulation
   pub fn set_frequency_modulation(&mut self, freq_mod: F) {
     self.pitch_shift.set_modulation(freq_mod);
     self.phase_inc_invalidated = true;
+  }
+
+  /// Get the frequency modulation
+  pub fn get_frequency_modulation(&self) -> F {
+    self.pitch_shift.get_modulation()
   }
 
   /// Set amplitude
@@ -86,9 +116,19 @@ impl<F: Float> PitchedOscillator<F> {
     self.amplitude = amplitude;
   }
 
+  /// Get amplitude
+  pub fn get_amplitude(&self) -> F {
+    self.amplitude
+  }
+
   /// Set amplitude modulation
   pub fn set_amplitude_modulation(&mut self, amp_mod: F) {
     self.amp_mod = amp_mod;
+  }
+
+  /// Get amplitude modulation
+  pub fn get_amplitude_modulation(&self) -> F {
+    self.amp_mod
   }
 
   /// Set the sample rate
@@ -110,7 +150,7 @@ impl<F: Float> PitchedOscillator<F> {
 
     let signal = self.waveform.generate(self.modulo, self.phase_inc);
     self.modulo = clamp_modulo(self.modulo + self.phase_inc);
-    signal * self.amplitude + self.amp_mod
+    signal * (self.amplitude + self.amp_mod)
   }
 
   fn update_phase_inc(&mut self) {

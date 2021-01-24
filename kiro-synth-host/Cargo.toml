@@ -25,8 +25,8 @@ heapless = "0.5.2"
 typenum = "1.11.2"
 generic-array = "0.14.2"
 
-cpal = { git = "https://github.com/RustAudio/cpal", branch = "master" }
-#cpal = "0.11.0"
+#cpal = { git = "https://github.com/RustAudio/cpal", branch = "master" }
+cpal = "0.12.1"
 
 #druid = { git = "https://github.com/xi-editor/druid", branch = "master", features = ["im"] }
 #druid = { path = "../../druid-orig/druid", features = ["im"] }

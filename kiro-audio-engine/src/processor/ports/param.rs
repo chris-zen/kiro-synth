@@ -22,7 +22,7 @@ impl ParamRenderPort {
 
   pub fn iter(&self) -> Iter {
     match self {
-      ParamRenderPort::Value(value, buffer) => Iter::Value(value.get(), buffer.len(), 0),
+      ParamRenderPort::Value(value, slice_buffer) => Iter::Value(value.get(), slice_buffer.len(), 0),
       ParamRenderPort::Buffer(buffer) => {
         let b = buffer.as_slice();
         Iter::Buffer(b.iter(), f32::MIN, true)
@@ -56,6 +56,7 @@ impl Index<usize> for ParamRenderPort {
   }
 }
 
+#[derive(Debug)]
 pub enum Iter<'a> {
   Value(f32, usize, usize),
   Buffer(core::slice::Iter<'a, f32>, f32, bool),
@@ -71,9 +72,18 @@ impl<'a> Iter<'a> {
 
   pub fn updated(&self) -> bool {
     match self {
-      Iter::Value(_value, _len, index) => *index == 0,
+      Iter::Value(_value, _len, index) => *index <= 1,
       Iter::Buffer(_iter, _last_value, updated) => *updated,
     }
+  }
+
+  pub fn next_if_updated<F>(&mut self, prev_value_fn: F) -> Option<f32>
+  where
+    F: Fn() -> f32,
+  {
+    self
+      .next()
+      .filter(|v| /* self.updated() && */ *v != (prev_value_fn)())
   }
 }
 

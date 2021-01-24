@@ -1,5 +1,5 @@
-// use crate::buffers::Signal;
 use std::ops::{Index, IndexMut};
+
 
 #[derive(Debug, Clone)]
 pub struct Buffer(Vec<f32>);
@@ -21,6 +21,10 @@ impl Buffer {
 
   pub fn iter(&self) -> core::slice::Iter<f32> {
     self.0.iter()
+  }
+
+  pub fn iter_mut(&mut self) -> core::slice::IterMut<f32> {
+    self.0.iter_mut()
   }
 
   pub fn as_slice(&self) -> &[f32] {

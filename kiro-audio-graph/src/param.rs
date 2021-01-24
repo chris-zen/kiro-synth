@@ -3,10 +3,10 @@ use crate::key_store::HasId;
 use crate::node::NodeRef;
 use crate::port::ParamPort;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
 pub struct ParamRef {
-  pub(crate) node_ref: NodeRef,
-  pub(crate) param_port_key: Key<ParamPort>,
+  pub node_ref: NodeRef,
+  pub param_port_key: Key<ParamPort>,
 }
 
 impl ParamRef {
