@@ -548,7 +548,7 @@ impl Graph {
           audio_port_key: port_key,
           signal,
         })
-        .ok_or(GraphError::NoDefaultAudioSourceAvailable(node.ref_string())),
+        .ok_or_else(|| GraphError::NoDefaultAudioSourceAvailable(node.ref_string())),
       ConnectionSource::DefaultMidiOut { node_ref, signal } => node
         .midi_outputs
         .first_key()
@@ -557,7 +557,7 @@ impl Graph {
           midi_port_key: port_key,
           signal,
         })
-        .ok_or(GraphError::NoDefaultMidiSourceAvailable(node.ref_string())),
+        .ok_or_else(|| GraphError::NoDefaultMidiSourceAvailable(node.ref_string())),
       _ => Ok(source),
     }
   }
@@ -585,9 +585,7 @@ impl Graph {
           audio_port_key,
           signal,
         })
-        .ok_or(GraphError::NoDefaultAudioDestiantionAvailable(
-          node.ref_string(),
-        )),
+        .ok_or_else(|| GraphError::NoDefaultAudioDestiantionAvailable(node.ref_string())),
       ConnectionDestination::DefaultMidiIn { node_ref, signal } => node
         .midi_inputs
         .first_key()
@@ -596,9 +594,7 @@ impl Graph {
           midi_port_key,
           signal,
         })
-        .ok_or(GraphError::NoDefaultMidiDestinationAvailable(
-          node.ref_string(),
-        )),
+        .ok_or_else(|| GraphError::NoDefaultMidiDestinationAvailable(node.ref_string())),
       _ => Ok(destination),
     }
   }
@@ -763,10 +759,16 @@ impl Graph {
   }
 }
 
+impl Default for Graph {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{MidiDescriptor, AudioDescriptor, ParamDescriptor};
+  use crate::{AudioDescriptor, MidiDescriptor, ParamDescriptor};
 
   fn create_graph_for_connections() -> anyhow::Result<(Graph, NodeRef, NodeRef)> {
     let mut g = Graph::new();
@@ -779,8 +781,8 @@ mod tests {
       .static_parameters(vec![ParamDescriptor::new("P1")])
       .static_midi_inputs(vec![MidiDescriptor::new("IN")]);
 
-    let n1 = g.add_node("N1", source_desc.clone())?;
-    let n2 = g.add_node("N2", sink_desc.clone())?;
+    let n1 = g.add_node("N1", source_desc)?;
+    let n2 = g.add_node("N2", sink_desc)?;
 
     Ok((g, n1, n2))
   }

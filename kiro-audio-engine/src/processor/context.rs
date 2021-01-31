@@ -4,35 +4,37 @@ use crate::processor::ports::audio::AudioRenderPort;
 use crate::processor::ports::param::ParamRenderPort;
 use crate::processor::ports::{Input, Output};
 
-#[derive(Debug, Clone)]
-pub struct ProcessorContext {
-  pub(crate) audio_inputs: HashMap<String, AudioRenderPort<Input>>,
-  pub(crate) audio_outputs: HashMap<String, AudioRenderPort<Output>>,
-  pub(crate) parameters: HashMap<String, ParamRenderPort>,
+pub struct RenderContext<'a> {
+  num_samples: usize,
+  audio_inputs: &'a HashMap<String, AudioRenderPort<Input>>,
+  audio_outputs: &'a HashMap<String, AudioRenderPort<Output>>,
+  parameters: &'a HashMap<String, ParamRenderPort>,
 }
 
-impl ProcessorContext {
+impl<'a> RenderContext<'a> {
   pub fn new(
-    audio_inputs: HashMap<String, AudioRenderPort<Input>>,
-    audio_outputs: HashMap<String, AudioRenderPort<Output>>,
-    parameters: HashMap<String, ParamRenderPort>,
+    num_samples: usize,
+    audio_inputs: &'a HashMap<String, AudioRenderPort<Input>>,
+    audio_outputs: &'a HashMap<String, AudioRenderPort<Output>>,
+    parameters: &'a HashMap<String, ParamRenderPort>,
   ) -> Self {
     Self {
+      num_samples,
       audio_inputs,
       audio_outputs,
       parameters,
     }
   }
 
+  pub fn num_samples(&self) -> usize {
+    self.num_samples
+  }
+
   pub fn num_audio_inputs(&self) -> usize {
     self.audio_inputs.len()
   }
 
-  pub fn audio_inputs(&self) -> &HashMap<String, AudioRenderPort<Input>> {
-    &self.audio_inputs
-  }
-
-  pub fn audio_input<'a, ID: Into<&'a str>>(&self, id: ID) -> &AudioRenderPort<Input> {
+  pub fn audio_input<'b, ID: Into<&'b str>>(&self, id: ID) -> &'a AudioRenderPort<Input> {
     &self.audio_inputs[id.into()]
   }
 
@@ -40,11 +42,7 @@ impl ProcessorContext {
     self.audio_outputs.len()
   }
 
-  pub fn audio_outputs(&self) -> &HashMap<String, AudioRenderPort<Output>> {
-    &self.audio_outputs
-  }
-
-  pub fn audio_output<'a, ID: Into<&'a str>>(&self, id: ID) -> &AudioRenderPort<Output> {
+  pub fn audio_output<'b, ID: Into<&'b str>>(&self, id: ID) -> &'a AudioRenderPort<Output> {
     &self.audio_outputs[id.into()]
   }
 
@@ -52,11 +50,7 @@ impl ProcessorContext {
     self.parameters.len()
   }
 
-  pub fn parameters(&self) -> &HashMap<String, ParamRenderPort> {
-    &self.parameters
-  }
-
-  pub fn parameter<'a, ID: Into<&'a str>>(&self, id: ID) -> &ParamRenderPort {
+  pub fn parameter<'b, ID: Into<&'b str>>(&self, id: ID) -> &'a ParamRenderPort {
     &self.parameters[id.into()]
   }
 }

@@ -3,7 +3,7 @@ use std::ops::DerefMut;
 use ringbuf::{Consumer, Producer};
 
 use crate::messages::Message;
-use crate::renderer::context::RenderContext;
+use crate::processor::context::RenderContext;
 use crate::renderer::plan::RenderOp;
 use crate::renderer::plan::RenderPlan;
 use crate::EngineConfig;
@@ -58,7 +58,10 @@ impl Renderer {
     // TODO Check if the mut can be removed
     for op in self.plan.operations.iter_mut() {
       match op {
-        RenderOp::RenderOutput { alias: _, audio_input } => {
+        RenderOp::RenderOutput {
+          alias: _,
+          audio_input,
+        } => {
           for (channel_index, input_buffer) in audio_input.iter().enumerate() {
             let mut output_offset = channel_index;
             for sample in input_buffer.as_slice()[0..num_samples].iter() {
@@ -73,13 +76,20 @@ impl Renderer {
           audio_outputs,
           parameters,
         } => {
+          audio_inputs
+            .values_mut()
+            .for_each(|port| port.set_num_samples(num_samples));
+          audio_outputs
+            .values_mut()
+            .for_each(|port| port.set_num_samples(num_samples));
+          parameters
+            .values_mut()
+            .for_each(|port| port.set_num_samples(num_samples));
+
+          let mut context =
+            RenderContext::new(num_samples, audio_inputs, audio_outputs, parameters);
+
           let processor = processor_ref.deref_mut();
-          let mut context = RenderContext::new(
-            num_samples,
-            audio_inputs,
-            audio_outputs,
-            parameters
-          );
           // TODO Check if the mut can be removed
           processor.render(&mut context);
         }

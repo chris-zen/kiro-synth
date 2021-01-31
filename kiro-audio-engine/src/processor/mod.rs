@@ -1,3 +1,4 @@
+pub(crate) mod context;
 pub mod ports;
 
 use std::collections::HashMap;
@@ -5,7 +6,7 @@ use std::fmt::Formatter;
 
 use kiro_audio_graph::Node;
 
-use crate::renderer::context::RenderContext;
+pub use context::RenderContext;
 
 pub type ProcessorBox = Box<dyn Processor + 'static>;
 

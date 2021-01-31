@@ -1,8 +1,11 @@
-use crate::controller::owned_data::Ref;
-use crate::processor::ports::param::ParamRenderPort;
-use crate::processor::ProcessorBox;
 use std::collections::HashMap;
+
 use crate::buffers::Buffer;
+use crate::controller::owned_data::Ref;
+use crate::processor::ports::audio::AudioRenderPort;
+use crate::processor::ports::param::ParamRenderPort;
+use crate::processor::ports::{Input, Output};
+use crate::processor::ProcessorBox;
 
 #[derive(Debug, Clone)]
 pub enum RenderOp {
@@ -13,8 +16,8 @@ pub enum RenderOp {
   },
   RenderProcessor {
     processor_ref: Ref<ProcessorBox>,
-    audio_inputs: HashMap<String, Vec<Ref<Buffer>>>,
-    audio_outputs: HashMap<String, Vec<Ref<Buffer>>>,
+    audio_inputs: HashMap<String, AudioRenderPort<Input>>,
+    audio_outputs: HashMap<String, AudioRenderPort<Output>>,
     parameters: HashMap<String, ParamRenderPort>,
   },
   // WaitProcessor(usize),

@@ -35,20 +35,20 @@ pub enum ConnectionSource<S> {
 
 impl<S> ConnectionSource<S> {
   pub fn node_ref(&self) -> NodeRef {
-    match self {
-      &ConnectionSource::DefaultAudioOut { node_ref, .. } => node_ref,
-      &ConnectionSource::AudioOut { node_ref, .. } => node_ref,
-      &ConnectionSource::DefaultMidiOut { node_ref, .. } => node_ref,
-      &ConnectionSource::MidiOut { node_ref, .. } => node_ref,
+    match *self {
+      ConnectionSource::DefaultAudioOut { node_ref, .. } => node_ref,
+      ConnectionSource::AudioOut { node_ref, .. } => node_ref,
+      ConnectionSource::DefaultMidiOut { node_ref, .. } => node_ref,
+      ConnectionSource::MidiOut { node_ref, .. } => node_ref,
     }
   }
 
   pub fn name(&self) -> &str {
-    match self {
-      &ConnectionSource::DefaultAudioOut { .. } => "AudioOut",
-      &ConnectionSource::AudioOut { .. } => "AudioOut",
-      &ConnectionSource::DefaultMidiOut { .. } => "MidiOut",
-      &ConnectionSource::MidiOut { .. } => "MidiOut",
+    match *self {
+      ConnectionSource::DefaultAudioOut { .. } => "AudioOut",
+      ConnectionSource::AudioOut { .. } => "AudioOut",
+      ConnectionSource::DefaultMidiOut { .. } => "MidiOut",
+      ConnectionSource::MidiOut { .. } => "MidiOut",
     }
   }
 }
@@ -120,22 +120,22 @@ pub enum ConnectionDestination<S> {
 
 impl<S> ConnectionDestination<S> {
   pub fn node_ref(&self) -> NodeRef {
-    match self {
-      &ConnectionDestination::Param { node_ref, .. } => node_ref,
-      &ConnectionDestination::DefaultAudioIn { node_ref, .. } => node_ref,
-      &ConnectionDestination::AudioIn { node_ref, .. } => node_ref,
-      &ConnectionDestination::DefaultMidiIn { node_ref, .. } => node_ref,
-      &ConnectionDestination::MidiIn { node_ref, .. } => node_ref,
+    match *self {
+      ConnectionDestination::Param { node_ref, .. } => node_ref,
+      ConnectionDestination::DefaultAudioIn { node_ref, .. } => node_ref,
+      ConnectionDestination::AudioIn { node_ref, .. } => node_ref,
+      ConnectionDestination::DefaultMidiIn { node_ref, .. } => node_ref,
+      ConnectionDestination::MidiIn { node_ref, .. } => node_ref,
     }
   }
 
   pub fn name(&self) -> &str {
-    match self {
-      &ConnectionDestination::Param { .. } => "Param",
-      &ConnectionDestination::DefaultAudioIn { .. } => "AudioIn",
-      &ConnectionDestination::AudioIn { .. } => "AudioIn",
-      &ConnectionDestination::DefaultMidiIn { .. } => "MidiIn",
-      &ConnectionDestination::MidiIn { .. } => "MidiIn",
+    match *self {
+      ConnectionDestination::Param { .. } => "Param",
+      ConnectionDestination::DefaultAudioIn { .. } => "AudioIn",
+      ConnectionDestination::AudioIn { .. } => "AudioIn",
+      ConnectionDestination::DefaultMidiIn { .. } => "MidiIn",
+      ConnectionDestination::MidiIn { .. } => "MidiIn",
     }
   }
 }

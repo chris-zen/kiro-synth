@@ -50,14 +50,14 @@ fn main() -> Result<()> {
 
   let mut osc1_freq_value = 1.0;
   controller.set_param_value(osc1_freq, osc1_freq_value)?;
-  controller.set_param_value(osc2_freq, 220.0)?;
+  controller.set_param_value(osc2_freq, 440.0)?;
 
   audio_driver.start()?;
 
   loop {
     controller.process_messages();
     std::thread::sleep(Duration::from_secs(1));
-    osc1_freq_value += 1.0;
+    osc1_freq_value *= 1.5;
     controller.set_param_value(osc1_freq, osc1_freq_value)?;
     println!("{}", osc1_freq_value);
   }

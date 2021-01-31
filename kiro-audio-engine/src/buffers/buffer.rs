@@ -1,6 +1,5 @@
 use std::ops::{Index, IndexMut};
 
-
 #[derive(Debug, Clone)]
 pub struct Buffer(Vec<f32>);
 
@@ -17,6 +16,10 @@ impl Buffer {
 
   pub fn fill(&mut self, value: f32) {
     self.0.iter_mut().for_each(|v| *v = value);
+  }
+
+  pub fn fill_first(&mut self, len: usize, value: f32) {
+    self.0.iter_mut().take(len).for_each(|v| *v = value);
   }
 
   pub fn iter(&self) -> core::slice::Iter<f32> {

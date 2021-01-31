@@ -4,7 +4,7 @@ use kiro_synth_dsp::waveforms::saw_blep::{self, SawBlep};
 use kiro_synth_dsp::waveforms::sine_parabolic::SineParabolic;
 use kiro_synth_dsp::waveforms::triangle_dpw2x::TriangleDpw2x;
 
-use kiro_audio_engine::renderer::RenderContext;
+use kiro_audio_engine::processor::RenderContext;
 use kiro_audio_engine::Processor;
 use kiro_audio_graph::{AudioDescriptor, NodeDescriptor, ParamDescriptor};
 
